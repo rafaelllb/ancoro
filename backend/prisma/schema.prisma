@@ -1,0 +1,207 @@
+// Prisma Schema para Ancoro Application
+// Database: PostgreSQL (produção) ou SQLite (desenvolvimento)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"  // Trocar para "postgresql" em produção
+  url      = env("DATABASE_URL")
+}
+
+// NOTA: SQLite não suporta enums nativamente.
+// Usamos String com valores constantes.
+// Em PostgreSQL, trocar String para enum nativo.
+
+// ===== MODELS =====
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  client      String
+  startDate   DateTime
+  status      String   @default("DISCOVERY") // DISCOVERY | REALIZATION | GOLIVE | HYPERCARE | CLOSED
+
+  requirements Requirement[]
+  users        ProjectUser[]
+  crossMatrix  CrossMatrixEntry[]
+  sprints      Sprint[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("projects")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  password    String   // Hashed with bcrypt
+  role        String   @default("CONSULTANT") // CONSULTANT | CLIENT | MANAGER | ADMIN
+
+  projects    ProjectUser[]
+  requirements Requirement[] @relation("AssignedTo")
+  comments    Comment[]
+  changes     ChangeLog[]
+  ownedIntegrations CrossMatrixEntry[] @relation("IntegrationOwner")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("users")
+}
+
+model ProjectUser {
+  id          String   @id @default(cuid())
+  projectId   String
+  userId      String
+  module      String?  // ISU | CRM | FICA | DEVICE | SD | MM | PM | OTHER (null para clientes/managers)
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@map("project_users")
+}
+
+model Requirement {
+  id              String   @id @default(cuid())
+  reqId           String   // REQ-001, REQ-002 (human-readable)
+  projectId       String
+
+  // 5W2H Fields
+  shortDesc       String   // <50 chars
+  module          String   // ISU | CRM | FICA | DEVICE | SD | MM | PM | OTHER
+  what            String   // O que precisa ser feito
+  why             String   // Dor/objetivo de negócio
+  who             String   // Quem executa
+  when            String   // Frequência/trigger
+  where           String   // Sistema atual → futuro
+  howToday        String   // Processo atual (3-5 passos)
+  howMuch         String   // Volume/esforço
+
+  // Integrations (arrays de Req IDs)
+  dependsOn       String   @default("") // JSON array string: ["REQ-002", "REQ-003"]
+  providesFor     String   @default("") // JSON array string: ["REQ-005"]
+
+  // Collaboration
+  consultantId    String
+  consultantNotes String?  // Dúvidas do consultor
+  status          String   @default("PENDING") // PENDING | IN_PROGRESS | VALIDATED | CONFLICT | REJECTED | APPROVED
+  observations    String?
+
+  // Relations
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  consultant      User     @relation("AssignedTo", fields: [consultantId], references: [id])
+  comments        Comment[]
+  changes         ChangeLog[]
+  crossMatrixFrom CrossMatrixEntry[] @relation("FromRequirement")
+  crossMatrixTo   CrossMatrixEntry[] @relation("ToRequirement")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([projectId, reqId])
+  @@map("requirements")
+}
+
+model Comment {
+  id              String   @id @default(cuid())
+  requirementId   String
+  userId          String
+  content         String
+  type            String   @default("OBSERVATION") // QUESTION | ANSWER | OBSERVATION | CONFLICT
+
+  requirement     Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id])
+
+  createdAt       DateTime @default(now())
+
+  @@map("comments")
+}
+
+model CrossMatrixEntry {
+  id              String   @id @default(cuid())
+  projectId       String
+  fromReqId       String   // ID interno do Requirement (não o reqId human-readable)
+  toReqId         String   // ID interno do Requirement
+
+  // Auto-generated fields (extraídos dos requisitos)
+  fromModule      String   // ISU | CRM | FICA | DEVICE | SD | MM | PM | OTHER
+  toModule        String   // ISU | CRM | FICA | DEVICE | SD | MM | PM | OTHER
+  dataFlow        String?  // "BP number, contract data"
+  dataFlowBack    String?  // "Contract account number"
+
+  // Manual validation fields (consultores preenchem)
+  integrationType String   @default("OTHER") // BAPI | IDOC | FILE | API | BATCH | OTHER
+  trigger         String   @default("")
+  timing          String   @default("SYNC") // SYNC | ASYNC | BATCH | EVENT
+  ownerUserId     String?  // Consultor responsável pela integração
+  status          String   @default("PENDING") // OK | PENDING | CONFLICT | CIRCULAR
+  manualNotes     String?
+
+  // Relations
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fromReq         Requirement @relation("FromRequirement", fields: [fromReqId], references: [id])
+  toReq           Requirement @relation("ToRequirement", fields: [toReqId], references: [id])
+  owner           User?    @relation("IntegrationOwner", fields: [ownerUserId], references: [id])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([projectId, fromReqId, toReqId])
+  @@map("cross_matrix_entries")
+}
+
+model ChangeLog {
+  id              String   @id @default(cuid())
+  requirementId   String
+  userId          String
+  field           String   // Campo alterado
+  oldValue        String?
+  newValue        String?
+  changeType      String   @default("UPDATE") // CREATE | UPDATE | DELETE | STATUS_CHANGE | COMMENT_ADDED
+
+  requirement     Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id])
+
+  createdAt       DateTime @default(now())
+
+  @@map("change_logs")
+}
+
+model Sprint {
+  id              String   @id @default(cuid())
+  projectId       String
+  sprintNumber    Int
+  startDate       DateTime
+  endDate         DateTime
+  goals           String
+  retrospective   String?
+
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([projectId, sprintNumber])
+  @@map("sprints")
+}
+
+// ===== ENUMS (Definidos como constantes TypeScript no código) =====
+// SQLite não suporta enums nativamente, então usamos String
+// Ao migrar para PostgreSQL, converter para enums nativos
+
+// ProjectStatus: DISCOVERY | REALIZATION | GOLIVE | HYPERCARE | CLOSED
+// UserRole: CONSULTANT | CLIENT | MANAGER | ADMIN
+// SAPModule: ISU | CRM | FICA | DEVICE | SD | MM | PM | OTHER
+// ReqStatus: PENDING | IN_PROGRESS | VALIDATED | CONFLICT | REJECTED | APPROVED
+// CommentType: QUESTION | ANSWER | OBSERVATION | CONFLICT
+// IntegrationType: BAPI | IDOC | FILE | API | BATCH | OTHER
+// IntegrationTiming: SYNC | ASYNC | BATCH | EVENT
+// IntegrationStatus: OK | PENDING | CONFLICT | CIRCULAR
+// ChangeType: CREATE | UPDATE | DELETE | STATUS_CHANGE | COMMENT_ADDED

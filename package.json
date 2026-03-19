@@ -1,0 +1,15 @@
+{
+  "name": "s4u-lean-app",
+  "version": "1.0.0",
+  "description": "Aplicação desktop-first para gestão colaborativa de requisitos SAP S/4 Utilities seguindo a metodologia **S4U-LEAN v2.0**.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
