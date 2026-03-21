@@ -25,6 +25,7 @@ interface BulkImportError {
 interface BulkImportResponse {
   success: boolean
   created: number
+  updated: number  // Quantidade de requisitos atualizados (upsert)
   message: string
   errors?: BulkImportError[]
   validCount?: number
@@ -478,16 +479,18 @@ router.post(
         })
       }
 
-      // Buscar reqIds existentes no projeto para verificar duplicatas
+      // Buscar reqIds existentes no projeto para identificar updates vs creates
       const existingReqs = await prisma.requirement.findMany({
         where: { projectId },
-        select: { reqId: true },
+        select: { id: true, reqId: true },
       })
-      const existingReqIds = new Set(existingReqs.map((r) => r.reqId))
+      // Mapa reqId -> id do registro existente
+      const existingReqMap = new Map(existingReqs.map((r) => [r.reqId, r.id]))
 
       // Validar cada item
       const errors: BulkImportError[] = []
-      const validItems: any[] = []
+      const itemsToCreate: any[] = []
+      const itemsToUpdate: { id: string; data: any }[] = []
       const seenReqIds = new Set<string>() // Para detectar duplicatas no próprio batch
 
       requirements.forEach((item: any, index: number) => {
@@ -502,11 +505,7 @@ router.post(
           )
         }
 
-        // Verificar duplicata no banco
         const reqId = item.reqId?.toString() || ''
-        if (existingReqIds.has(reqId)) {
-          rowErrors.push(`reqId "${reqId}" já existe no projeto`)
-        }
 
         // Verificar duplicata no próprio batch
         if (seenReqIds.has(reqId)) {
@@ -521,27 +520,35 @@ router.post(
             errors: rowErrors,
           })
         } else {
-          validItems.push(result.data)
+          // Upsert: se existe, atualiza; se não, cria
+          const existingId = existingReqMap.get(reqId)
+          if (existingId) {
+            itemsToUpdate.push({ id: existingId, data: result.data })
+          } else {
+            itemsToCreate.push(result.data)
+          }
         }
       })
 
-      // Se houver erros, retorna sem inserir
+      // Se houver erros de validação, retorna sem processar
       if (errors.length > 0) {
         const response: BulkImportResponse = {
           success: false,
           created: 0,
+          updated: 0,
           message: `Encontrados ${errors.length} erro(s) de validação`,
           errors,
-          validCount: validItems.length,
+          validCount: itemsToCreate.length + itemsToUpdate.length,
           errorCount: errors.length,
         }
         return res.status(400).json(response)
       }
 
-      // Inserção transacional (all-or-nothing)
-      const createdRequirements = await prisma.$transaction(
-        validItems.map((data) =>
-          prisma.requirement.create({
+      // Execução transacional (all-or-nothing) com creates e updates
+      await prisma.$transaction(async (tx) => {
+        // Criar novos requisitos
+        for (const data of itemsToCreate) {
+          await tx.requirement.create({
             data: {
               projectId,
               reqId: data.reqId,
@@ -562,18 +569,52 @@ router.post(
               consultantId: req.user!.userId,
             },
           })
-        )
-      )
+        }
+
+        // Atualizar requisitos existentes (upsert)
+        for (const { id, data } of itemsToUpdate) {
+          await tx.requirement.update({
+            where: { id },
+            data: {
+              shortDesc: data.shortDesc,
+              module: data.module,
+              what: data.what,
+              why: data.why,
+              who: data.who,
+              when: data.when,
+              where: data.where,
+              howToday: data.howToday,
+              howMuch: data.howMuch,
+              dependsOn: JSON.stringify(data.dependsOn || []),
+              providesFor: JSON.stringify(data.providesFor || []),
+              status: data.status || 'PENDING',
+              observations: data.observations,
+              consultantNotes: data.consultantNotes,
+            },
+          })
+        }
+      })
 
       // Trigger regeneração da matriz em background
       regenerateCrossMatrix(projectId).catch((err) =>
         console.error('Error regenerating cross matrix after bulk import:', err)
       )
 
+      // Monta mensagem de resultado
+      const parts: string[] = []
+      if (itemsToCreate.length > 0) {
+        parts.push(`${itemsToCreate.length} criado(s)`)
+      }
+      if (itemsToUpdate.length > 0) {
+        parts.push(`${itemsToUpdate.length} atualizado(s)`)
+      }
+      const message = parts.length > 0 ? parts.join(', ') : 'Nenhuma alteração'
+
       const response: BulkImportResponse = {
         success: true,
-        created: createdRequirements.length,
-        message: `${createdRequirements.length} requisito(s) importado(s) com sucesso`,
+        created: itemsToCreate.length,
+        updated: itemsToUpdate.length,
+        message,
       }
 
       res.status(201).json(response)

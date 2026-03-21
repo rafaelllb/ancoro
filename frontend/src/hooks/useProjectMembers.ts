@@ -12,11 +12,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   projectMembersAPI,
-  ProjectMember,
-  AvailableUser,
-  AddMemberRequest,
-  UpdateMemberRequest,
+  type ProjectMember,
+  type AvailableUser,
+  type AddMemberRequest,
+  type UpdateMemberRequest,
 } from '../services/api'
+
+// Re-export types para uso externo
+export type { ProjectMember, AvailableUser }
 import toast from 'react-hot-toast'
 
 // Query keys para invalidação de cache

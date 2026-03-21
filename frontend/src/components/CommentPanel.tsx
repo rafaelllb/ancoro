@@ -132,10 +132,18 @@ export default function CommentPanel({ requirement, onClose }: CommentPanelProps
   // Painel fechado (sem requisito selecionado) - oculto em mobile
   if (!requirement) {
     return (
-      <div className="hidden lg:flex w-96 bg-gray-50 border-l border-gray-200 p-6 flex-col items-center justify-center text-center">
-        <div className="text-gray-400 text-6xl mb-4">💬</div>
-        <h3 className="text-lg font-medium text-gray-600 mb-2">Comentários</h3>
-        <p className="text-sm text-gray-500">
+      <div className="hidden lg:flex w-96 bg-slate-50 border-l border-gray-200 p-8 flex-col items-center justify-center text-center rounded-r-lg">
+        {/* Ilustração de speech bubble */}
+        <div className="w-24 h-24 mb-6 relative">
+          <div className="absolute inset-0 bg-teal-100 rounded-full"></div>
+          <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center shadow-sm">
+            <svg className="w-10 h-10 text-teal-500" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+            </svg>
+          </div>
+        </div>
+        <h3 className="text-xl font-semibold text-gray-800 mb-3">Comentários</h3>
+        <p className="text-sm text-gray-500 leading-relaxed">
           Selecione um requisito na tabela para ver e adicionar comentários.
         </p>
       </div>
@@ -183,15 +191,15 @@ export default function CommentPanel({ requirement, onClose }: CommentPanelProps
         <button
           type="button"
           onClick={() => setActiveTab('comments')}
-          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+          className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
             activeTab === 'comments'
-              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+              ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50'
               : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
           }`}
         >
           💬 Comentários
           {comments && comments.length > 0 && (
-            <span className="ml-1 text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
+            <span className="ml-1.5 text-xs bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded-full">
               {comments.length}
             </span>
           )}
@@ -199,9 +207,9 @@ export default function CommentPanel({ requirement, onClose }: CommentPanelProps
         <button
           type="button"
           onClick={() => setActiveTab('history')}
-          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+          className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
             activeTab === 'history'
-              ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+              ? 'text-teal-600 border-b-2 border-teal-600 bg-teal-50'
               : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
           }`}
         >

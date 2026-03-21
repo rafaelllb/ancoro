@@ -29,7 +29,7 @@ const envLabels: Record<AppEnv, string> = {
 // Usadas no banner de indicador de ambiente
 const envColors: Record<AppEnv, { text: string; bg: string }> = {
   demo: { text: 'text-white', bg: 'bg-purple-600' },
-  development: { text: 'text-white', bg: 'bg-blue-600' },
+  development: { text: 'text-white', bg: 'bg-teal-600' },
   staging: { text: 'text-black', bg: 'bg-yellow-400' },
   production: { text: 'text-white', bg: 'bg-green-600' },
 }

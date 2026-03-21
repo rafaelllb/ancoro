@@ -216,6 +216,7 @@ export interface BulkImportError {
 export interface BulkImportResponse {
   success: boolean
   created: number
+  updated: number  // Quantidade de requisitos atualizados (upsert)
   message: string
   errors?: BulkImportError[]
   validCount?: number

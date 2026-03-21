@@ -106,9 +106,9 @@ export default function CommentForm({ requirementId, onSuccess }: CommentFormPro
           id="comment-content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Escreva seu comentário..."
+          placeholder="Adicionar novo comentário..."
           rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none text-sm"
           disabled={createMutation.isPending}
         />
       </div>
@@ -121,7 +121,7 @@ export default function CommentForm({ requirementId, onSuccess }: CommentFormPro
           w-full px-4 py-2 rounded-lg font-medium text-sm transition-all
           ${
             content.trim() && !createMutation.isPending
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
+              ? 'bg-teal-600 text-white hover:bg-teal-700'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
           }
         `}

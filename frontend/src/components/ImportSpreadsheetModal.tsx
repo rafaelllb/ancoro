@@ -1,23 +1,29 @@
 /**
- * ImportSpreadsheetModal - Modal para importação de requisitos via planilha
+ * SpreadsheetModal - Modal para importação e exportação de requisitos via planilha
  *
  * Funcionalidades:
- * - Upload de arquivo Excel (.xlsx) ou CSV
+ * - Importação: Upload de arquivo Excel (.xlsx) ou CSV
+ * - Exportação: Download de planilha com requisitos existentes
  * - Parse automático com biblioteca xlsx
  * - Preview dos dados com validação por linha
  * - Auto-detecção de colunas baseado em headers conhecidos
- * - Importação em massa via API
+ * - Importação em massa via API (upsert: cria ou atualiza se existir)
  */
 
 import { useState, useCallback, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { useBulkImportRequirements } from '../hooks/useBulkImport'
-import { BulkImportError } from '../services/api'
+import { BulkImportError, Requirement } from '../services/api'
+
+// Tipos de operação do modal
+type SpreadsheetMode = 'import' | 'export'
 
 interface ImportSpreadsheetModalProps {
   isOpen: boolean
   onClose: () => void
   projectId: string
+  mode?: SpreadsheetMode  // 'import' (default) ou 'export'
+  requirements?: Requirement[]  // Requisitos para exportação
 }
 
 // Mapeamento de headers conhecidos para campos do requisito
@@ -131,17 +137,57 @@ function parseDependencies(value: any): string[] {
     .filter(Boolean)
 }
 
+// Headers para exportação (ordem das colunas no arquivo Excel)
+const EXPORT_HEADERS = [
+  'reqId',
+  'shortDesc',
+  'module',
+  'what',
+  'why',
+  'who',
+  'when',
+  'where',
+  'howToday',
+  'howMuch',
+  'dependsOn',
+  'providesFor',
+  'status',
+  'observations',
+  'consultantNotes',
+]
+
+// Labels amigáveis para os headers (primeira linha do Excel)
+const HEADER_LABELS: Record<string, string> = {
+  reqId: 'Req ID',
+  shortDesc: 'Descrição',
+  module: 'Módulo',
+  what: 'O que',
+  why: 'Por que',
+  who: 'Quem',
+  when: 'Quando',
+  where: 'Onde',
+  howToday: 'Como Hoje',
+  howMuch: 'Quanto',
+  dependsOn: 'Depende De',
+  providesFor: 'Fornece Para',
+  status: 'Status',
+  observations: 'Observações',
+  consultantNotes: 'Dúvidas',
+}
+
 export default function ImportSpreadsheetModal({
   isOpen,
   onClose,
   projectId,
+  mode = 'import',
+  requirements = [],
 }: ImportSpreadsheetModalProps) {
   const [step, setStep] = useState<Step>('upload')
   const [file, setFile] = useState<File | null>(null)
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([])
   const [columnMapping, setColumnMapping] = useState<Record<string, number>>({})
   const [serverErrors, setServerErrors] = useState<BulkImportError[]>([])
-  const [importResult, setImportResult] = useState<{ success: boolean; created: number; message: string } | null>(null)
+  const [importResult, setImportResult] = useState<{ success: boolean; created: number; updated: number; message: string } | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const bulkImportMutation = useBulkImportRequirements()
@@ -156,6 +202,56 @@ export default function ImportSpreadsheetModal({
     setImportResult(null)
     onClose()
   }, [onClose])
+
+  // Função para exportar requisitos para Excel
+  // Gera arquivo no mesmo formato esperado pela importação
+  const handleExport = useCallback(() => {
+    if (requirements.length === 0) {
+      alert('Nenhum requisito para exportar')
+      return
+    }
+
+    // Converte requisitos para formato tabular
+    const data = requirements.map((req) => ({
+      reqId: req.reqId,
+      shortDesc: req.shortDesc,
+      module: req.module,
+      what: req.what,
+      why: req.why,
+      who: req.who,
+      when: req.when,
+      where: req.where,
+      howToday: req.howToday,
+      howMuch: req.howMuch,
+      // Arrays são convertidos para string separada por vírgula
+      dependsOn: Array.isArray(req.dependsOn) ? req.dependsOn.join(', ') : req.dependsOn || '',
+      providesFor: Array.isArray(req.providesFor) ? req.providesFor.join(', ') : req.providesFor || '',
+      status: req.status,
+      observations: req.observations || '',
+      consultantNotes: req.consultantNotes || '',
+    }))
+
+    // Cria worksheet com headers amigáveis
+    const headers = EXPORT_HEADERS.map((h) => HEADER_LABELS[h] || h)
+    const wsData = [headers, ...data.map((row) => EXPORT_HEADERS.map((h) => row[h as keyof typeof row]))]
+    const ws = XLSX.utils.aoa_to_sheet(wsData)
+
+    // Ajusta largura das colunas
+    ws['!cols'] = EXPORT_HEADERS.map((h) => ({
+      wch: h === 'what' || h === 'why' || h === 'howToday' ? 40 : 20,
+    }))
+
+    // Cria workbook e salva
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Requisitos')
+
+    // Nome do arquivo com data
+    const date = new Date().toISOString().split('T')[0]
+    const filename = `requisitos_${date}.xlsx`
+
+    XLSX.writeFile(wb, filename)
+    handleClose()
+  }, [requirements, handleClose])
 
   // Handler para upload de arquivo
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -288,6 +384,7 @@ export default function ImportSpreadsheetModal({
           setImportResult({
             success: true,
             created: data.created,
+            updated: data.updated || 0,
             message: data.message,
           })
           setStep('result')
@@ -300,6 +397,7 @@ export default function ImportSpreadsheetModal({
           setImportResult({
             success: false,
             created: 0,
+            updated: 0,
             message: response?.message || 'Erro na importação',
           })
           setStep('result')
@@ -334,7 +432,7 @@ export default function ImportSpreadsheetModal({
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h2 id="import-modal-title" className="text-xl font-semibold text-gray-900">
-              Importar Requisitos de Planilha
+              {mode === 'export' ? 'Exportar Requisitos para Planilha' : 'Importar Requisitos de Planilha'}
             </h2>
             <button
               type="button"
@@ -350,8 +448,45 @@ export default function ImportSpreadsheetModal({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
-            {/* Step: Upload */}
-            {step === 'upload' && (
+            {/* Modo Exportação */}
+            {mode === 'export' && (
+              <div className="space-y-6">
+                <div className="text-center py-8">
+                  <svg
+                    className="mx-auto h-16 w-16 text-teal-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                  <h3 className="mt-4 text-lg font-medium text-gray-900">
+                    Exportar {requirements.length} Requisito(s)
+                  </h3>
+                  <p className="mt-2 text-sm text-gray-500">
+                    O arquivo Excel gerado pode ser editado e reimportado para atualizar os requisitos.
+                  </p>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">Colunas incluídas:</h4>
+                  <div className="text-sm text-blue-700 font-mono bg-blue-100 rounded p-2 overflow-x-auto">
+                    {EXPORT_HEADERS.map((h) => HEADER_LABELS[h] || h).join(' | ')}
+                  </div>
+                  <p className="text-sm text-blue-600 mt-2">
+                    Ao reimportar, requisitos com o mesmo Req ID serão atualizados automaticamente.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Step: Upload (apenas para importação) */}
+            {mode === 'import' && step === 'upload' && (
               <div className="space-y-6">
                 {/* Dropzone */}
                 <div
@@ -404,8 +539,8 @@ export default function ImportSpreadsheetModal({
               </div>
             )}
 
-            {/* Step: Preview */}
-            {step === 'preview' && (
+            {/* Step: Preview (apenas para importação) */}
+            {mode === 'import' && step === 'preview' && (
               <div className="space-y-4">
                 {/* Info do arquivo */}
                 <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
@@ -501,8 +636,8 @@ export default function ImportSpreadsheetModal({
               </div>
             )}
 
-            {/* Step: Importing */}
-            {step === 'importing' && (
+            {/* Step: Importing (apenas para importação) */}
+            {mode === 'import' && step === 'importing' && (
               <div className="flex flex-col items-center justify-center py-12">
                 <svg
                   className="animate-spin h-12 w-12 text-purple-600 mb-4"
@@ -529,8 +664,8 @@ export default function ImportSpreadsheetModal({
               </div>
             )}
 
-            {/* Step: Result */}
-            {step === 'result' && importResult && (
+            {/* Step: Result (apenas para importação) */}
+            {mode === 'import' && step === 'result' && importResult && (
               <div className="space-y-6">
                 {importResult.success ? (
                   <div className="text-center py-8">
@@ -541,6 +676,21 @@ export default function ImportSpreadsheetModal({
                     </div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">Importação Concluída!</h3>
                     <p className="text-gray-600">{importResult.message}</p>
+                    {/* Detalhes de criados/atualizados */}
+                    <div className="flex justify-center gap-6 mt-4">
+                      {importResult.created > 0 && (
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-green-600">{importResult.created}</p>
+                          <p className="text-xs text-gray-500">criado(s)</p>
+                        </div>
+                      )}
+                      {importResult.updated > 0 && (
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-blue-600">{importResult.updated}</p>
+                          <p className="text-xs text-gray-500">atualizado(s)</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -581,10 +731,36 @@ export default function ImportSpreadsheetModal({
           {/* Footer */}
           <div className="flex justify-between items-center px-6 py-4 border-t border-gray-200 bg-gray-50">
             <div className="text-sm text-gray-500">
-              {step === 'preview' && `${validCount} de ${parsedRows.length} linhas prontas para importar`}
+              {mode === 'import' && step === 'preview' && `${validCount} de ${parsedRows.length} linhas prontas para importar`}
+              {mode === 'export' && `${requirements.length} requisito(s) serão exportados`}
             </div>
             <div className="flex gap-3">
-              {step === 'upload' && (
+              {/* Modo Exportação - botões */}
+              {mode === 'export' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExport}
+                    disabled={requirements.length === 0}
+                    className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-md hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Exportar Planilha
+                  </button>
+                </>
+              )}
+
+              {/* Modo Importação - botões por step */}
+              {mode === 'import' && step === 'upload' && (
                 <button
                   type="button"
                   onClick={handleClose}
@@ -594,7 +770,7 @@ export default function ImportSpreadsheetModal({
                 </button>
               )}
 
-              {step === 'preview' && (
+              {mode === 'import' && step === 'preview' && (
                 <>
                   <button
                     type="button"
@@ -607,7 +783,7 @@ export default function ImportSpreadsheetModal({
                     type="button"
                     onClick={handleImport}
                     disabled={validCount === 0}
-                    className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                    className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-md hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -617,7 +793,7 @@ export default function ImportSpreadsheetModal({
                 </>
               )}
 
-              {step === 'result' && (
+              {mode === 'import' && step === 'result' && (
                 <button
                   type="button"
                   onClick={handleClose}

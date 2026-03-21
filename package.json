@@ -1,15 +1,37 @@
 {
-  "name": "s4u-lean-app",
+  "name": "ancoro",
   "version": "1.0.0",
-  "description": "Aplicação desktop-first para gestão colaborativa de requisitos SAP S/4 Utilities seguindo a metodologia **S4U-LEAN v2.0**.",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "description": "Aplicação desktop-first para gestão colaborativa de requisitos SAP S/4 Utilities.",
+  "author": "Rafael Brito",
+  "license": "UNLICENSED",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+
+    "demo": "concurrently \"npm run demo:backend\" \"npm run demo:frontend\"",
+    "demo:backend": "cd backend && npm run dev:demo",
+    "demo:frontend": "cd frontend && npm run dev:demo",
+
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build:staging": "cd frontend && npm run build:staging",
+    "build:demo": "cd frontend && npm run build:demo",
+
+    "start:prod": "cd backend && npm run start:prod",
+    "start:staging": "cd backend && npm run start:staging",
+
+    "electron": "cd frontend && npm run electron:dev",
+    "electron:demo": "cd frontend && npm run electron:demo",
+    "electron:build": "cd frontend && npm run electron:build",
+
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "prisma:migrate": "cd backend && npm run prisma:migrate",
+    "prisma:seed": "cd backend && npm run prisma:seed",
+    "prisma:studio": "cd backend && npm run prisma:studio"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
 }
