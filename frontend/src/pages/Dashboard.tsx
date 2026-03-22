@@ -73,6 +73,7 @@ export default function Dashboard() {
               userRole={user?.role}
               onLogout={logout}
             />
+            <img src="/logo.png" alt="Ancoro" className="h-10 hidden sm:block" />
             <div>
               <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Ancoro</h1>
               <p className="text-xs lg:text-sm text-gray-600 hidden sm:block">Dashboard de Requisitos</p>

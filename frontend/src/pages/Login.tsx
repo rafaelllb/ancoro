@@ -31,6 +31,11 @@ export default function Login() {
       <div className="max-w-md w-full">
         {/* Logo/Header */}
         <div className="text-center mb-8">
+          <img
+            src="/logo.png"
+            alt="Ancoro Logo"
+            className="h-24 mx-auto mb-4"
+          />
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Ancoro</h1>
           <p className="text-gray-600">
             Gestão Colaborativa de Requisitos SAP S/4 Utilities

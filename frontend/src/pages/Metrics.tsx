@@ -74,9 +74,12 @@ export default function Metrics() {
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Ancoro</h1>
-            <p className="text-sm text-gray-600">Dashboard de Métricas</p>
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="Ancoro" className="h-10" />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Ancoro</h1>
+              <p className="text-sm text-gray-600">Dashboard de Métricas</p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <Link
