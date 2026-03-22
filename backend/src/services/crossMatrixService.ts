@@ -242,3 +242,41 @@ export async function updateCrossMatrixEntry(
     data,
   });
 }
+
+// =============================================================================
+// TODO [ESTIGMERGIA]: AI-Powered Impact Analysis
+// =============================================================================
+// CONTEXTO:
+//   Diferencial competitivo identificado - nenhum competidor (Jira, Azure DevOps,
+//   DOORS) oferece análise semântica de impacto quando um requisito muda.
+//
+// O QUE IMPLEMENTAR:
+//   Quando um requisito é alterado, usar LLM para analisar:
+//   1. Delta da mudança (oldValue → newValue)
+//   2. Requisitos conectados via cross-matrix (1º e 2º grau)
+//   3. Histórico de conflitos similares (changelog)
+//   4. Ranquear impacto: ALTO / MÉDIO / BAIXO + razão
+//
+// ARQUITETURA SUGERIDA:
+//   - Novo service: ImpactAnalysisService
+//   - Endpoint: POST /api/requirements/:id/impact-analysis
+//   - Provider: Anthropic (Haiku) ou OpenAI (GPT-4o-mini) - custo ~$0.01-0.05/análise
+//   - Cache: Redis ou in-memory para análises recentes (mesmo delta = mesmo resultado)
+//   - Trigger: manual (botão na UI) ou automático (on change com debounce)
+//
+// FLUXO:
+//   1. Requisito alterado → captura delta
+//   2. Query getCrossMatrix() → lista dependências
+//   3. Monta prompt com contexto estruturado
+//   4. LLM retorna JSON: { impacts: [{ reqId, level, reason }] }
+//   5. UI exibe lista priorizada para review
+//
+// DECISÃO PENDENTE:
+//   - Definir se análise é síncrona (bloqueia UI 2-5s) ou async (notifica quando pronta)
+//   - Definir limite de tokens/custo mensal aceitável
+//
+// REFERÊNCIAS:
+//   - Cross-matrix já disponível via getCrossMatrix()
+//   - Changelog disponível via /api/requirements/:id/changelog
+//   - Plano estratégico: C:\Users\rafae\.claude\plans\reactive-bouncing-ripple.md
+// =============================================================================

@@ -629,4 +629,50 @@ router.post(
   }
 )
 
+// =============================================================================
+// TODO [ESTIGMERGIA]: Template Library de Requisitos por Vertical
+// =============================================================================
+// CONTEXTO:
+//   Diferencial competitivo identificado - consultores não deveriam começar
+//   do zero em cada projeto. Templates reduzem tempo de discovery em ~50%.
+//
+// O QUE IMPLEMENTAR:
+//   Biblioteca de requisitos pré-definidos organizados por vertical:
+//   - Utilities: leitura, faturamento, corte/religação, medição, perdas
+//   - Financeiro: contas a pagar/receber, conciliação, fechamento
+//   - Varejo: PDV, estoque, pricing, promoções
+//   - Manufatura: MRP, chão de fábrica, qualidade
+//
+// MODELO DE DADOS SUGERIDO:
+//   Template {
+//     id, name, vertical, module,
+//     shortDesc, what, why, who, when, where, howToday, howMuch,
+//     typicalDependencies: string[],  // Padrões comuns de dependência
+//     tags: string[],
+//     createdBy, isPublic
+//   }
+//
+// ENDPOINTS:
+//   GET  /api/templates                    - Lista templates (filtro por vertical/module)
+//   GET  /api/templates/:id                - Detalhes de um template
+//   POST /api/templates                    - Cria template (ADMIN only)
+//   POST /api/projects/:projectId/requirements/from-template
+//        Body: { templateId, overrides?: Partial<Requirement> }
+//        → Cria requisito a partir de template com customizações opcionais
+//
+// UI SUGERIDA:
+//   - Modal "Criar de Template" no botão + de requisitos
+//   - Filtros: vertical, módulo, tags
+//   - Preview antes de criar
+//   - Batch: selecionar múltiplos templates de uma vez
+//
+// DECISÃO PENDENTE:
+//   - Templates globais (Ancoro mantém) vs. por organização (cada cliente cria os seus)
+//   - Monetização: templates premium? marketplace?
+//
+// REFERÊNCIAS:
+//   - Bulk import já existe como referência de criação em massa
+//   - Plano estratégico: C:\Users\rafae\.claude\plans\reactive-bouncing-ripple.md
+// =============================================================================
+
 export default router
