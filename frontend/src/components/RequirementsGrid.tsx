@@ -113,6 +113,7 @@ const SAP_MODULES = [
   'ISU-EDM',
   'ISU-DM',
   'ISU-CS',
+  'CRM',
   'SD',
   'MM',
   'PP',
@@ -121,6 +122,7 @@ const SAP_MODULES = [
   'HR',
   'CROSS',
   'CUSTOM',
+  'OTHER',
 ]
 
 interface EditableModuleCellProps {
@@ -404,9 +406,9 @@ const EditableCell = ({ value, rowId, columnId, columnLabel, onUpdate, multiline
           setIsEditing(true)
         }}
       >
-        <span className="line-clamp-2">{displayValue || '—'}</span>
-        {/* Botão expandir visível no hover */}
-        {displayValue && displayValue.length > 50 && (
+        <span className="line-clamp-2 pr-6">{displayValue || '—'}</span>
+        {/* Botão expandir visível no hover - sempre disponível para todos os campos */}
+        {displayValue && (
           <button
             type="button"
             onClick={handleExpandClick}
@@ -544,7 +546,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
 
       columnHelper.accessor('what', {
         header: 'What (O que)',
-        size: 200,
+        size: 280,
         cell: (info) => (
           <EditableCell
             value={info.getValue()}
@@ -559,7 +561,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
 
       columnHelper.accessor('why', {
         header: 'Why (Por que)',
-        size: 200,
+        size: 280,
         cell: (info) => (
           <EditableCell
             value={info.getValue()}
@@ -574,7 +576,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
 
       columnHelper.accessor('who', {
         header: 'Who (Quem)',
-        size: 150,
+        size: 180,
         cell: (info) => (
           <EditableCell
             value={info.getValue()}
@@ -588,7 +590,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
 
       columnHelper.accessor('when', {
         header: 'When (Quando)',
-        size: 150,
+        size: 180,
         cell: (info) => (
           <EditableCell
             value={info.getValue()}
@@ -602,7 +604,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
 
       columnHelper.accessor('where', {
         header: 'Where (Onde)',
-        size: 150,
+        size: 180,
         cell: (info) => (
           <EditableCell
             value={info.getValue()}
@@ -616,7 +618,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
 
       columnHelper.accessor('howToday', {
         header: 'How (Hoje)',
-        size: 200,
+        size: 280,
         cell: (info) => (
           <EditableCell
             value={info.getValue()}
@@ -631,7 +633,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
 
       columnHelper.accessor('howMuch', {
         header: 'How Much (Quanto)',
-        size: 150,
+        size: 180,
         cell: (info) => (
           <EditableCell
             value={info.getValue()}

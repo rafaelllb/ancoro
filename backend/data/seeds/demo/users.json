@@ -1,0 +1,40 @@
+{
+  "users": [
+    {
+      "key": "admin",
+      "name": "Administrador",
+      "email": "admin@ancoro.app",
+      "role": "ADMIN"
+    },
+    {
+      "key": "user1",
+      "name": "João Silva",
+      "email": "joao.silva@seidor.com",
+      "role": "CONSULTANT"
+    },
+    {
+      "key": "user2",
+      "name": "Maria Santos",
+      "email": "maria.santos@seidor.com",
+      "role": "CONSULTANT"
+    },
+    {
+      "key": "user3",
+      "name": "Pedro Oliveira",
+      "email": "pedro.oliveira@seidor.com",
+      "role": "CONSULTANT"
+    },
+    {
+      "key": "manager",
+      "name": "Rafael Brito",
+      "email": "rafael.brito@seidor.com",
+      "role": "MANAGER"
+    },
+    {
+      "key": "client",
+      "name": "Ana Costa (Cliente)",
+      "email": "ana.costa@cliente.com",
+      "role": "CLIENT"
+    }
+  ]
+}

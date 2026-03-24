@@ -247,8 +247,99 @@ export const requirementsAPI = {
 }
 
 // Projects
+export interface CreateProjectRequest {
+  name: string
+  client: string
+  startDate: string
+  status?: string
+  reqIdPrefix?: string
+  reqIdSeparator?: string
+  reqIdDigitCount?: number
+}
+
 export const projectsAPI = {
   getAll: () => api.get('/api/projects'),
+
+  getById: (projectId: string) => api.get(`/api/projects/${projectId}`),
+
+  // Criar projeto (ADMIN only)
+  create: (data: CreateProjectRequest) => api.post('/api/projects', data),
+
+  // Configurações de padrão de ID de requisitos
+  getSettings: (projectId: string) =>
+    api.get(`/api/projects/${projectId}/settings`),
+
+  updateSettings: (
+    projectId: string,
+    data: { reqIdPrefix?: string; reqIdSeparator?: string; reqIdDigitCount?: number }
+  ) => api.patch(`/api/projects/${projectId}/settings`, data),
+}
+
+// ===== PROJECT LIST ITEMS TYPES =====
+
+export type ListType = 'MODULE' | 'REQ_STATUS' | 'INTEGRATION_TYPE' | 'INTEGRATION_TIMING'
+
+export interface ProjectListItem {
+  id: string
+  projectId: string
+  listType: ListType
+  code: string
+  name: string
+  color: string | null
+  icon: string | null
+  sortOrder: number
+  isActive: boolean
+  isDefault: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateListItemRequest {
+  code: string
+  name: string
+  color?: string | null
+  icon?: string | null
+  sortOrder?: number
+  isDefault?: boolean
+}
+
+export interface UpdateListItemRequest {
+  name?: string
+  color?: string | null
+  icon?: string | null
+  sortOrder?: number
+  isActive?: boolean
+  isDefault?: boolean
+}
+
+// Project Lists API
+export const projectListsAPI = {
+  // Lista itens de uma lista configurável
+  getItems: (projectId: string, listType: ListType, includeInactive = false) =>
+    api.get<{ success: boolean; listType: ListType; data: ProjectListItem[]; count: number }>(
+      `/api/projects/${projectId}/lists/${listType}`,
+      { params: { includeInactive } }
+    ),
+
+  // Adiciona item à lista
+  createItem: (projectId: string, listType: ListType, data: CreateListItemRequest) =>
+    api.post<{ success: boolean; data: ProjectListItem; message: string }>(
+      `/api/projects/${projectId}/lists/${listType}`,
+      data
+    ),
+
+  // Atualiza item da lista
+  updateItem: (projectId: string, listType: ListType, itemId: string, data: UpdateListItemRequest) =>
+    api.patch<{ success: boolean; data: ProjectListItem; message: string }>(
+      `/api/projects/${projectId}/lists/${listType}/${itemId}`,
+      data
+    ),
+
+  // Desativa item da lista (soft delete)
+  deleteItem: (projectId: string, listType: ListType, itemId: string) =>
+    api.delete<{ success: boolean; message: string }>(
+      `/api/projects/${projectId}/lists/${listType}/${itemId}`
+    ),
 }
 
 // Cross Matrix

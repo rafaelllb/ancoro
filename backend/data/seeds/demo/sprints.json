@@ -1,0 +1,20 @@
+{
+  "sprints": [
+    {
+      "projectKey": "project1",
+      "sprintNumber": 1,
+      "startDate": "2026-01-15",
+      "endDate": "2026-01-29",
+      "goals": "Discovery: mapear processos AS-IS de CRM e ISU",
+      "retrospective": null
+    },
+    {
+      "projectKey": "project1",
+      "sprintNumber": 2,
+      "startDate": "2026-01-30",
+      "endDate": "2026-02-13",
+      "goals": "Discovery: validar TO-BE e matriz de cruzamento",
+      "retrospective": null
+    }
+  ]
+}

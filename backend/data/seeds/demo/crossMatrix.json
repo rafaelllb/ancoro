@@ -1,0 +1,64 @@
+{
+  "entries": [
+    {
+      "projectKey": "project1",
+      "fromReqKey": "req1",
+      "toReqKey": "req2",
+      "fromModule": "CRM",
+      "toModule": "ISU-IDE",
+      "dataFlow": "BP number, contract data, service order ID",
+      "dataFlowBack": "Installation confirmation",
+      "integrationType": "BAPI",
+      "trigger": "Service order OK",
+      "timing": "SYNC",
+      "ownerKey": "user1",
+      "status": "OK",
+      "manualNotes": "Integração via BAPI_CONTRACT_CREATE"
+    },
+    {
+      "projectKey": "project1",
+      "fromReqKey": "req2",
+      "toReqKey": "req3",
+      "fromModule": "ISU-IDE",
+      "toModule": "ISU-BILLING",
+      "dataFlow": "Installation object, device number, readings",
+      "dataFlowBack": null,
+      "integrationType": "BATCH",
+      "trigger": "Monthly batch",
+      "timing": "BATCH",
+      "ownerKey": "user1",
+      "status": "PENDING",
+      "manualNotes": "Precisa validar estrutura de dados"
+    },
+    {
+      "projectKey": "project1",
+      "fromReqKey": "req3",
+      "toReqKey": "req4",
+      "fromModule": "ISU-BILLING",
+      "toModule": "FI-CA",
+      "dataFlow": "Invoice document, amount, customer account",
+      "dataFlowBack": "FI document number",
+      "integrationType": "BATCH",
+      "trigger": "Post billing",
+      "timing": "ASYNC",
+      "ownerKey": "user3",
+      "status": "OK",
+      "manualNotes": "Z-program customizado necessário"
+    },
+    {
+      "projectKey": "project1",
+      "fromReqKey": "req5",
+      "toReqKey": "req1",
+      "fromModule": "CRM",
+      "toModule": "CRM",
+      "dataFlow": "Credit score, approval status",
+      "dataFlowBack": null,
+      "integrationType": "API",
+      "trigger": "Contract creation",
+      "timing": "SYNC",
+      "ownerKey": "user2",
+      "status": "PENDING",
+      "manualNotes": "Depende de integração com Serasa"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "name": "dev-dataset",
+  "description": "Ancoro Development - Apenas usuarios base, sem dados mock",
+  "defaultPassword": "demo123",
+  "created": "2026-03-24",
+  "updated": "2026-03-24"
+}

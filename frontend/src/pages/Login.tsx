@@ -97,17 +97,20 @@ export default function Login() {
           {/* Demo credentials */}
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-600 mb-2">Credenciais de demonstração:</p>
-            <div className="bg-gray-50 rounded p-3 text-sm">
-              <p className="font-mono text-xs mb-1">
-                <strong>Email:</strong> joao.silva@seidor.com
+            <div className="bg-gray-50 rounded p-3 text-sm space-y-1">
+              <p className="font-mono text-xs">
+                <span className="inline-block w-20 text-purple-600 font-semibold">Admin:</span> admin@ancoro.app
               </p>
-              <p className="font-mono text-xs mb-1">
-                <strong>Email:</strong> maria.santos@seidor.com
+              <p className="font-mono text-xs">
+                <span className="inline-block w-20 text-blue-600 font-semibold">Manager:</span> rafael.brito@seidor.com
               </p>
-              <p className="font-mono text-xs mb-1">
-                <strong>Email:</strong> rafael.brito@seidor.com
+              <p className="font-mono text-xs">
+                <span className="inline-block w-20 text-teal-600 font-semibold">Consultant:</span> joao.silva@seidor.com
               </p>
-              <p className="font-mono text-xs mt-2">
+              <p className="font-mono text-xs">
+                <span className="inline-block w-20 text-gray-600 font-semibold">Client:</span> ana.costa@cliente.com
+              </p>
+              <p className="font-mono text-xs mt-2 pt-2 border-t border-gray-200">
                 <strong>Senha (todos):</strong> demo123
               </p>
             </div>

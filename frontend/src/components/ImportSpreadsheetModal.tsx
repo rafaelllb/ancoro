@@ -8,12 +8,19 @@
  * - Preview dos dados com validação por linha
  * - Auto-detecção de colunas baseado em headers conhecidos
  * - Importação em massa via API (upsert: cria ou atualiza se existir)
+ * - Suporta padrão de ID flexível por projeto (REQ-001, US-0001, etc.)
  */
 
 import { useState, useCallback, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { useBulkImportRequirements } from '../hooks/useBulkImport'
 import { BulkImportError, Requirement } from '../services/api'
+import {
+  RequirementIdPattern,
+  DEFAULT_PATTERN,
+  validateReqId,
+  generateExample,
+} from '../utils/reqIdPattern'
 
 // Tipos de operação do modal
 type SpreadsheetMode = 'import' | 'export'
@@ -24,6 +31,8 @@ interface ImportSpreadsheetModalProps {
   projectId: string
   mode?: SpreadsheetMode  // 'import' (default) ou 'export'
   requirements?: Requirement[]  // Requisitos para exportação
+  /** Padrão de ID do projeto. Se não fornecido, usa o padrão default (REQ-XXX) */
+  reqIdPattern?: RequirementIdPattern
 }
 
 // Mapeamento de headers conhecidos para campos do requisito
@@ -52,8 +61,13 @@ const REQUIRED_FIELDS = ['reqId', 'shortDesc', 'module', 'what', 'why', 'who', '
 // Status válidos
 const VALID_STATUS = ['PENDING', 'IN_PROGRESS', 'VALIDATED', 'APPROVED', 'CONFLICT', 'REJECTED']
 
-// Módulos válidos
-const VALID_MODULES = ['ISU', 'CRM', 'FICA', 'DEVICE', 'SD', 'MM', 'PM', 'OTHER']
+// Módulos válidos - alinhado com backend/src/utils/defaultLists.ts
+const VALID_MODULES = [
+  'FI-CA', 'FI-AR', 'FI-GL',
+  'ISU-BILLING', 'ISU-BPEM', 'ISU-IDE', 'ISU-EDM', 'ISU-DM', 'ISU-CS',
+  'CRM', 'SD', 'MM', 'PP', 'PM', 'CO', 'HR',
+  'CROSS', 'CUSTOM', 'OTHER'
+]
 
 interface ParsedRow {
   data: Record<string, any>
@@ -82,8 +96,13 @@ function autoDetectMapping(headers: string[]): Record<string, number> {
   return mapping
 }
 
-// Valida uma linha de dados
-function validateRow(data: Record<string, any>, rowNumber: number): ParsedRow {
+/**
+ * Valida uma linha de dados
+ * @param data - Dados da linha
+ * @param rowNumber - Número da linha (para referência em erros)
+ * @param pattern - Padrão de ID do projeto
+ */
+function validateRow(data: Record<string, any>, rowNumber: number, pattern: RequirementIdPattern): ParsedRow {
   const errors: string[] = []
 
   // Verificar campos obrigatórios
@@ -94,9 +113,10 @@ function validateRow(data: Record<string, any>, rowNumber: number): ParsedRow {
     }
   }
 
-  // Validar formato do reqId
-  if (data.reqId && !/^REQ-\d{3,}$/.test(data.reqId)) {
-    errors.push('reqId deve seguir formato REQ-001')
+  // Validar formato do reqId usando padrão do projeto
+  if (data.reqId && !validateReqId(data.reqId, pattern)) {
+    const example = generateExample(pattern)
+    errors.push(`reqId deve seguir formato ${example}`)
   }
 
   // Validar module
@@ -181,6 +201,7 @@ export default function ImportSpreadsheetModal({
   projectId,
   mode = 'import',
   requirements = [],
+  reqIdPattern = DEFAULT_PATTERN,
 }: ImportSpreadsheetModalProps) {
   const [step, setStep] = useState<Step>('upload')
   const [file, setFile] = useState<File | null>(null)
@@ -320,7 +341,7 @@ export default function ImportSpreadsheetModal({
           }
         }
 
-        const parsedRow = validateRow(rowData, i + 1)
+        const parsedRow = validateRow(rowData, i + 1, reqIdPattern)
         rows.push(parsedRow)
       }
 
@@ -330,7 +351,7 @@ export default function ImportSpreadsheetModal({
       console.error('Error parsing file:', error)
       alert(error instanceof Error ? error.message : 'Erro ao processar arquivo')
     }
-  }, [])
+  }, [reqIdPattern])
 
   // Handler para drag & drop
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {

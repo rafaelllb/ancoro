@@ -3,32 +3,59 @@
  *
  * Form completo com todos os campos 5W2H necessários para criar um requisito.
  * Utiliza o hook useCreateRequirement() já existente para a mutação.
+ *
+ * Suporta padrão de ID flexível por projeto (REQ-001, US-0001, PROJ1_001, etc.)
  */
 
 import { useState, useEffect } from 'react'
 import { useCreateRequirement } from '../hooks/useRequirements'
+import { useProjectModules, useProjectStatuses } from '../hooks/useProjectLists'
+import {
+  RequirementIdPattern,
+  DEFAULT_PATTERN,
+  generateNextId,
+  validateReqId,
+  generateExample,
+} from '../utils/reqIdPattern'
 
 interface CreateRequirementModalProps {
   isOpen: boolean
   onClose: () => void
   projectId: string
   existingReqIds: string[] // Para gerar próximo reqId
+  /** Padrão de ID do projeto. Se não fornecido, usa o padrão default (REQ-XXX) */
+  reqIdPattern?: RequirementIdPattern
 }
 
-// Módulos SAP disponíveis para seleção
-const SAP_MODULES = [
-  { value: 'ISU', label: 'ISU - Industry Solution Utilities' },
-  { value: 'CRM', label: 'CRM - Customer Relationship Management' },
-  { value: 'FICA', label: 'FI-CA - Contract Accounting' },
-  { value: 'DEVICE', label: 'DEVICE - Device Management' },
+// Fallback: Módulos SAP para quando dados do projeto não estão disponíveis
+// Alinhado com backend/src/utils/defaultLists.ts e frontend RequirementsGrid.tsx
+const DEFAULT_SAP_MODULES = [
+  // Financeiro
+  { value: 'FI-CA', label: 'FI-CA - Contract Accounting' },
+  { value: 'FI-AR', label: 'FI-AR - Accounts Receivable' },
+  { value: 'FI-GL', label: 'FI-GL - General Ledger' },
+  // ISU
+  { value: 'ISU-BILLING', label: 'ISU-BILLING - Faturamento' },
+  { value: 'ISU-BPEM', label: 'ISU-BPEM - Business Process Except. Mgmt' },
+  { value: 'ISU-IDE', label: 'ISU-IDE - Installation & Device Mgmt' },
+  { value: 'ISU-EDM', label: 'ISU-EDM - Energy Data Management' },
+  { value: 'ISU-DM', label: 'ISU-DM - Device Management' },
+  { value: 'ISU-CS', label: 'ISU-CS - Customer Service' },
+  // Outros módulos
+  { value: 'CRM', label: 'CRM - Customer Relationship' },
   { value: 'SD', label: 'SD - Sales & Distribution' },
   { value: 'MM', label: 'MM - Materials Management' },
+  { value: 'PP', label: 'PP - Production Planning' },
   { value: 'PM', label: 'PM - Plant Maintenance' },
-  { value: 'OTHER', label: 'OTHER - Outro' },
+  { value: 'CO', label: 'CO - Controlling' },
+  { value: 'HR', label: 'HR - Human Resources' },
+  { value: 'CROSS', label: 'CROSS - Cross-Module' },
+  { value: 'CUSTOM', label: 'Customizado' },
+  { value: 'OTHER', label: 'Outro' },
 ]
 
-// Status disponíveis
-const STATUS_OPTIONS = [
+// Fallback: Status para quando dados do projeto não estão disponíveis
+const DEFAULT_STATUS_OPTIONS = [
   { value: 'PENDING', label: 'Pendente' },
   { value: 'IN_PROGRESS', label: 'Em Progresso' },
   { value: 'VALIDATED', label: 'Validado' },
@@ -37,27 +64,12 @@ const STATUS_OPTIONS = [
   { value: 'REJECTED', label: 'Rejeitado' },
 ]
 
-// Gera próximo reqId baseado nos existentes (ex: REQ-001 → REQ-002)
-function generateNextReqId(existingIds: string[]): string {
-  if (existingIds.length === 0) return 'REQ-001'
-
-  const numbers = existingIds
-    .map((id) => {
-      const match = id.match(/REQ-(\d+)/)
-      return match ? parseInt(match[1], 10) : 0
-    })
-    .filter((n) => !isNaN(n))
-
-  const maxNumber = Math.max(0, ...numbers)
-  const nextNumber = maxNumber + 1
-  return `REQ-${String(nextNumber).padStart(3, '0')}`
-}
 
 // Estado inicial do formulário
 const initialFormState = {
   reqId: '',
   shortDesc: '',
-  module: 'ISU',
+  module: 'ISU-BILLING',
   what: '',
   why: '',
   who: '',
@@ -74,12 +86,18 @@ const initialFormState = {
 
 type FormState = typeof initialFormState
 
-// Validação simples dos campos obrigatórios
-function validateForm(form: FormState): Record<string, string> {
+/**
+ * Validação simples dos campos obrigatórios
+ * @param form - Estado do formulário
+ * @param pattern - Padrão de ID do projeto para validação do reqId
+ */
+function validateForm(form: FormState, pattern: RequirementIdPattern): Record<string, string> {
   const errors: Record<string, string> = {}
 
-  if (!form.reqId.match(/^REQ-\d{3,}$/)) {
-    errors.reqId = 'Formato inválido. Use REQ-XXX (ex: REQ-001)'
+  // Valida reqId usando o padrão do projeto
+  if (!validateReqId(form.reqId, pattern)) {
+    const example = generateExample(pattern)
+    errors.reqId = `Formato inválido. Use ${example}`
   }
   if (!form.shortDesc.trim()) {
     errors.shortDesc = 'Descrição obrigatória'
@@ -116,6 +134,7 @@ export default function CreateRequirementModal({
   onClose,
   projectId,
   existingReqIds,
+  reqIdPattern = DEFAULT_PATTERN,
 }: CreateRequirementModalProps) {
   const [form, setForm] = useState<FormState>(initialFormState)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -123,15 +142,29 @@ export default function CreateRequirementModal({
 
   const createMutation = useCreateRequirement()
 
-  // Gera próximo reqId quando modal abre
+  // Busca módulos e status configurados para o projeto
+  const { data: projectModules } = useProjectModules(projectId)
+  const { data: projectStatuses } = useProjectStatuses(projectId)
+
+  // Usa módulos do projeto se disponíveis, senão usa fallback
+  const moduleOptions = projectModules?.length
+    ? projectModules.map(m => ({ value: m.code, label: m.name }))
+    : DEFAULT_SAP_MODULES
+
+  // Usa status do projeto se disponíveis, senão usa fallback
+  const statusOptions = projectStatuses?.length
+    ? projectStatuses.map(s => ({ value: s.code, label: s.name }))
+    : DEFAULT_STATUS_OPTIONS
+
+  // Gera próximo reqId quando modal abre, usando padrão do projeto
   useEffect(() => {
     if (isOpen) {
-      const nextReqId = generateNextReqId(existingReqIds)
+      const nextReqId = generateNextId(reqIdPattern, existingReqIds)
       setForm({ ...initialFormState, reqId: nextReqId })
       setErrors({})
       setTouched({})
     }
-  }, [isOpen, existingReqIds])
+  }, [isOpen, existingReqIds, reqIdPattern])
 
   // Handler para mudança de campo
   const handleChange = (
@@ -143,7 +176,7 @@ export default function CreateRequirementModal({
     // Valida campo ao modificar (se já foi tocado)
     if (touched[name]) {
       const newForm = { ...form, [name]: value }
-      const newErrors = validateForm(newForm)
+      const newErrors = validateForm(newForm, reqIdPattern)
       setErrors((prev) => ({ ...prev, [name]: newErrors[name] || '' }))
     }
   }
@@ -154,7 +187,7 @@ export default function CreateRequirementModal({
     setTouched((prev) => ({ ...prev, [name]: true }))
 
     // Valida campo no blur
-    const newErrors = validateForm(form)
+    const newErrors = validateForm(form, reqIdPattern)
     setErrors((prev) => ({ ...prev, [name]: newErrors[name] || '' }))
   }
 
@@ -162,8 +195,8 @@ export default function CreateRequirementModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Valida todos os campos
-    const formErrors = validateForm(form)
+    // Valida todos os campos usando o padrão do projeto
+    const formErrors = validateForm(form, reqIdPattern)
     setErrors(formErrors)
 
     // Marca todos como tocados
@@ -271,7 +304,7 @@ export default function CreateRequirementModal({
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono ${
                     errors.reqId && touched.reqId ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="REQ-001"
+                  placeholder={generateExample(reqIdPattern)}
                 />
                 {errors.reqId && touched.reqId && (
                   <p className="mt-1 text-sm text-red-600">{errors.reqId}</p>
@@ -290,7 +323,7 @@ export default function CreateRequirementModal({
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {SAP_MODULES.map((m) => (
+                  {moduleOptions.map((m) => (
                     <option key={m.value} value={m.value}>
                       {m.label}
                     </option>
@@ -333,7 +366,7 @@ export default function CreateRequirementModal({
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {STATUS_OPTIONS.map((s) => (
+                  {statusOptions.map((s) => (
                     <option key={s.value} value={s.value}>
                       {s.label}
                     </option>
@@ -520,7 +553,7 @@ export default function CreateRequirementModal({
                     value={form.dependsOn}
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="REQ-001, REQ-002"
+                    placeholder={`${generateExample(reqIdPattern)}, ...`}
                   />
                 </div>
 
@@ -536,7 +569,7 @@ export default function CreateRequirementModal({
                     value={form.providesFor}
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="REQ-003, REQ-004"
+                    placeholder={`${generateExample(reqIdPattern)}, ...`}
                   />
                 </div>
               </div>

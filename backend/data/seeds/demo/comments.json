@@ -1,0 +1,28 @@
+{
+  "comments": [
+    {
+      "requirementKey": "req3",
+      "userKey": "client",
+      "content": "O batch deve rodar dia 1º porque precisamos fechar contabilidade no dia 5. Quem disse dia 5 está errado.",
+      "type": "CONFLICT"
+    },
+    {
+      "requirementKey": "req3",
+      "userKey": "user1",
+      "content": "Entendido. Vou atualizar o requisito para dia 1º e documentar a decisão.",
+      "type": "ANSWER"
+    },
+    {
+      "requirementKey": "req1",
+      "userKey": "user1",
+      "content": "Pergunta: CRM valida BP antes de criar contrato ou ISU faz essa validação?",
+      "type": "QUESTION"
+    },
+    {
+      "requirementKey": "req1",
+      "userKey": "user2",
+      "content": "CRM valida BP via BAPI_BUPA_EXISTENCE_CHECK antes de criar service order. ISU não precisa re-validar.",
+      "type": "ANSWER"
+    }
+  ]
+}

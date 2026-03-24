@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client'
 import config from './config'
 import { initializeSocketServer } from './services/notificationService'
 import { seedDemoData } from './utils/seedData'
+import { seedDefaultConfigs } from './utils/seedDefaultConfigs'
 
 // Inicializa Prisma Client
 export const prisma = new PrismaClient()
@@ -40,6 +41,9 @@ import changelogRoutes from './routes/changelog'
 import exportRoutes from './routes/export'
 import metricsRoutes from './routes/metrics'
 import projectMembersRoutes from './routes/projectMembers'
+import projectsRoutes from './routes/projects'
+import projectListsRoutes from './routes/projectLists'
+import configRoutes from './routes/config'
 import demoRoutes from './routes/demo'
 
 // ===== ROUTES =====
@@ -74,6 +78,10 @@ app.get('/api/test-db', async (_req: Request, res: Response) => {
 })
 
 // ===== API ROUTES =====
+// Config e Demo routes PRIMEIRO - não requerem autenticação (parcialmente)
+// IMPORTANTE: deve vir antes de routers que usam router.use(authenticate)
+app.use('/api/config', configRoutes)
+app.use('/api/demo', demoRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api', requirementsRoutes)
 app.use('/api', crossMatrixRoutes)
@@ -82,25 +90,8 @@ app.use('/api', changelogRoutes)
 app.use('/api', exportRoutes)
 app.use('/api', metricsRoutes)
 app.use('/api', projectMembersRoutes)
-app.use('/api/demo', demoRoutes)
-
-// ===== PROJECTS ROUTES (manter por enquanto para compatibilidade) =====
-app.get('/api/projects', async (_req: Request, res: Response) => {
-  try {
-    const projects = await prisma.project.findMany({
-      include: {
-        _count: {
-          select: { requirements: true, users: true },
-        },
-      },
-    })
-    res.json(projects)
-  } catch (error) {
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error',
-    })
-  }
-})
+app.use('/api', projectsRoutes)
+app.use('/api', projectListsRoutes)
 
 // ===== ERROR HANDLER =====
 app.use((err: Error, _req: Request, res: Response, _next: any) => {
@@ -110,6 +101,20 @@ app.use((err: Error, _req: Request, res: Response, _next: any) => {
     message: config.features.showDebugInfo ? err.message : 'Erro interno do servidor',
   })
 })
+
+// ===== SEED DE CONFIGURAÇÕES DEFAULT =====
+async function seedConfigsIfNeeded(): Promise<void> {
+  try {
+    // Sempre executa seed de configs (usa upsert, não sobrescreve existentes)
+    const result = await seedDefaultConfigs(prisma, config.env)
+    if (result.globals > 0 || result.overrides > 0) {
+      console.log(`✓ AppConfig seed: ${result.globals} globals, ${result.overrides} ${config.env} overrides`)
+    }
+  } catch (error) {
+    console.error('[Config] Erro no seed de configurações:', error)
+    // Não falha o startup - ConfigService tem fallback para defaults
+  }
+}
 
 // ===== AUTO-SEED PARA MODO DEMO =====
 async function autoSeedIfDemo(): Promise<void> {
@@ -140,6 +145,9 @@ async function main() {
     // Testa conexão com database
     await prisma.$connect()
     console.log('✓ Database connected successfully')
+
+    // Seed de configurações default (sempre executa, usa upsert)
+    await seedConfigsIfNeeded()
 
     // Auto-seed em modo demo
     await autoSeedIfDemo()

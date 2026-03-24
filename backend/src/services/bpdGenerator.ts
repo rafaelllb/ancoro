@@ -99,14 +99,29 @@ const MATRIX_STATUS_DISPLAY: Record<string, string> = {
 };
 
 // Mapeamento de módulos SAP para nomes completos
+// Alinhado com backend/src/utils/defaultLists.ts
 const MODULE_NAMES: Record<string, string> = {
-  ISU: 'IS-U (Industry Solution Utilities)',
+  // Financeiro
+  'FI-CA': 'FI-CA (Contract Accounting)',
+  'FI-AR': 'FI-AR (Accounts Receivable)',
+  'FI-GL': 'FI-GL (General Ledger)',
+  // ISU - Industry Solution Utilities
+  'ISU-BILLING': 'ISU-BILLING (Faturamento)',
+  'ISU-BPEM': 'ISU-BPEM (Business Process Exception Mgmt)',
+  'ISU-IDE': 'ISU-IDE (Installation & Device Mgmt)',
+  'ISU-EDM': 'ISU-EDM (Energy Data Management)',
+  'ISU-DM': 'ISU-DM (Device Management)',
+  'ISU-CS': 'ISU-CS (Customer Service)',
+  // Outros módulos SAP
   CRM: 'CRM (Customer Relationship Management)',
-  FICA: 'FI-CA (Contract Accounting)',
-  DEVICE: 'Device Management',
   SD: 'SD (Sales & Distribution)',
   MM: 'MM (Materials Management)',
+  PP: 'PP (Production Planning)',
   PM: 'PM (Plant Maintenance)',
+  CO: 'CO (Controlling)',
+  HR: 'HR (Human Resources)',
+  CROSS: 'CROSS (Cross-Module)',
+  CUSTOM: 'Customizado',
   OTHER: 'Outros',
 };
 

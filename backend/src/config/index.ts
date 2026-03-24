@@ -1,3 +1,26 @@
+/**
+ * Bootstrap Configuration
+ *
+ * Este arquivo contém APENAS configurações de infraestrutura que precisam
+ * estar disponíveis ANTES de conectar ao banco de dados:
+ * - DATABASE_URL (necessário para conectar)
+ * - JWT_SECRET (segurança)
+ * - PORT (servidor)
+ * - NODE_ENV (ambiente)
+ * - CORS_ORIGIN (segurança)
+ *
+ * Configurações de APLICAÇÃO (features, ui, limits) agora estão no banco de dados
+ * e são gerenciadas pelo ConfigService (src/services/configService.ts).
+ * Isso permite alteração em runtime sem redeploy.
+ *
+ * Para acessar configs de aplicação:
+ * ```
+ * import { getConfigService } from './services/configService'
+ * const configService = getConfigService(prisma)
+ * const appConfig = await configService.getTypedConfig()
+ * ```
+ */
+
 import { z } from 'zod'
 import dotenv from 'dotenv'
 import path from 'path'
@@ -10,7 +33,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../..', envFile) })
 // Fallback para .env padrão se o específico não existir
 dotenv.config({ path: path.resolve(__dirname, '../../..', '.env') })
 
-// Schema de validação para variáveis de ambiente
+// Schema de validação para variáveis de ambiente de INFRAESTRUTURA
 // Falha rápido se configuração inválida - evita erros em runtime
 const envSchema = z.object({
   NODE_ENV: z.enum(['demo', 'development', 'staging', 'production']).default('development'),
@@ -23,7 +46,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET deve ter no mínimo 16 caracteres'),
   JWT_EXPIRES_IN: z.string().default('7d'),
 
-  // Demo mode - controle explícito além do NODE_ENV
+  // Demo mode - controle explícito além do NODE_ENV (para compatibilidade)
   DEMO_MODE: z.coerce.boolean().default(false),
   DEMO_AUTO_SEED: z.coerce.boolean().default(false),
 
@@ -59,60 +82,41 @@ function loadEnv(): Env {
 
 const env = loadEnv()
 
-// Configurações específicas por ambiente
-// Cada ambiente define features permitidas e comportamentos
-const environmentConfigs = {
-  demo: {
-    features: {
-      allowSeed: true,
-      allowDatabaseReset: true,
-      showDebugInfo: true,
-    },
-    ui: {
-      showEnvironmentBanner: true,
-      bannerMessage: 'MODO DEMO - Dados podem ser resetados a qualquer momento',
-      bannerColor: 'purple',
-    },
+// Defaults hardcoded para fallback (antes do banco estar disponível)
+// Estes são usados apenas durante bootstrap, depois o ConfigService assume
+const BOOTSTRAP_DEFAULTS = {
+  features: {
+    allowSeed: env.NODE_ENV === 'demo' || env.NODE_ENV === 'development',
+    allowDatabaseReset: env.NODE_ENV === 'demo' || env.NODE_ENV === 'development',
+    showDebugInfo: env.NODE_ENV !== 'production',
   },
-  development: {
-    features: {
-      allowSeed: true,
-      allowDatabaseReset: true,
-      showDebugInfo: true,
-    },
-    ui: {
-      showEnvironmentBanner: true,
-      bannerMessage: 'Ambiente de Desenvolvimento',
-      bannerColor: 'blue',
-    },
+  ui: {
+    showEnvironmentBanner: env.NODE_ENV !== 'production',
+    bannerMessage: getBannerMessage(env.NODE_ENV),
+    bannerColor: getBannerColor(env.NODE_ENV),
   },
-  staging: {
-    features: {
-      allowSeed: false,
-      allowDatabaseReset: false,
-      showDebugInfo: true,
-    },
-    ui: {
-      showEnvironmentBanner: true,
-      bannerMessage: 'Ambiente de Qualidade (Staging)',
-      bannerColor: 'yellow',
-    },
-  },
-  production: {
-    features: {
-      allowSeed: false,
-      allowDatabaseReset: false,
-      showDebugInfo: false,
-    },
-    ui: {
-      showEnvironmentBanner: false,
-      bannerMessage: null,
-      bannerColor: null,
-    },
-  },
-} as const
+}
 
-// Config final exportado - single source of truth
+function getBannerMessage(nodeEnv: string): string | null {
+  const messages: Record<string, string> = {
+    demo: 'MODO DEMO - Dados podem ser resetados a qualquer momento',
+    development: 'Ambiente de Desenvolvimento',
+    staging: 'Ambiente de Qualidade (Staging)',
+  }
+  return messages[nodeEnv] ?? null
+}
+
+function getBannerColor(nodeEnv: string): string | null {
+  const colors: Record<string, string> = {
+    demo: 'purple',
+    development: 'blue',
+    staging: 'yellow',
+  }
+  return colors[nodeEnv] ?? null
+}
+
+// Config de BOOTSTRAP exportado - apenas infraestrutura
+// Para configs de aplicação, use ConfigService
 export const config = {
   // Ambiente atual
   env: env.NODE_ENV,
@@ -129,7 +133,7 @@ export const config = {
     expiresIn: env.JWT_EXPIRES_IN,
   },
 
-  // Demo mode - true se NODE_ENV=demo OU DEMO_MODE=true
+  // Demo mode - para compatibilidade durante migração
   demo: {
     enabled: env.DEMO_MODE || env.NODE_ENV === 'demo',
     autoSeed: env.DEMO_AUTO_SEED,
@@ -141,16 +145,21 @@ export const config = {
   // CORS
   corsOrigin: env.CORS_ORIGIN,
 
-  // Features do ambiente atual
-  ...environmentConfigs[env.NODE_ENV],
-
   // Helpers para checagem rápida
   isDemo: env.DEMO_MODE || env.NODE_ENV === 'demo',
   isDevelopment: env.NODE_ENV === 'development',
   isStaging: env.NODE_ENV === 'staging',
   isProduction: env.NODE_ENV === 'production',
 
+  // Defaults de bootstrap (usados antes do ConfigService estar disponível)
+  // DEPRECATED: Migrar para ConfigService.getTypedConfig()
+  features: BOOTSTRAP_DEFAULTS.features,
+  ui: BOOTSTRAP_DEFAULTS.ui,
+
   // Método para obter info do ambiente (usado pela API /demo/status)
+  // TODO [ESTIGMERGIA]: Migrar para usar ConfigService quando disponível
+  // - O ConfigService precisa do Prisma que só está disponível após conexão
+  // - Este método é chamado antes do banco estar conectado em alguns casos
   getEnvironmentInfo() {
     return {
       environment: this.env,

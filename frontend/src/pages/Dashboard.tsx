@@ -2,16 +2,21 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useRequirements } from '../hooks/useRequirements'
-import { useProjects } from '../hooks/useProjects'
+import { useCurrentProject } from '../hooks/useProjects'
 import RequirementsGrid from '../components/RequirementsGrid'
 import CommentPanel from '../components/CommentPanel'
 import CreateRequirementModal from '../components/CreateRequirementModal'
 import ImportSpreadsheetModal from '../components/ImportSpreadsheetModal'
 import ExportModal from '../components/ExportModal'
 import ManageMembersModal from '../components/ManageMembersModal'
+import ProjectSettingsModal from '../components/ProjectSettingsModal'
+import ProjectSwitcher from '../components/ProjectSwitcher'
+import CreateProjectModal from '../components/CreateProjectModal'
+import ListConfigModal from '../components/ListConfigModal'
 import { NotificationBell } from '../components/NotificationBell'
 import { MobileNav, NavIcons } from '../components/MobileNav'
 import { Requirement } from '../services/api'
+import { patternFromProject } from '../utils/reqIdPattern'
 
 // Itens de navegação para o menu mobile
 const navItems = [
@@ -23,11 +28,11 @@ const navItems = [
 export default function Dashboard() {
   const { user, logout } = useAuth()
 
-  // Buscar projetos disponíveis
-  const { data: projects = [] } = useProjects()
-
-  // Usa o primeiro projeto como default
-  const projectId = projects[0]?.id || ''
+  // Buscar projetos e gerenciar projeto atual
+  const { currentProject, projects, setCurrentProject } = useCurrentProject()
+  const projectId = currentProject?.id || ''
+  // Extrai o padrão de ID do projeto para usar no modal de criação
+  const reqIdPattern = currentProject ? patternFromProject(currentProject) : undefined
 
   // Estados de filtro
   const [showAllModules, setShowAllModules] = useState(false)
@@ -40,9 +45,13 @@ export default function Dashboard() {
   const [isSpreadsheetMenuOpen, setIsSpreadsheetMenuOpen] = useState(false)
   const [isExportModalOpen, setIsExportModalOpen] = useState(false)
   const [isManageMembersModalOpen, setIsManageMembersModalOpen] = useState(false)
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
+  const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false)
+  const [isListConfigModalOpen, setIsListConfigModalOpen] = useState(false)
 
   // Verifica se usuário pode gerenciar membros (ADMIN ou MANAGER)
   const canManageMembers = user?.role === 'ADMIN' || user?.role === 'MANAGER'
+  const isAdmin = user?.role === 'ADMIN'
 
   // Determina filtro de módulo
   // Se showAllModules = false, filtra pelo módulo do usuário (se disponível)
@@ -74,10 +83,20 @@ export default function Dashboard() {
               onLogout={logout}
             />
             <img src="/logo.png" alt="Ancoro" className="h-10 hidden sm:block" />
-            <div>
+            <div className="hidden sm:block">
               <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Ancoro</h1>
-              <p className="text-xs lg:text-sm text-gray-600 hidden sm:block">Dashboard de Requisitos</p>
+              <p className="text-xs lg:text-sm text-gray-600">Dashboard de Requisitos</p>
             </div>
+          </div>
+
+          {/* Project Switcher - seletor de projeto */}
+          <div className="hidden sm:block">
+            <ProjectSwitcher
+              projects={projects}
+              currentProject={currentProject}
+              onProjectChange={setCurrentProject}
+              onCreateProject={isAdmin ? () => setIsCreateProjectModalOpen(true) : undefined}
+            />
           </div>
 
           {/* Navegação desktop - oculta em mobile */}
@@ -160,6 +179,33 @@ export default function Dashboard() {
                 <span className="hidden sm:inline">Novo Requisito</span>
                 <span className="sm:hidden">Novo</span>
               </button>
+              {/* Botão de configurações do padrão de ID */}
+              <button
+                type="button"
+                onClick={() => setIsSettingsModalOpen(true)}
+                disabled={!projectId}
+                className="p-2 border border-gray-300 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Configurar padrão de ID"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </button>
+              {/* Botão de configurar listas (ADMIN/MANAGER) */}
+              {canManageMembers && (
+                <button
+                  type="button"
+                  onClick={() => setIsListConfigModalOpen(true)}
+                  disabled={!projectId}
+                  className="p-2 border border-gray-300 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Configurar listas (Módulos, Status, etc.)"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                </button>
+              )}
               {/* Dropdown Planilha - Importar/Exportar */}
               <div className="relative flex-1 sm:flex-initial">
                 <button
@@ -282,6 +328,7 @@ export default function Dashboard() {
         onClose={() => setIsCreateModalOpen(false)}
         projectId={projectId}
         existingReqIds={requirements.map((r) => r.reqId)}
+        reqIdPattern={reqIdPattern}
       />
 
       {/* Modal de planilha (importação/exportação) */}
@@ -306,6 +353,30 @@ export default function Dashboard() {
           isOpen={isManageMembersModalOpen}
           onClose={() => setIsManageMembersModalOpen(false)}
           projectId={projectId}
+        />
+      )}
+
+      {/* Modal de configuração do padrão de ID de requisitos */}
+      <ProjectSettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        projectId={projectId}
+      />
+
+      {/* Modal de criar projeto (ADMIN only) */}
+      <CreateProjectModal
+        isOpen={isCreateProjectModalOpen}
+        onClose={() => setIsCreateProjectModalOpen(false)}
+        onSuccess={(newProjectId) => setCurrentProject(newProjectId)}
+      />
+
+      {/* Modal de configuração de listas (ADMIN/MANAGER) */}
+      {canManageMembers && currentProject && (
+        <ListConfigModal
+          isOpen={isListConfigModalOpen}
+          onClose={() => setIsListConfigModalOpen(false)}
+          projectId={projectId}
+          projectName={currentProject.name}
         />
       )}
     </div>

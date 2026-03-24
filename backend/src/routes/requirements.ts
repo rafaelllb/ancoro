@@ -2,9 +2,14 @@ import { Router, Request, Response } from 'express'
 import { prisma } from '../index'
 import { authenticate } from '../middleware/auth'
 import { requireEditPermission, requireProjectAccess } from '../middleware/permissions'
-import { createRequirementSchema, updateRequirementSchema, bulkImportItemSchema } from '../schemas'
+import {
+  createRequirementSchemaForProject,
+  updateRequirementSchema,
+  createBulkImportItemSchemaForProject,
+} from '../schemas'
 import { CreateRequirementRequest, UpdateRequirementRequest } from '../types'
 import { regenerateCrossMatrix } from '../services/crossMatrixService'
+import { patternFromProject } from '../utils/reqIdPattern'
 import {
   emitRequirementCreate,
   emitRequirementUpdate,
@@ -148,11 +153,38 @@ router.get('/requirements/:id', authenticate, async (req: Request, res: Response
  *
  * NOTA: consultantId é definido automaticamente como o usuário logado
  * (a não ser que seja Manager/Admin criando para outro consultor)
+ *
+ * Validação de reqId é dinâmica baseada no padrão configurado no projeto
  */
 router.post('/requirements', authenticate, async (req: Request, res: Response) => {
   try {
-    // Validar request body
-    const validationResult = createRequirementSchema.safeParse(req.body)
+    // Primeiro busca o projeto para obter o padrão de ID
+    const projectId = req.body.projectId
+    if (!projectId) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'projectId é obrigatório',
+      })
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { reqIdPrefix: true, reqIdSeparator: true, reqIdDigitCount: true },
+    })
+
+    if (!project) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Projeto não encontrado',
+      })
+    }
+
+    // Cria schema dinâmico baseado no padrão do projeto
+    const pattern = patternFromProject(project)
+    const schema = createRequirementSchemaForProject(pattern)
+
+    // Validar request body com schema dinâmico
+    const validationResult = schema.safeParse(req.body)
     if (!validationResult.success) {
       return res.status(400).json({
         error: 'Validation Error',
@@ -479,6 +511,24 @@ router.post(
         })
       }
 
+      // Buscar projeto para obter o padrão de ID
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
+        select: { reqIdPrefix: true, reqIdSeparator: true, reqIdDigitCount: true },
+      })
+
+      if (!project) {
+        return res.status(404).json({
+          success: false,
+          error: 'Not Found',
+          message: 'Projeto não encontrado',
+        })
+      }
+
+      // Cria schema dinâmico baseado no padrão do projeto
+      const pattern = patternFromProject(project)
+      const bulkItemSchema = createBulkImportItemSchemaForProject(pattern)
+
       // Buscar reqIds existentes no projeto para identificar updates vs creates
       const existingReqs = await prisma.requirement.findMany({
         where: { projectId },
@@ -497,8 +547,8 @@ router.post(
         const rowNumber = index + 1
         const rowErrors: string[] = []
 
-        // Validar com Zod
-        const result = bulkImportItemSchema.safeParse(item)
+        // Validar com Zod usando schema dinâmico do projeto
+        const result = bulkItemSchema.safeParse(item)
         if (!result.success) {
           rowErrors.push(
             ...result.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`)

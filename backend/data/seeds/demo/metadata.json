@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "name": "demo-dataset",
+  "description": "Ancoro Demo - SAP S/4 HANA Utilities Discovery",
+  "defaultPassword": "demo123",
+  "created": "2026-03-22",
+  "updated": "2026-03-23"
+}

@@ -23,10 +23,18 @@ model Project {
   startDate   DateTime
   status      String   @default("DISCOVERY") // DISCOVERY | REALIZATION | GOLIVE | HYPERCARE | CLOSED
 
+  // Padrão de ID de requisitos (flexível por projeto)
+  // Formato: {prefix}{separator}{número com zero-padding}
+  // Exemplo: REQ-001, US-0001, PROJ1_001
+  reqIdPrefix     String   @default("REQ")   // Prefixo: 1-10 chars alfanumérico
+  reqIdSeparator  String   @default("-")     // Separador: "-", "_", ou ""
+  reqIdDigitCount Int      @default(3)       // Dígitos com zero-padding: 2-6
+
   requirements Requirement[]
   users        ProjectUser[]
   crossMatrix  CrossMatrixEntry[]
   sprints      Sprint[]
+  listItems    ProjectListItem[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -190,6 +198,99 @@ model Sprint {
 
   @@unique([projectId, sprintNumber])
   @@map("sprints")
+}
+
+// Listas configuráveis por projeto (Módulos, Status, etc.)
+// Substitui os enums hardcoded por valores dinâmicos no banco
+model ProjectListItem {
+  id          String   @id @default(cuid())
+  projectId   String
+  listType    String   // MODULE | REQ_STATUS | INTEGRATION_TYPE | INTEGRATION_TIMING
+  code        String   // Código interno: ISU, PENDING, BAPI, SYNC
+  name        String   // Nome legível: "ISU - Industry Solution Utilities"
+  color       String?  // Cor hex para badges: #3B82F6
+  icon        String?  // Emoji ou ícone: ⏳, ✅
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false) // Valor padrão ao criar requisito
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, listType, code])
+  @@index([projectId, listType])
+  @@map("project_list_items")
+}
+
+// ===== APPLICATION CONFIGURATION =====
+// Configurações de aplicação em banco de dados (runtime)
+// Infraestrutura (DATABASE_URL, JWT_SECRET, PORT) permanece em .env
+
+model AppConfig {
+  id          String   @id @default(cuid())
+
+  // Chave de configuração em notação de ponto
+  // Ex: "features.allowSeed", "ui.bannerMessage", "limits.maxUploadSize"
+  key         String   @unique
+
+  // Valor armazenado como JSON string (suporta todos os tipos)
+  value       String
+
+  // Tipo explícito para validação e renderização na UI
+  // STRING | NUMBER | BOOLEAN | JSON | ENUM
+  valueType   String   @default("STRING")
+
+  // Categoria para agrupamento na UI de admin
+  // FEATURE | UI | LIMIT | NOTIFICATION | INTEGRATION
+  category    String   @default("FEATURE")
+
+  // Descrição legível para UI de admin
+  description String?
+
+  // Ambiente específico (null = global, aplica a todos)
+  // "production" | "staging" | "development" | "demo"
+  environment String?
+
+  // Regras de validação como JSON (min, max, pattern, enumValues)
+  validation  String?
+
+  // Soft delete para auditoria
+  isActive    Boolean  @default(true)
+
+  // Campos de auditoria
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?
+  updatedBy   String?
+
+  @@index([category])
+  @@index([environment])
+  @@map("app_configs")
+}
+
+// Histórico de alterações de configuração (audit trail)
+model ConfigChangeLog {
+  id          String   @id @default(cuid())
+  configId    String
+  configKey   String   // Desnormalizado para referência histórica
+
+  oldValue    String?
+  newValue    String?
+
+  userId      String
+  userName    String   // Desnormalizado
+  userEmail   String   // Desnormalizado
+
+  reason      String?  // Motivo opcional da alteração
+
+  createdAt   DateTime @default(now())
+
+  @@index([configId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("config_change_logs")
 }
 
 // ===== ENUMS (Definidos como constantes TypeScript no código) =====

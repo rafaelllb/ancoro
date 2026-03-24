@@ -1,0 +1,19 @@
+{
+  "projects": [
+    {
+      "key": "project1",
+      "name": "Projeto Demo - S/4 HANA Utilities",
+      "client": "Cliente Demo S.A.",
+      "startDate": "2026-01-01",
+      "status": "DISCOVERY"
+    }
+  ],
+  "projectUsers": [
+    { "projectKey": "project1", "userKey": "admin", "module": null },
+    { "projectKey": "project1", "userKey": "user1", "module": "ISU-BILLING" },
+    { "projectKey": "project1", "userKey": "user2", "module": "CRM" },
+    { "projectKey": "project1", "userKey": "user3", "module": "FI-CA" },
+    { "projectKey": "project1", "userKey": "manager", "module": null },
+    { "projectKey": "project1", "userKey": "client", "module": null }
+  ]
+}

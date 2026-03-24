@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
 import config from '../config'
-import { seedDemoData } from '../utils/seedData'
+import { seedDemoData, loadSeedDataset } from '../utils/seedData'
 
 const router = Router()
 
@@ -74,19 +74,37 @@ router.post('/reset', requireDemoMode, async (req: Request, res: Response) => {
  * GET /api/demo/credentials
  * Retorna credenciais de login para demonstração
  * APENAS disponível em modo demo
+ *
+ * Carrega dados do dataset JSON - sem hardcoded no código
  */
-router.get('/credentials', requireDemoMode, (_req: Request, res: Response) => {
-  res.json({
-    message: 'Credenciais de demonstração',
-    password: 'demo123',
-    users: [
-      { email: 'joao.silva@seidor.com', role: 'CONSULTANT', module: 'ISU' },
-      { email: 'maria.santos@seidor.com', role: 'CONSULTANT', module: 'CRM' },
-      { email: 'pedro.oliveira@seidor.com', role: 'CONSULTANT', module: 'FICA' },
-      { email: 'rafael.brito@seidor.com', role: 'MANAGER', module: null },
-      { email: 'ana.costa@cliente.com', role: 'CLIENT', module: null },
-    ],
-  })
+router.get('/credentials', requireDemoMode, async (_req: Request, res: Response) => {
+  try {
+    // Carrega dataset para obter credenciais atualizadas dos arquivos JSON
+    const dataset = await loadSeedDataset('demo')
+
+    // Mapeia users com seus módulos (extraído do projectUsers)
+    const usersWithModules = dataset.users.map(user => {
+      const projectUser = dataset.projectUsers.find(pu => pu.userKey === user.key)
+      return {
+        email: user.email,
+        role: user.role,
+        module: projectUser?.module ?? null,
+      }
+    })
+
+    res.json({
+      message: 'Credenciais de demonstração',
+      password: dataset.metadata.defaultPassword,
+      users: usersWithModules,
+    })
+  } catch (error) {
+    console.error('[Demo] Erro ao carregar credenciais:', error)
+
+    res.status(500).json({
+      error: 'Falha ao carregar credenciais',
+      message: error instanceof Error ? error.message : 'Erro desconhecido',
+    })
+  }
 })
 
 export default router
