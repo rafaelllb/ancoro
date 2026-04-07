@@ -71,16 +71,16 @@ function extractDependencies(
   };
 
   requirements.forEach((req) => {
-    // "Depende De" = este req → outros reqs
+    // "Depende De" = outros reqs → este req
     const dependsOn = parseReqIds(req.dependsOn);
-    dependsOn.forEach((toReqId) => {
-      addEdge(req.reqId, toReqId);
+    dependsOn.forEach((fromReqId) => {
+      addEdge(fromReqId, req.reqId);
     });
 
-    // "Fornece Para" = outros reqs → este req
+    // "Fornece Para" = este req → outros reqs
     const providesTo = parseReqIds(req.providesFor);
-    providesTo.forEach((fromReqId) => {
-      addEdge(fromReqId, req.reqId);
+    providesTo.forEach((toReqId) => {
+      addEdge(req.reqId, toReqId);
     });
   });
 
