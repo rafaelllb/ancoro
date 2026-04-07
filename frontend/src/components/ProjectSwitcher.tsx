@@ -28,7 +28,8 @@ export default function ProjectSwitcher({
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const isAdmin = user?.role === 'ADMIN'
+  // ADMIN e MANAGER podem criar projetos
+  const canCreateProject = user?.role === 'ADMIN' || user?.role === 'MANAGER'
 
   // Fecha dropdown ao clicar fora
   useEffect(() => {
@@ -49,10 +50,6 @@ export default function ProjectSwitcher({
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
   }, [])
-
-  const status = currentProject?.status
-    ? statusConfig[currentProject.status] || statusConfig.DISCOVERY
-    : statusConfig.DISCOVERY
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -152,8 +149,8 @@ export default function ProjectSwitcher({
             })
           )}
 
-          {/* Botão criar projeto (apenas ADMIN) */}
-          {isAdmin && onCreateProject && (
+          {/* Botão criar projeto (ADMIN ou MANAGER) */}
+          {canCreateProject && onCreateProject && (
             <>
               <div className="border-t border-gray-200 my-1" />
               <button

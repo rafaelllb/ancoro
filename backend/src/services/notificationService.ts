@@ -39,9 +39,14 @@ let io: Server | null = null
  * Chamado uma vez na inicialização do servidor Express
  */
 export function initializeSocketServer(httpServer: HttpServer): Server {
+  // CORS origins: usa CORS_ORIGIN do ambiente (comma-separated) ou fallback para localhost em dev
+  const corsOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
+    : ['http://localhost:5173', 'http://localhost:3000']
+
   io = new Server(httpServer, {
     cors: {
-      origin: ['http://localhost:5173', 'http://localhost:3000'],
+      origin: corsOrigins,
       methods: ['GET', 'POST'],
       credentials: true,
     },

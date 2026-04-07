@@ -4,10 +4,13 @@ Sistema de gestão colaborativa de requisitos.
 
 ## Visão Geral
 
-Ancoro implementa três pilares:
+Ancoro implementa o **Ancora ReqOps Method** — sistema operacional de requisitos que aplica princípios de DevOps ao ciclo de vida dos requisitos.
+
+### Pilares
 1. **Pensamento Estruturado** — Requisitos em formato 5W2H Duplo
 2. **Integração Explícita** — Cross-Module Awareness entre módulos SAP
 3. **Melhoria Contínua Pragmática** — Métricas e colaboração em tempo real
+4. **Pipeline de Validação** — Requisitos só avançam se passarem em todas as checagens
 
 ## Funcionalidades
 
@@ -16,6 +19,22 @@ Ancoro implementa três pilares:
 - **Sistema de Projetos** — Múltiplos projetos com configuração dinâmica de ID de requisitos
 - **Matriz de Cruzamento** — Auto-geração de dependências + validação manual de integrações
 - **Colaboração Real-time** — Comentários, notificações via Socket.io, histórico de mudanças
+
+### ReqOps (Ancora Method v2)
+- **Objetivos de Projeto** — Cadastro de objetivos de negócio com keywords para matching
+- **Requisitos Órfãos** — Detecção automática de WHY sem correspondência a objetivos
+- **Conflitos Semânticos** — Detecção de WHO sobrepostos, WHERE incompatíveis, HOW MUCH contraditórios
+- **Sistema de Evidências** — Anexar evidências (commit, teste, screenshot) para fechamento
+- **Pipeline de Validação** — Validação completa antes de promoção (ciclos + conflitos + órfãos)
+- **Campos AS IS / TO BE** — Separação do processo atual e futuro com versionamento
+- **HOW MUCH Prometido/Realizado** — Rastreabilidade de critérios de aceitação
+
+### Métricas ReqOps
+- **Lead Time** — Tempo médio da criação até aprovação
+- **Taxa de Rejeição** — % de requisitos que voltaram no pipeline
+- **Iterações de Refinamento** — Contagem de edições por requisito
+- **Cobertura de Objetivos** — % de requisitos vinculados a objetivos
+- **Cobertura de Evidências** — % de requisitos com evidência anexada
 
 ### Dados
 - **Import/Export** — Planilhas Excel com upsert inteligente
@@ -141,9 +160,27 @@ DEMO_AUTO_SEED=false               # Auto-seed no startup
 ### Matriz de Cruzamento
 - `GET /api/projects/:id/cross-matrix` — Listar integrações
 - `PUT /api/projects/:id/cross-matrix/:entryId` — Atualizar
+- `GET /api/projects/:id/semantic-conflicts` — Detectar conflitos semânticos
+- `POST /api/projects/:id/validate-pipeline` — Validação completa ReqOps
+
+### Objetivos (ReqOps)
+- `GET /api/projects/:id/objectives` — Listar objetivos
+- `POST /api/projects/:id/objectives` — Criar objetivo
+- `PUT /api/projects/:id/objectives/:objId` — Atualizar
+- `POST /api/projects/:id/objectives/validate-requirements` — Validar WHY vs objetivos
+- `GET /api/projects/:id/orphan-requirements` — Listar requisitos órfãos
+
+### Evidências (ReqOps)
+- `GET /api/requirements/:id/evidences` — Listar evidências
+- `POST /api/requirements/:id/evidences` — Criar evidência
+- `POST /api/evidences/:id/verify` — Verificar evidência
+- `GET /api/requirements/:id/can-approve` — Verificar se pode aprovar
 
 ### Dados
-- `GET /api/projects/:id/metrics` — KPIs
+- `GET /api/projects/:id/metrics` — KPIs (inclui métricas ReqOps)
+- `GET /api/projects/:id/metrics/lead-time` — Lead time por requisito
+- `GET /api/projects/:id/metrics/rejections` — Requisitos rejeitados
+- `GET /api/projects/:id/metrics/refinements` — Iterações de refinamento
 - `GET /api/projects/:id/export` — Export XLSX
 - `POST /api/projects/:id/import` — Import planilha
 

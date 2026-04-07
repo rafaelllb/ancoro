@@ -197,18 +197,21 @@ router.post('/requirements', authenticate, async (req: Request, res: Response) =
     const data = validationResult.data as CreateRequirementRequest
 
     // Verificar se o usuário tem acesso ao projeto
-    const isProjectMember = await prisma.projectUser.findFirst({
-      where: {
-        projectId: data.projectId,
-        userId: req.user!.userId,
-      },
-    })
-
-    if (!isProjectMember) {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'Você não tem permissão para criar requisitos neste projeto',
+    // ADMIN tem acesso global a todos os projetos
+    if (req.user!.role !== 'ADMIN') {
+      const isProjectMember = await prisma.projectUser.findFirst({
+        where: {
+          projectId: data.projectId,
+          userId: req.user!.userId,
+        },
       })
+
+      if (!isProjectMember) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Você não tem permissão para criar requisitos neste projeto',
+        })
+      }
     }
 
     // Verificar se reqId já existe neste projeto

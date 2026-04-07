@@ -161,7 +161,7 @@ export function useCurrentProject() {
 }
 
 /**
- * Hook para criar novo projeto (ADMIN only)
+ * Hook para criar novo projeto (ADMIN ou MANAGER)
  */
 export function useCreateProject() {
   const queryClient = useQueryClient()

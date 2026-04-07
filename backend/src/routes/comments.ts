@@ -240,7 +240,7 @@ router.get(
       const requirementId = req.params.id
 
       // Verifica se o usuário tem acesso ao requisito
-      const hasAccess = await canCommentRequirement(req.user!.userId, requirementId)
+      const hasAccess = await canCommentRequirement(req.user!.userId, req.user!.role, requirementId)
       if (!hasAccess) {
         return res.status(403).json({
           error: 'Forbidden',

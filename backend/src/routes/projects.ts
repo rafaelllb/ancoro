@@ -10,7 +10,7 @@ const router = Router()
 /**
  * POST /api/projects
  * Cria um novo projeto com listas configuráveis default
- * Requer: autenticação + role ADMIN
+ * Requer: autenticação + role ADMIN ou MANAGER
  *
  * Body:
  * - name: string (obrigatório)
@@ -23,11 +23,11 @@ const router = Router()
  */
 router.post('/projects', authenticate, async (req: Request, res: Response) => {
   try {
-    // Apenas ADMIN pode criar projetos
-    if (req.user!.role !== 'ADMIN') {
+    // ADMIN e MANAGER podem criar projetos
+    if (req.user!.role !== 'ADMIN' && req.user!.role !== 'MANAGER') {
       return res.status(403).json({
         error: 'Forbidden',
-        message: 'Apenas administradores podem criar projetos',
+        message: 'Apenas administradores ou gerentes podem criar projetos',
       })
     }
 

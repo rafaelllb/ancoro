@@ -9,7 +9,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { useProjects } from '../hooks/useProjects'
+import { useCurrentProject } from '../hooks/useProjects'
 import {
   useCrossMatrix,
   useRegenerateCrossMatrix,
@@ -23,8 +23,8 @@ export default function CrossMatrix() {
   const [isManageMembersModalOpen, setIsManageMembersModalOpen] = useState(false)
 
   // Busca projetos disponíveis (mesmo que Dashboard)
-  const { data: projects = [] } = useProjects()
-  const projectId = projects[0]?.id || ''
+  const { currentProject } = useCurrentProject()
+  const projectId = currentProject?.id || ''
 
   // Verifica se usuário pode gerenciar membros (ADMIN ou MANAGER)
   const canManageMembers = user?.role === 'ADMIN' || user?.role === 'MANAGER'
@@ -33,6 +33,7 @@ export default function CrossMatrix() {
   const regenerateMutation = useRegenerateCrossMatrix()
 
   const handleRegenerate = () => {
+    if (!projectId) return
     regenerateMutation.mutate(projectId)
   }
 
@@ -127,10 +128,10 @@ export default function CrossMatrix() {
             {/* Regenerate button */}
             <button
               onClick={handleRegenerate}
-              disabled={regenerateMutation.isPending}
+              disabled={!projectId || regenerateMutation.isPending}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {regenerateMutation.isPending ? 'Regenerando...' : '🔄 Regenerar Matriz'}
+              {regenerateMutation.isPending ? 'Regerando...' : '🔄 Regerar Matriz'}
             </button>
           </div>
 

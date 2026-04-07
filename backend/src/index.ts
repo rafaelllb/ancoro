@@ -45,6 +45,7 @@ import projectsRoutes from './routes/projects'
 import projectListsRoutes from './routes/projectLists'
 import configRoutes from './routes/config'
 import demoRoutes from './routes/demo'
+import evidencesRoutes from './routes/evidences'
 
 // ===== ROUTES =====
 
@@ -89,9 +90,10 @@ app.use('/api', commentsRoutes)
 app.use('/api', changelogRoutes)
 app.use('/api', exportRoutes)
 app.use('/api', metricsRoutes)
+app.use('/api', projectListsRoutes)    // ANTES de projectMembersRoutes para evitar conflito de middleware
 app.use('/api', projectMembersRoutes)
 app.use('/api', projectsRoutes)
-app.use('/api', projectListsRoutes)
+app.use('/api', evidencesRoutes)
 
 // ===== ERROR HANDLER =====
 app.use((err: Error, _req: Request, res: Response, _next: any) => {

@@ -262,7 +262,7 @@ export const projectsAPI = {
 
   getById: (projectId: string) => api.get(`/api/projects/${projectId}`),
 
-  // Criar projeto (ADMIN only)
+  // Criar projeto (ADMIN ou MANAGER)
   create: (data: CreateProjectRequest) => api.post('/api/projects', data),
 
   // Configurações de padrão de ID de requisitos

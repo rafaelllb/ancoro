@@ -1,12 +1,12 @@
 // Prisma Schema para Ancoro Application
-// Database: PostgreSQL (staging e produÃ§Ã£o)
+// Database: SQLite (desenvolvimento e demo)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 

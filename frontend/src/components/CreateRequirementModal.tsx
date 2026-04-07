@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect } from 'react'
+import { toast } from 'react-hot-toast'
 import { useCreateRequirement } from '../hooks/useRequirements'
 import { useProjectModules, useProjectStatuses } from '../hooks/useProjectLists'
 import {
@@ -194,6 +195,12 @@ export default function CreateRequirementModal({
   // Handler para submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validação defensiva: projectId é obrigatório
+    if (!projectId) {
+      toast.error('Nenhum projeto selecionado. Feche o modal e selecione um projeto.')
+      return
+    }
 
     // Valida todos os campos usando o padrão do projeto
     const formErrors = validateForm(form, reqIdPattern)

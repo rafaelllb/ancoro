@@ -1,0 +1,36 @@
+# Dependências
+node_modules
+
+# Build output (será gerado no container)
+dist
+
+# Arquivos de ambiente locais
+.env
+.env.*
+!.env.example
+
+# Banco SQLite local
+*.db
+*.db-journal
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vscode
+.idea
+
+# Git
+.git
+.gitignore
+
+# Testes
+coverage
+*.test.ts
+*.spec.ts
+__tests__
+
+# Documentação
+*.md
+!README.md

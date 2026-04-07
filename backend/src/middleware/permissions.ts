@@ -84,12 +84,19 @@ export async function canEditRequirement(
  * Verifica se o usuário pode comentar em um requisito
  *
  * Regras:
- * - Qualquer membro do projeto pode comentar
+ * - ADMIN: acesso global a qualquer requisito
+ * - Outros: qualquer membro do projeto pode comentar
  */
 export async function canCommentRequirement(
   userId: string,
+  userRole: string,
   requirementId: string
 ): Promise<boolean> {
+  // ADMIN tem acesso global
+  if (userRole === UserRole.ADMIN) {
+    return true
+  }
+
   const requirement = await prisma.requirement.findUnique({
     where: { id: requirementId },
     select: { projectId: true },
@@ -113,12 +120,19 @@ export async function canCommentRequirement(
  * Verifica se o usuário pode ver um requisito
  *
  * Regras:
- * - Qualquer membro do projeto pode ver todos os requisitos (cross-module visibility)
+ * - ADMIN: acesso global a qualquer requisito
+ * - Outros: qualquer membro do projeto pode ver todos os requisitos (cross-module visibility)
  */
 export async function canViewRequirement(
   userId: string,
+  userRole: string,
   requirementId: string
 ): Promise<boolean> {
+  // ADMIN tem acesso global
+  if (userRole === UserRole.ADMIN) {
+    return true
+  }
+
   const requirement = await prisma.requirement.findUnique({
     where: { id: requirementId },
     select: { projectId: true },
@@ -140,8 +154,17 @@ export async function canViewRequirement(
 
 /**
  * Verifica se o usuário pode ver todos os requisitos de um projeto
+ *
+ * Regras:
+ * - ADMIN: acesso global a qualquer projeto
+ * - Outros: apenas se for membro do projeto
  */
-export async function canViewProject(userId: string, projectId: string): Promise<boolean> {
+export async function canViewProject(userId: string, userRole: string, projectId: string): Promise<boolean> {
+  // ADMIN tem acesso global
+  if (userRole === UserRole.ADMIN) {
+    return true
+  }
+
   const isProjectMember = await prisma.projectUser.findFirst({
     where: {
       projectId: projectId,
@@ -199,7 +222,7 @@ export async function requireCommentPermission(req: Request, res: Response, next
       return res.status(400).json({ error: 'Bad Request', message: 'Requirement ID não fornecido' })
     }
 
-    const hasPermission = await canCommentRequirement(req.user.userId, requirementId)
+    const hasPermission = await canCommentRequirement(req.user.userId, req.user.role, requirementId)
 
     if (!hasPermission) {
       return res.status(403).json({
@@ -226,12 +249,17 @@ export async function requireProjectAccess(req: Request, res: Response, next: Ne
       return res.status(401).json({ error: 'Unauthorized', message: 'Usuário não autenticado' })
     }
 
+    // ADMIN tem acesso global a todos os projetos
+    if (req.user.role === UserRole.ADMIN) {
+      return next()
+    }
+
     const projectId = req.params.projectId || req.params.id
     if (!projectId) {
       return res.status(400).json({ error: 'Bad Request', message: 'Project ID não fornecido' })
     }
 
-    const hasPermission = await canViewProject(req.user.userId, projectId)
+    const hasPermission = await canViewProject(req.user.userId, req.user.role, projectId)
 
     if (!hasPermission) {
       return res.status(403).json({

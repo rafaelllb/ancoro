@@ -7,7 +7,7 @@
  * @author Rafael Brito
  */
 
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { useProjects } from '../hooks/useProjects'
@@ -39,6 +39,13 @@ const MODULE_NAMES: Record<string, string> = {
 
 export default function Metrics() {
   const { user, logout } = useAuth()
+
+  // Métricas são restritas a ADMIN e MANAGER
+  // Redireciona para dashboard se usuário não tiver permissão
+  const canViewMetrics = user?.role === 'ADMIN' || user?.role === 'MANAGER'
+  if (!canViewMetrics) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   // Buscar projetos disponíveis
   const { data: projects = [] } = useProjects()

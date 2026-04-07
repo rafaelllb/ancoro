@@ -39,6 +39,10 @@ export function useBulkImportRequirements() {
       queryClient.invalidateQueries({
         queryKey: requirementKeys.byProject(variables.projectId),
       })
+      // Invalida cache da crossMatrix (backend regenera automaticamente)
+      queryClient.invalidateQueries({
+        queryKey: ['crossMatrix', variables.projectId],
+      })
 
       // Toast de sucesso
       toast.success(data.message)

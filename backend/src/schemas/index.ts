@@ -69,6 +69,12 @@ export function createRequirementSchemaForProject(pattern: RequirementIdPattern)
     where: z.string().min(3, 'Campo "Where" deve ter no mínimo 3 caracteres'),
     howToday: z.string().min(10, 'Campo "How (hoje)" deve ter no mínimo 10 caracteres'),
     howMuch: z.string().min(3, 'Campo "How Much" deve ter no mínimo 3 caracteres'),
+    // Ancora Method v2: HOW separado AS IS / TO BE
+    howAsIs: z.string().min(10).optional(),
+    howToBe: z.string().min(10).optional(),
+    // Ancora Method v2: HOW MUCH prometido vs realizado
+    howMuchPromised: z.string().min(3).optional(),
+    howMuchActual: z.string().min(3).optional(),
     dependsOn: z.array(z.string()).optional().default([]),
     providesFor: z.array(z.string()).optional().default([]),
     consultantNotes: z.string().optional(),
@@ -128,6 +134,12 @@ export const updateRequirementSchema = z.object({
   where: z.string().min(3).optional(),
   howToday: z.string().min(10).optional(),
   howMuch: z.string().min(3).optional(),
+  // Ancora Method v2: HOW separado AS IS / TO BE
+  howAsIs: z.string().min(10).optional(),
+  howToBe: z.string().min(10).optional(),
+  // Ancora Method v2: HOW MUCH prometido vs realizado
+  howMuchPromised: z.string().min(3).optional(),
+  howMuchActual: z.string().min(3).optional(),
   dependsOn: z.array(z.string()).optional(),
   providesFor: z.array(z.string()).optional(),
   consultantNotes: z.string().optional(),

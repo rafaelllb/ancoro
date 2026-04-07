@@ -32,9 +32,24 @@ interface RequirementForMatrix {
  */
 function parseReqIds(text: string | null): string[] {
   if (!text) return [];
-  return text
+
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((id) => String(id).trim())
+        .filter((id) => id.length > 0);
+    }
+  } catch {
+    // Compatibilidade com registros antigos armazenados como CSV.
+  }
+
+  return trimmed
     .split(',')
-    .map((id) => id.trim())
+    .map((id) => id.trim().replace(/^["[]+|["\]]+$/g, ''))
     .filter((id) => id.length > 0);
 }
 
@@ -46,24 +61,26 @@ function extractDependencies(
   requirements: RequirementForMatrix[]
 ): DependencyEdge[] {
   const edges: DependencyEdge[] = [];
+  const seenEdges = new Set<string>();
+
+  const addEdge = (fromReqId: string, toReqId: string) => {
+    const key = `${fromReqId}->${toReqId}`;
+    if (seenEdges.has(key)) return;
+    seenEdges.add(key);
+    edges.push({ fromReqId, toReqId });
+  };
 
   requirements.forEach((req) => {
     // "Depende De" = este req → outros reqs
     const dependsOn = parseReqIds(req.dependsOn);
     dependsOn.forEach((toReqId) => {
-      edges.push({
-        fromReqId: req.reqId,
-        toReqId,
-      });
+      addEdge(req.reqId, toReqId);
     });
 
     // "Fornece Para" = outros reqs → este req
     const providesTo = parseReqIds(req.providesFor);
     providesTo.forEach((fromReqId) => {
-      edges.push({
-        fromReqId,
-        toReqId: req.reqId,
-      });
+      addEdge(fromReqId, req.reqId);
     });
   });
 
@@ -145,8 +162,8 @@ export async function regenerateCrossMatrix(
 
       return {
         projectId,
-        fromReqId: edge.fromReqId,
-        toReqId: edge.toReqId,
+        fromReqId: fromId,
+        toReqId: toId,
         fromModule,
         toModule,
         status: 'PENDING' as const,
@@ -176,10 +193,13 @@ export async function regenerateCrossMatrix(
 
     // Atualizar entries envolvidas em ciclos
     for (const reqId of affectedReqIds) {
+      const requirementId = findRequirementId(reqId, requirements);
+      if (!requirementId) continue;
+
       await prisma.crossMatrixEntry.updateMany({
         where: {
           projectId,
-          OR: [{ fromReqId: reqId }, { toReqId: reqId }],
+          OR: [{ fromReqId: requirementId }, { toReqId: requirementId }],
         },
         data: {
           status: 'CIRCULAR',
@@ -216,10 +236,30 @@ export async function getCrossMatrix(
 
   const entries = await prisma.crossMatrixEntry.findMany({
     where,
+    include: {
+      fromReq: {
+        select: { reqId: true },
+      },
+      toReq: {
+        select: { reqId: true },
+      },
+    },
     orderBy: [{ fromReqId: 'asc' }, { toReqId: 'asc' }],
   });
 
-  return entries;
+  return entries
+    .map(({ fromReq, toReq, ...entry }) => ({
+      ...entry,
+      fromReqId: fromReq.reqId,
+      toReqId: toReq.reqId,
+    }))
+    .sort((a, b) => {
+      if (a.fromReqId !== b.fromReqId) {
+        return a.fromReqId.localeCompare(b.fromReqId);
+      }
+
+      return a.toReqId.localeCompare(b.toReqId);
+    });
 }
 
 /**

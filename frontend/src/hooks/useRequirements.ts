@@ -74,6 +74,10 @@ export function useCreateRequirement() {
       queryClient.invalidateQueries({
         queryKey: requirementKeys.byProject(variables.projectId),
       })
+      // Invalida cache da crossMatrix (backend regenera automaticamente)
+      queryClient.invalidateQueries({
+        queryKey: ['crossMatrix', variables.projectId],
+      })
       toast.success('Requisito criado com sucesso')
     },
     onError: (error: any) => {
@@ -122,6 +126,8 @@ export function useUpdateRequirement() {
     onSuccess: (_response) => {
       // Invalida cache para refetch com dados frescos do servidor
       queryClient.invalidateQueries({ queryKey: requirementKeys.all })
+      // Invalida todos os caches de crossMatrix (backend regenera automaticamente)
+      queryClient.invalidateQueries({ queryKey: ['crossMatrix'] })
       toast.success('Requisito atualizado')
     },
 
