@@ -27,7 +27,7 @@ export const logger: Logger = pino({
   // Base context que aparece em todo log
   base: {
     env: process.env.NODE_ENV,
-    service: 'ancoro-backend'
+    service: 'backend-demo'
   },
   // Redação automática de campos sensíveis
   redact: {
