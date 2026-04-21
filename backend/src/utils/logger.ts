@@ -1,4 +1,5 @@
 import pino, { Logger } from 'pino'
+import { Request, Response } from 'express'
 
 // Determina o nível de log baseado no ambiente
 // Em produção, só info e acima. Em dev, tudo.
@@ -36,18 +37,27 @@ export const createChildLogger = (context: Record<string, unknown>): Logger => {
   return logger.child(context)
 }
 
+// Extensão do Express Request para propriedades injetadas por middlewares
+interface ExtendedRequest extends Request {
+  tenantSlug?: string
+  userId?: string
+}
+
 // Logger específico para requisições HTTP (usado com pino-http)
 export const httpLoggerOptions = {
   logger,
   // Não logar health checks para reduzir ruído
   autoLogging: {
-    ignore: (req: { url?: string }) => req.url === '/health',
+    ignore: (req: Request) => req.url === '/health',
   },
   // Campos customizados no log de request
-  customProps: (req: { tenantSlug?: string; userId?: string }) => ({
-    tenantSlug: req.tenantSlug,
-    userId: req.userId,
-  }),
+  customProps: (req: Request, _res: Response) => {
+    const extReq = req as ExtendedRequest
+    return {
+      tenantSlug: extReq.tenantSlug,
+      userId: extReq.userId,
+    }
+  },
 }
 
 export default logger
