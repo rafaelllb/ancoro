@@ -1,7 +1,7 @@
 # Dockerfile para deploy do backend Ancoro
 # Otimizado para Render, Railway, Fly.io e outras plataformas PaaS
 
-FROM node:18-alpine
+FROM node:18-alpine3.19
 
 # Install OpenSSL 1.1 compatibility library (required by Prisma query engine)
 RUN apk add --no-cache openssl1.1-compat
