@@ -29,7 +29,12 @@ RUN npx prisma generate --schema prisma/schema.prisma
 # Compilar TypeScript
 RUN npm run build
 
+# Copy entrypoint script and make it executable
+COPY docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
+
 # Remover devDependencies apÃ³s build (reduz tamanho da imagem)
+# Note: prisma must be in dependencies for migrations to work
 RUN npm prune --production
 
 # Expor porta (configurÃ¡vel via PORT env var)
@@ -39,7 +44,7 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-3001}/health || exit 1
 
-# Comando de inicializaÃ§Ã£o
+# Comando de inicializaÃ§Ã£o - roda migrations antes de iniciar o servidor
 # Nota: VariÃ¡veis de ambiente (DATABASE_URL, JWT_SECRET, etc.) devem ser
 # configuradas na plataforma de deploy, nÃ£o no Dockerfile
-CMD ["node", "dist/index.js"]
+CMD ["/app/docker-entrypoint.sh"]
