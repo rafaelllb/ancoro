@@ -152,7 +152,7 @@ npm run dev:sqlite
 3. Criar serviço: `backend-demo`
    - Tipo: **Combined** (build + run)
    - Source: GitHub (conectar repositório)
-   - Branch: `develop`
+   - Branch: `demo`
    - Build context: `backend`
    - Dockerfile path: `backend/Dockerfile`
    - Port: 3000
