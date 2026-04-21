@@ -1,10 +1,15 @@
 # Dockerfile para deploy do backend Ancoro
 # Otimizado para Render, Railway, Fly.io e outras plataformas PaaS
+# Using Debian Slim for better Prisma compatibility and native dependencies support
 
-FROM node:18-alpine3.19
+FROM node:18-slim
 
-# Install OpenSSL 1.1 compatibility library (required by Prisma query engine)
-RUN apk add --no-cache openssl1.1-compat
+# Install OpenSSL and CA certificates (required by Prisma and HTTPS connections)
+RUN apt-get update && apt-get install -y \
+    openssl \
+    ca-certificates \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
 # Criar diretÃ³rio de trabalho
 WORKDIR /app
