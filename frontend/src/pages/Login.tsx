@@ -102,10 +102,10 @@ export default function Login() {
                 <span className="inline-block w-20 text-purple-600 font-semibold">Admin:</span> admin@ancoro.app
               </p>
               <p className="font-mono text-xs">
-                <span className="inline-block w-20 text-blue-600 font-semibold">Manager:</span> rafael.brito@seidor.com
+                <span className="inline-block w-20 text-blue-600 font-semibold">Manager:</span> rafael.brito@ancoro.com
               </p>
               <p className="font-mono text-xs">
-                <span className="inline-block w-20 text-teal-600 font-semibold">Consultant:</span> joao.silva@seidor.com
+                <span className="inline-block w-20 text-teal-600 font-semibold">Consultant:</span> joao.silva@ancoro.com
               </p>
               <p className="font-mono text-xs">
                 <span className="inline-block w-20 text-gray-600 font-semibold">Client:</span> ana.costa@cliente.com

@@ -9,25 +9,25 @@
     {
       "key": "user1",
       "name": "Joao Silva",
-      "email": "joao.silva@seidor.com",
+      "email": "joao.silva@ancoro.com",
       "role": "CONSULTANT"
     },
     {
       "key": "user2",
       "name": "Maria Santos",
-      "email": "maria.santos@seidor.com",
+      "email": "maria.santos@ancoro.com",
       "role": "CONSULTANT"
     },
     {
       "key": "user3",
       "name": "Pedro Oliveira",
-      "email": "pedro.oliveira@seidor.com",
+      "email": "pedro.oliveira@ancoro.com",
       "role": "CONSULTANT"
     },
     {
       "key": "manager",
       "name": "Rafael Brito",
-      "email": "rafael.brito@seidor.com",
+      "email": "rafael.brito@ancoro.com",
       "role": "MANAGER"
     },
     {
