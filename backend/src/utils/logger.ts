@@ -1,22 +1,25 @@
 import pino, { Logger } from 'pino'
 import { Request, Response } from 'express'
 
+// Garantir a verificação de ambiente de forma explícita
+const isProduction = process.env.NODE_ENV === 'production';
+
 // Determina o nível de log baseado no ambiente
 // Em produção, só info e acima. Em dev, tudo.
 const level = process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug')
 
 // Transport formatado para dev, JSON puro para produção
 // pino-pretty só é carregado se instalado (devDependency)
-const transport = process.env.NODE_ENV !== 'production'
-  ? {
+const transport = isProduction
+  ? undefined
+  : {
       target: 'pino-pretty',
       options: {
         colorize: true,
         translateTime: 'HH:MM:ss',
         ignore: 'pid,hostname',
       },
-    }
-  : undefined
+    };
 
 export const logger: Logger = pino({
   level,
@@ -24,6 +27,7 @@ export const logger: Logger = pino({
   // Base context que aparece em todo log
   base: {
     env: process.env.NODE_ENV,
+    service: 'ancoro-backend'
   },
   // Redação automática de campos sensíveis
   redact: {
@@ -48,7 +52,7 @@ export const httpLoggerOptions = {
   logger,
   // Não logar health checks para reduzir ruído
   autoLogging: {
-    ignore: (req: Request) => req.url === '/health',
+    ignore: (req: Request) => req.url === '/health' || req.url === '/',
   },
   // Campos customizados no log de request
   customProps: (req: Request, _res: Response) => {
