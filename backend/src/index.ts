@@ -21,42 +21,8 @@ const httpServer = createServer(app)
 // Disponibiliza prisma para rotas via app.get('prisma')
 app.set('prisma', prisma)
 
-// ===== SECURITY MIDDLEWARES =====
-
-// Helmet: HTTP security headers (CSP, X-Frame-Options, etc.)
-app.use(helmet({
-  // Desabilita CSP em dev para permitir HMR do Vite
-  contentSecurityPolicy: config.isDevelopment ? false : undefined,
-}))
-
-// Rate limiting global: 100 requests por 15 minutos por IP
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests', message: 'Muitas requisições. Aguarde alguns minutos.' },
-  // Não aplica rate limit em dev para facilitar debugging
-  skip: () => config.isDevelopment,
-})
-app.use(globalLimiter)
-
-// Rate limiting específico para auth: 5 tentativas por 15 minutos
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many login attempts', message: 'Muitas tentativas de login. Aguarde 15 minutos.' },
-  // Não aplica rate limit em dev para facilitar debugging
-  skip: () => config.isDevelopment,
-})
-// Aplica apenas em login (registrado antes da rota de auth)
-app.use('/api/auth/login', authLimiter)
-
-// ===== STANDARD MIDDLEWARES =====
-
-// CORS configuration - supports multiple origins
+// ===== CORS PRIMEIRO (necessário para preflight OPTIONS) =====
+// CORS DEVE vir antes de outros middlewares que possam bloquear requisições
 const corsOrigins = config.corsOrigin.split(',').map(origin => origin.trim())
 app.use(cors({
   origin: (origin, callback) => {
@@ -74,7 +40,47 @@ app.use(cors({
     }
   },
   credentials: true,
+  // Métodos e headers permitidos para preflight
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }))
+
+// ===== SECURITY MIDDLEWARES =====
+
+// Helmet: HTTP security headers (CSP, X-Frame-Options, etc.)
+app.use(helmet({
+  // Desabilita CSP em dev para permitir HMR do Vite
+  contentSecurityPolicy: config.isDevelopment ? false : undefined,
+}))
+
+// Rate limiting global: 100 requests por 15 minutos por IP
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests', message: 'Muitas requisições. Aguarde alguns minutos.' },
+  // Não aplica rate limit em dev para facilitar debugging
+  // Ignora OPTIONS para não bloquear preflight CORS
+  skip: (req) => config.isDevelopment || req.method === 'OPTIONS',
+})
+app.use(globalLimiter)
+
+// Rate limiting específico para auth: 5 tentativas por 15 minutos
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts', message: 'Muitas tentativas de login. Aguarde 15 minutos.' },
+  // Não aplica rate limit em dev para facilitar debugging
+  // Ignora OPTIONS para não bloquear preflight CORS
+  skip: (req) => config.isDevelopment || req.method === 'OPTIONS',
+})
+// Aplica apenas em login (registrado antes da rota de auth)
+app.use('/api/auth/login', authLimiter)
+
+// ===== STANDARD MIDDLEWARES =====
 app.use(express.json())
 
 // Structured logging com Pino (substitui console.log manual)
