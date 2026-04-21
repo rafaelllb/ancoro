@@ -56,8 +56,23 @@ app.use('/api/auth/login', authLimiter)
 
 // ===== STANDARD MIDDLEWARES =====
 
+// CORS configuration - supports multiple origins
+const corsOrigins = config.corsOrigin.split(',').map(origin => origin.trim())
 app.use(cors({
-  origin: config.corsOrigin,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true)
+
+    // Allow wildcard in development
+    if (corsOrigins.includes('*')) return callback(null, true)
+
+    // Check if origin is in allowed list
+    if (corsOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
   credentials: true,
 }))
 app.use(express.json())
