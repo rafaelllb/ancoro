@@ -3,6 +3,9 @@
 
 FROM node:18-alpine
 
+# Install OpenSSL 1.1 compatibility library (required by Prisma query engine)
+RUN apk add --no-cache openssl1.1-compat
+
 # Criar diretÃ³rio de trabalho
 WORKDIR /app
 
