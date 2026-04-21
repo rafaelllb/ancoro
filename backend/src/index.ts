@@ -1,11 +1,15 @@
 import express, { Request, Response } from 'express'
 import cors from 'cors'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
+import pinoHttp from 'pino-http'
 import { createServer } from 'http'
 import { PrismaClient } from '@prisma/client'
 import config from './config'
 import { initializeSocketServer } from './services/notificationService'
 import { seedDemoData } from './utils/seedData'
 import { seedDefaultConfigs } from './utils/seedDefaultConfigs'
+import { logger, httpLoggerOptions } from './utils/logger'
 
 // Inicializa Prisma Client
 export const prisma = new PrismaClient()
@@ -17,20 +21,49 @@ const httpServer = createServer(app)
 // Disponibiliza prisma para rotas via app.get('prisma')
 app.set('prisma', prisma)
 
-// Middlewares
+// ===== SECURITY MIDDLEWARES =====
+
+// Helmet: HTTP security headers (CSP, X-Frame-Options, etc.)
+app.use(helmet({
+  // Desabilita CSP em dev para permitir HMR do Vite
+  contentSecurityPolicy: config.isDevelopment ? false : undefined,
+}))
+
+// Rate limiting global: 100 requests por 15 minutos por IP
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests', message: 'Muitas requisições. Aguarde alguns minutos.' },
+  // Não aplica rate limit em dev para facilitar debugging
+  skip: () => config.isDevelopment,
+})
+app.use(globalLimiter)
+
+// Rate limiting específico para auth: 5 tentativas por 15 minutos
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts', message: 'Muitas tentativas de login. Aguarde 15 minutos.' },
+  // Não aplica rate limit em dev para facilitar debugging
+  skip: () => config.isDevelopment,
+})
+// Aplica apenas em login (registrado antes da rota de auth)
+app.use('/api/auth/login', authLimiter)
+
+// ===== STANDARD MIDDLEWARES =====
+
 app.use(cors({
   origin: config.corsOrigin,
   credentials: true,
 }))
 app.use(express.json())
 
-// Logger middleware - nível baseado em config
-app.use((req, _res, next) => {
-  if (config.logLevel === 'debug') {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`)
-  }
-  next()
-})
+// Structured logging com Pino (substitui console.log manual)
+app.use(pinoHttp(httpLoggerOptions))
 
 // ===== IMPORT ROUTES =====
 import authRoutes from './routes/auth'
@@ -97,7 +130,7 @@ app.use('/api', evidencesRoutes)
 
 // ===== ERROR HANDLER =====
 app.use((err: Error, _req: Request, res: Response, _next: any) => {
-  console.error('Error:', err)
+  logger.error({ err }, 'Unhandled error')
   res.status(500).json({
     error: 'Internal server error',
     message: config.features.showDebugInfo ? err.message : 'Erro interno do servidor',
@@ -110,10 +143,10 @@ async function seedConfigsIfNeeded(): Promise<void> {
     // Sempre executa seed de configs (usa upsert, não sobrescreve existentes)
     const result = await seedDefaultConfigs(prisma, config.env)
     if (result.globals > 0 || result.overrides > 0) {
-      console.log(`✓ AppConfig seed: ${result.globals} globals, ${result.overrides} ${config.env} overrides`)
+      logger.info({ globals: result.globals, overrides: result.overrides, env: config.env }, 'AppConfig seed completed')
     }
   } catch (error) {
-    console.error('[Config] Erro no seed de configurações:', error)
+    logger.error({ err: error }, 'Config seed failed')
     // Não falha o startup - ConfigService tem fallback para defaults
   }
 }
@@ -129,14 +162,14 @@ async function autoSeedIfDemo(): Promise<void> {
     const userCount = await prisma.user.count()
 
     if (userCount === 0) {
-      console.log('[Demo] Banco vazio, executando auto-seed...')
+      logger.info('Demo database empty, running auto-seed')
       await seedDemoData(prisma)
-      console.log('[Demo] Auto-seed concluído')
+      logger.info('Demo auto-seed completed')
     } else {
-      console.log(`[Demo] Banco já tem ${userCount} usuários, pulando auto-seed`)
+      logger.debug({ userCount }, 'Demo database already seeded, skipping')
     }
   } catch (error) {
-    console.error('[Demo] Erro no auto-seed:', error)
+    logger.error({ err: error }, 'Demo auto-seed failed')
     // Não falha o startup por erro de seed
   }
 }
@@ -146,7 +179,7 @@ async function main() {
   try {
     // Testa conexão com database
     await prisma.$connect()
-    console.log('✓ Database connected successfully')
+    logger.info('Database connected successfully')
 
     // Seed de configurações default (sempre executa, usa upsert)
     await seedConfigsIfNeeded()
@@ -156,30 +189,33 @@ async function main() {
 
     // Inicializa Socket.io server (real-time notifications)
     initializeSocketServer(httpServer)
-    console.log('✓ Socket.io server initialized')
+    logger.info('Socket.io server initialized')
 
     // Inicia servidor HTTP (Express + Socket.io)
     httpServer.listen(config.port, () => {
-      console.log(`✓ Server running on http://localhost:${config.port}`)
-      console.log(`✓ Environment: ${config.env}${config.isDemo ? ' (DEMO MODE)' : ''}`)
-      console.log(`✓ Health check: http://localhost:${config.port}/health`)
-      console.log(`✓ WebSocket: ws://localhost:${config.port}`)
+      logger.info({
+        port: config.port,
+        env: config.env,
+        demo: config.isDemo,
+        health: `http://localhost:${config.port}/health`,
+        websocket: `ws://localhost:${config.port}`,
+      }, 'Server started')
     })
   } catch (error) {
-    console.error('Failed to start server:', error)
+    logger.fatal({ err: error }, 'Failed to start server')
     process.exit(1)
   }
 }
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('\nShutting down gracefully...')
+  logger.info('Received SIGINT, shutting down gracefully')
   await prisma.$disconnect()
   process.exit(0)
 })
 
 process.on('SIGTERM', async () => {
-  console.log('\nShutting down gracefully...')
+  logger.info('Received SIGTERM, shutting down gracefully')
   await prisma.$disconnect()
   process.exit(0)
 })

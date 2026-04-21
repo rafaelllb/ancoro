@@ -44,13 +44,16 @@ Ancoro implementa o **Ancora ReqOps Method** — sistema operacional de requisit
 ### Infraestrutura
 - **Multi-ambiente** — development, demo, staging, production
 - **Modo Demo** — Auto-seed com dados de exemplo, reset de banco
+- **Multi-Tenancy** — Database-per-client com tenant registry criptografado
+- **Security Hardening** — Helmet, rate limiting, structured logging (Pino)
+- **CI/CD** — GitHub Actions para PR checks, deploy QA e produção
 
 ## Stack Tecnológica
 
 | Camada | Tecnologia |
 |--------|------------|
 | **Backend** | Node.js 18+, Express 4.18, Prisma 5.9 |
-| **Database** | SQLite (dev/demo), PostgreSQL (staging/prod) |
+| **Database** | PostgreSQL 16 (via Docker em dev), Neon (staging/prod) |
 | **Frontend** | Electron 28.1, React 18.2, Vite 5.0 |
 | **State** | Zustand 4.4, TanStack Query 5.17 |
 | **Real-time** | Socket.io 4.6 |
@@ -67,10 +70,12 @@ ancoro/
 │   ├── src/
 │   │   ├── routes/       # API endpoints
 │   │   ├── services/     # Lógica de negócio
-│   │   ├── middleware/   # Auth, logging
+│   │   ├── middleware/   # Auth, permissions, changelog
+│   │   ├── tenancy/      # Multi-tenant (crypto, cache, resolver)
 │   │   ├── schemas/      # Validação Zod
+│   │   ├── utils/        # Logger (Pino), helpers
 │   │   └── config/       # Bootstrap config
-│   └── data/             # SQLite database (dev)
+│   └── Dockerfile        # Container para deploy
 │
 ├── frontend/
 │   ├── electron/         # Main process
@@ -82,7 +87,9 @@ ancoro/
 │   │   └── hooks/        # Custom hooks
 │   └── build/            # Electron assets
 │
+├── .github/workflows/    # CI/CD (pr-checks, deploy-qa, deploy-prod)
 ├── docs/                 # Documentação adicional
+├── docker-compose.yml    # PostgreSQL local para dev
 └── package.json          # Scripts do monorepo
 ```
 
@@ -91,6 +98,12 @@ ancoro/
 ```bash
 # Instalar dependências
 npm run install:all
+
+# Iniciar PostgreSQL local (requer Docker)
+cd backend && npm run db:start
+
+# Executar migrations
+npx prisma migrate dev --schema prisma/schema.prisma
 
 # Desenvolvimento (backend + frontend)
 npm run dev
@@ -102,19 +115,38 @@ npm run demo
 npm run electron
 ```
 
+### Pré-requisitos
+- Node.js 18+
+- Docker Desktop (para PostgreSQL local)
+- Git
+
 ## Scripts Disponíveis
 
+### Desenvolvimento
 | Script | Descrição |
 |--------|-----------|
 | `npm run dev` | Backend + Frontend em desenvolvimento |
 | `npm run demo` | Backend + Frontend em modo demo |
 | `npm run electron` | Electron em modo desenvolvimento |
 | `npm run electron:demo` | Electron em modo demo |
-| `npm run electron:build` | Build do Electron (Windows/Mac/Linux) |
 | `npm run build` | Build de produção |
-| `npm run prisma:migrate` | Executar migrations |
+
+### Database (backend/)
+| Script | Descrição |
+|--------|-----------|
+| `npm run db:start` | Inicia PostgreSQL via Docker |
+| `npm run db:stop` | Para PostgreSQL |
+| `npm run db:reset` | Remove volume e reinicia (dados limpos) |
+| `npm run prisma:migrate` | Executar migrations (SQLite) |
+| `npm run prisma:migrate:prod` | Executar migrations (PostgreSQL) |
 | `npm run prisma:seed` | Popular dados de exemplo |
 | `npm run prisma:studio` | GUI do Prisma (localhost:5555) |
+
+### Build
+| Script | Descrição |
+|--------|-----------|
+| `npm run electron:build` | Build do Electron (Windows/Mac/Linux) |
+| `npm run build` | Build de produção |
 
 ## Configuração de Ambiente
 
@@ -122,21 +154,34 @@ npm run electron
 
 | Arquivo | Uso |
 |---------|-----|
-| `.env.development` | Desenvolvimento local (SQLite) |
+| `.env.development` | Desenvolvimento local (PostgreSQL via Docker) |
+| `.env.development.sqlite` | Fallback SQLite (sem Docker) |
 | `.env.demo` | Demo com auto-seed |
-| `.env.staging` | Staging (PostgreSQL) |
-| `.env.production` | Produção (PostgreSQL) |
+| `.env.staging` | Staging (Neon PostgreSQL) |
+| `.env.production` | Produção (Neon PostgreSQL) |
 
 ### Variáveis Principais
 
 ```env
-DATABASE_URL=file:./data/dev.db    # SQLite ou PostgreSQL connection string
+# Database
+DATABASE_URL=postgresql://ancoro:ancoro@localhost:5432/ancoro_dev
+
+# Auth
 JWT_SECRET=sua-chave-secreta       # Mínimo 16 chars (32+ em prod)
 JWT_EXPIRES_IN=7d                  # Expiração do token
-PORT=3000                          # Porta do backend
+
+# Server
+PORT=3000
 NODE_ENV=development               # development|demo|staging|production
-DEMO_MODE=false                    # Habilita funcionalidades demo
-DEMO_AUTO_SEED=false               # Auto-seed no startup
+LOG_LEVEL=debug                    # debug|info|warn|error
+
+# Demo Mode
+DEMO_MODE=false
+DEMO_AUTO_SEED=false
+
+# Multi-Tenancy (produção)
+TENANT_REGISTRY_DATABASE_URL=      # URL do banco de registro de tenants
+TENANT_REGISTRY_ENCRYPTION_KEY=    # Chave AES-256 em base64
 ```
 
 ## API Endpoints
@@ -191,8 +236,45 @@ DEMO_AUTO_SEED=false               # Auto-seed no startup
 ## Documentação Adicional
 
 - [docs/SETUP.md](docs/SETUP.md) — Guia detalhado de instalação
+- [docs/INFRASTRUCTURE_GUIDE.md](docs/INFRASTRUCTURE_GUIDE.md) — Arquitetura de banco, deploy e DevOps
 - [docs/ROADMAP.md](docs/ROADMAP.md) — Plano de desenvolvimento
 - [docs/API_EXAMPLES.md](docs/API_EXAMPLES.md) — Exemplos de uso da API
+
+## Arquitetura de Infraestrutura
+
+### Ambientes
+
+| Ambiente | Database | Backend | Custo |
+|----------|----------|---------|-------|
+| dev (local) | PostgreSQL (Docker) | localhost | $0 |
+| demo | Neon Free | Northflank Free | $0 |
+| qa | Neon Free | Northflank Free | $0 |
+| prod | Neon Launch | Railway Hobby | ~$24/mês |
+
+### Multi-Tenancy
+
+Modelo **database-per-client** para isolamento máximo de dados:
+
+1. **Tenant Registry** — Banco central com mapeamento slug → database URL (criptografado)
+2. **LRU Cache** — Pool de até 10 Prisma Clients simultâneos
+3. **Middleware** — Resolve tenant do JWT e injeta `req.prisma`
+
+### Security
+
+- **Helmet** — HTTP security headers
+- **Rate Limiting** — 100 req/15min global, 5 tentativas login/15min
+- **Pino** — Structured logging com redação automática de dados sensíveis
+- **AES-256-GCM** — Criptografia de URLs de banco no tenant registry
+
+### CI/CD (GitHub Actions)
+
+| Workflow | Trigger | Ação |
+|----------|---------|------|
+| `pr-checks.yml` | PR para main/develop | Lint, TypeCheck, Tests, Build |
+| `deploy-qa.yml` | Push em develop | Migrate + Deploy QA automático |
+| `deploy-prod.yml` | Push em main | Aprovação manual → Backup → Migrate → Deploy |
+
+Ver [docs/INFRASTRUCTURE_GUIDE.md](docs/INFRASTRUCTURE_GUIDE.md) para detalhes completos.
 
 ## Autor
 

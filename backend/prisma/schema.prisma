@@ -392,6 +392,49 @@ model ConfigChangeLog {
   @@map("config_change_logs")
 }
 
+// ===== MULTI-TENANCY MODELS =====
+// Modelos para suporte a multi-tenant (database-per-client)
+// Ver: docs/INFRASTRUCTURE_GUIDE.md seção 3.4
+//
+// TODO [ESTIGMERGIA]: Tenant Registry
+// - Estes modelos existem aqui para desenvolvimento inicial
+// - Em produção, o tenant registry será um banco Neon separado (ancoro-prod-tenant-registry)
+// - O schema será idêntico, mas isolado dos dados de tenant
+// - Migrar para schema separado quando implementar CI/CD de produção
+
+model Tenant {
+  id                    String   @id @default(cuid())
+  slug                  String   @unique  // URL-safe identifier: "seidor", "energia-vitalis"
+  name                  String            // Nome legível: "Seidor Brasil"
+  databaseUrlEncrypted  String   @map("database_url_encrypted")  // AES-256-GCM encrypted
+
+  // Plano e status
+  plan                  String   @default("pilot")   // pilot | starter | pro | enterprise
+  status                String   @default("active")  // active | suspended | cancelled
+
+  // Metadata
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  users                 TenantUser[]
+
+  @@map("tenants")
+}
+
+model TenantUser {
+  tenantId   String
+  userEmail  String      // Email do usuário (lookup key)
+  role       String      // admin | member | readonly
+
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([tenantId, userEmail])
+  @@index([userEmail])
+  @@map("tenant_users")
+}
+
 // ===== ENUMS (Definidos como constantes TypeScript no código) =====
 // SQLite não suporta enums nativamente, então usamos String
 // Ao migrar para PostgreSQL, converter para enums nativos

@@ -1,0 +1,148 @@
+# Deploy QA Workflow
+# Executa deploy automático para ambiente QA após merge em develop
+# Ver: docs/INFRASTRUCTURE_GUIDE.md seção 6.1
+
+name: Deploy QA
+
+on:
+  push:
+    branches: [develop]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  migrate-qa:
+    name: Migrate QA Database
+    runs-on: ubuntu-latest
+    environment: qa
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: backend
+        run: npx prisma generate --schema prisma/schema.prisma
+
+      - name: Run migrations on QA database
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.NEON_QA_DATABASE_URL }}
+        run: npx prisma migrate deploy --schema prisma/schema.prisma
+
+  deploy-backend-qa:
+    name: Deploy Backend to QA
+    needs: migrate-qa
+    runs-on: ubuntu-latest
+    environment: qa
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # TODO [ESTIGMERGIA]: Deploy to Northflank
+      # - Criar conta Northflank e projeto QA
+      # - Adicionar NORTHFLANK_API_TOKEN nos secrets
+      # - Configurar serviço via API ou CLI
+      #
+      # Opção 1: Northflank CLI
+      # - name: Install Northflank CLI
+      #   run: npm install -g @northflank/cli
+      #
+      # - name: Deploy to Northflank QA
+      #   env:
+      #     NORTHFLANK_API_TOKEN: ${{ secrets.NORTHFLANK_API_TOKEN }}
+      #   run: |
+      #     northflank deploy \
+      #       --project ancoro \
+      #       --service backend-qa \
+      #       --image-tag ${{ github.sha }}
+      #
+      # Opção 2: Webhook de deploy (mais simples)
+      # - name: Trigger Northflank deploy
+      #   run: |
+      #     curl -X POST ${{ secrets.NORTHFLANK_QA_DEPLOY_WEBHOOK }}
+
+      - name: Placeholder - Deploy to Northflank QA
+        run: |
+          echo "TODO: Configure Northflank deployment"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+
+  smoke-tests:
+    name: Smoke Tests
+    needs: deploy-backend-qa
+    runs-on: ubuntu-latest
+    environment: qa
+    steps:
+      - name: Wait for deploy to stabilize
+        run: sleep 30
+
+      # TODO [ESTIGMERGIA]: Smoke tests após deploy
+      # - Configurar URL do ambiente QA
+      # - Implementar testes de smoke básicos
+      #
+      # - name: Health check
+      #   run: |
+      #     response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.QA_API_URL }}/health)
+      #     if [ "$response" != "200" ]; then
+      #       echo "Health check failed with status $response"
+      #       exit 1
+      #     fi
+      #     echo "Health check passed"
+      #
+      # - name: Run smoke tests
+      #   working-directory: backend
+      #   env:
+      #     API_URL: ${{ secrets.QA_API_URL }}
+      #   run: npm run test:smoke --if-present
+
+      - name: Placeholder - Smoke tests
+        run: |
+          echo "TODO: Implement smoke tests"
+          echo "QA API URL would be checked here"
+
+  notify-failure:
+    name: Notify on Failure
+    needs: [migrate-qa, deploy-backend-qa, smoke-tests]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      # TODO [ESTIGMERGIA]: Notificação de falha
+      # - Configurar webhook do Slack ou Discord
+      #
+      # - name: Send Slack notification
+      #   uses: slackapi/slack-github-action@v1.24.0
+      #   with:
+      #     payload: |
+      #       {
+      #         "text": "❌ Deploy QA falhou!",
+      #         "blocks": [
+      #           {
+      #             "type": "section",
+      #             "text": {
+      #               "type": "mrkdwn",
+      #               "text": "*Deploy QA falhou*\nCommit: ${{ github.sha }}\nAutor: ${{ github.actor }}"
+      #             }
+      #           }
+      #         ]
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Log failure
+        run: |
+          echo "❌ Deploy QA falhou!"
+          echo "Commit: ${{ github.sha }}"
+          echo "Autor: ${{ github.actor }}"
+          echo "TODO: Configure Slack/Discord notification"

@@ -1,0 +1,277 @@
+# Deploy Production Workflow
+# Deploy para produção com aprovação manual e backup prévio
+# Ver: docs/INFRASTRUCTURE_GUIDE.md seção 6.1
+
+name: Deploy Production
+
+on:
+  push:
+    branches: [main]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  approval:
+    name: Await Approval
+    runs-on: ubuntu-latest
+    environment: production  # Requer aprovação manual configurada no GitHub
+    steps:
+      - name: Approval received
+        run: echo "✅ Deployment approved by ${{ github.actor }}"
+
+  backup-all-tenants:
+    name: Backup All Tenants
+    needs: approval
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      # TODO [ESTIGMERGIA]: Backup automático de todos os tenants
+      # - Criar scripts/backup-all-tenants.ts
+      # - Configurar Backblaze B2 bucket
+      # - Adicionar secrets: BACKBLAZE_KEY_ID, BACKBLAZE_APPLICATION_KEY, BACKBLAZE_BUCKET_NAME
+      #
+      # - name: Install pg_dump
+      #   run: sudo apt-get install -y postgresql-client
+      #
+      # - name: Run backup script
+      #   working-directory: backend
+      #   env:
+      #     TENANT_REGISTRY_DATABASE_URL: ${{ secrets.NEON_PROD_REGISTRY_URL }}
+      #     TENANT_REGISTRY_ENCRYPTION_KEY: ${{ secrets.TENANT_REGISTRY_ENCRYPTION_KEY }}
+      #     BACKBLAZE_KEY_ID: ${{ secrets.BACKBLAZE_KEY_ID }}
+      #     BACKBLAZE_APPLICATION_KEY: ${{ secrets.BACKBLAZE_APPLICATION_KEY }}
+      #     BACKBLAZE_BUCKET_NAME: ${{ secrets.BACKBLAZE_BUCKET_NAME }}
+      #   run: npx ts-node scripts/backup-all-tenants.ts
+
+      - name: Placeholder - Backup tenants
+        run: |
+          echo "TODO: Implement backup-all-tenants.ts script"
+          echo "Backups would be uploaded to Backblaze B2"
+
+  migrate-demo:
+    name: Migrate Demo Database
+    needs: backup-all-tenants
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: backend
+        run: npx prisma generate --schema prisma/schema.prisma
+
+      # TODO [ESTIGMERGIA]: Migrate demo database
+      # - Criar projeto Neon para demo (ancoro-demo)
+      # - Adicionar NEON_DEMO_DATABASE_URL nos secrets
+      #
+      # - name: Run migrations on Demo database
+      #   working-directory: backend
+      #   env:
+      #     DATABASE_URL: ${{ secrets.NEON_DEMO_DATABASE_URL }}
+      #   run: npx prisma migrate deploy --schema prisma/schema.prisma
+
+      - name: Placeholder - Migrate demo
+        run: echo "TODO: Configure NEON_DEMO_DATABASE_URL secret"
+
+  migrate-all-tenants:
+    name: Migrate All Production Tenants
+    needs: migrate-demo
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: backend
+        run: npx prisma generate --schema prisma/schema.prisma
+
+      # TODO [ESTIGMERGIA]: Migrate all tenants sequencialmente
+      # - Criar scripts/migrate-all-tenants.ts
+      # - Configurar tenant registry em produção
+      #
+      # - name: Run migration script
+      #   working-directory: backend
+      #   env:
+      #     TENANT_REGISTRY_DATABASE_URL: ${{ secrets.NEON_PROD_REGISTRY_URL }}
+      #     TENANT_REGISTRY_ENCRYPTION_KEY: ${{ secrets.TENANT_REGISTRY_ENCRYPTION_KEY }}
+      #   run: npx ts-node scripts/migrate-all-tenants.ts
+
+      - name: Placeholder - Migrate all tenants
+        run: |
+          echo "TODO: Implement migrate-all-tenants.ts script"
+          echo "Each tenant would be migrated sequentially"
+          echo "Pipeline halts if any tenant fails"
+
+  deploy-backend-prod:
+    name: Deploy Backend to Production
+    needs: migrate-all-tenants
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # TODO [ESTIGMERGIA]: Deploy to Railway
+      # - Criar conta Railway e projeto de produção
+      # - Adicionar RAILWAY_TOKEN nos secrets
+      #
+      # - name: Install Railway CLI
+      #   run: npm install -g @railway/cli
+      #
+      # - name: Deploy to Railway
+      #   env:
+      #     RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      #   run: railway up --service ancoro-backend-prod
+
+      - name: Placeholder - Deploy to Railway
+        run: |
+          echo "TODO: Configure Railway deployment"
+          echo "Commit: ${{ github.sha }}"
+
+  build-electron:
+    name: Build Electron App
+    needs: deploy-backend-prod
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      # TODO [ESTIGMERGIA]: Build Electron para cada plataforma
+      # - Configurar electron-builder
+      # - Upload para GitHub Releases
+      #
+      # - name: Install dependencies
+      #   working-directory: frontend
+      #   run: npm ci
+      #
+      # - name: Build Electron app
+      #   working-directory: frontend
+      #   env:
+      #     VITE_API_URL: https://api-prod.ancoro.com.br
+      #     VITE_APP_ENV: production
+      #   run: npm run electron:build
+      #
+      # - name: Upload artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: electron-${{ matrix.os }}
+      #     path: frontend/release/**/*
+
+      - name: Placeholder - Build Electron
+        run: |
+          echo "TODO: Configure Electron build for ${{ matrix.os }}"
+          echo "Would upload to GitHub Releases"
+
+  smoke-tests-prod:
+    name: Production Smoke Tests
+    needs: deploy-backend-prod
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Wait for deploy to stabilize
+        run: sleep 30
+
+      # TODO [ESTIGMERGIA]: Smoke tests em produção
+      # - name: Health check
+      #   run: |
+      #     response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.PROD_API_URL }}/health)
+      #     if [ "$response" != "200" ]; then
+      #       echo "Health check failed with status $response"
+      #       exit 1
+      #     fi
+
+      - name: Placeholder - Smoke tests
+        run: echo "TODO: Implement production smoke tests"
+
+  rollback:
+    name: Rollback on Failure
+    needs: [deploy-backend-prod, smoke-tests-prod]
+    if: failure() && needs.deploy-backend-prod.result == 'success'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      # TODO [ESTIGMERGIA]: Rollback automático
+      # - Railway tem auto-rollback se health check falhar
+      # - Implementar notificação crítica
+      #
+      # - name: Trigger Railway rollback
+      #   env:
+      #     RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      #   run: railway rollback --service ancoro-backend-prod
+      #
+      # - name: Send critical notification
+      #   uses: slackapi/slack-github-action@v1.24.0
+      #   with:
+      #     payload: |
+      #       {
+      #         "text": "🚨 CRITICAL: Production deploy failed, rollback initiated!"
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Rollback placeholder
+        run: |
+          echo "🚨 Production deploy failed!"
+          echo "Rollback would be initiated here"
+          echo "TODO: Configure Railway rollback"
+
+  notify-success:
+    name: Notify Success
+    needs: [deploy-backend-prod, smoke-tests-prod, build-electron]
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log success
+        run: |
+          echo "✅ Production deploy completed successfully!"
+          echo "Commit: ${{ github.sha }}"
+          echo "TODO: Send success notification to Slack/Discord"

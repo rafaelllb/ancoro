@@ -1,0 +1,145 @@
+# PR Checks Workflow
+# Executa lint, typecheck, testes e build em toda PR
+# Ver: docs/INFRASTRUCTURE_GUIDE.md seção 6.1
+
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  lint:
+    name: Lint & TypeCheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm run install:all
+
+      - name: Lint backend
+        working-directory: backend
+        run: npm run lint --if-present
+
+      - name: TypeCheck backend
+        working-directory: backend
+        run: npm run typecheck --if-present || npx tsc --noEmit
+
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint --if-present
+
+      - name: TypeCheck frontend
+        working-directory: frontend
+        run: npm run typecheck --if-present || npx tsc --noEmit
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ancoro
+          POSTGRES_PASSWORD: ancoro
+          POSTGRES_DB: ancoro_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: backend
+        run: npx prisma generate --schema prisma/schema.prisma
+
+      - name: Run migrations
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://ancoro:ancoro@localhost:5432/ancoro_test
+        run: npx prisma migrate deploy --schema prisma/schema.prisma
+
+      - name: Run tests
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://ancoro:ancoro@localhost:5432/ancoro_test
+          JWT_SECRET: test_secret_for_ci_min_32_characters
+          NODE_ENV: test
+        run: npm test -- --coverage --passWithNoTests
+
+      # TODO [ESTIGMERGIA]: Upload coverage to Codecov
+      # - Habilitar quando tiver testes implementados
+      # - Criar conta no Codecov e adicionar CODECOV_TOKEN nos secrets
+      # - name: Upload coverage
+      #   uses: codecov/codecov-action@v4
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     fail_ci_if_error: false
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm run install:all
+
+      - name: Generate Prisma Client (backend)
+        working-directory: backend
+        run: npx prisma generate --schema prisma/schema.prisma
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
