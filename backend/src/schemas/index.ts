@@ -270,7 +270,6 @@ export function createBulkImportItemSchemaForProject(pattern: RequirementIdPatte
       .optional()
       .default(ReqStatus.PENDING),
     observations: z.string().optional(),
-    consultantNotes: z.string().optional(),
   })
 }
 
