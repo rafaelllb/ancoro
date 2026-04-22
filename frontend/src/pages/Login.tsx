@@ -27,34 +27,48 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
-        {/* Logo/Header */}
-        <div className="text-center mb-8">
-          <img
-            src="/logo.png"
-            alt="Ancoro Logo"
-            className="h-24 mx-auto mb-4"
-          />
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Ancoro</h1>
-          <p className="text-gray-600">
-            Gestão Colaborativa de Requisitos SAP S/4 Utilities
-          </p>
-        </div>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Painel esquerdo — branding */}
+      <div className="lg:w-1/2 bg-blue-50 flex flex-col items-center justify-center px-10 py-16 lg:py-0">
+        <div className="w-full flex flex-col items-center">
+          {/* Lockup horizontal — logo + título/subtítulo */}
+          <div className="flex items-center gap-5">
+            <img
+              src="/logo-new.png"
+              alt="Ancoro Logo"
+              className="h-52 flex-shrink-0"
+            />
+            <div>
+              <h1 className="text-8xl font-extrabold text-blue-900 leading-none tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                Ancoro
+              </h1>
+              <p className="text-blue-700 text-sm leading-snug mt-1.5" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                Gestão Colaborativa de Requisitos SAP S/4 Utilities
+              </p>
+            </div>
+          </div>
 
-        {/* Card de Login */}
-        <div className="bg-white rounded-lg shadow-xl p-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Login</h2>
+          <div className="text-sm text-blue-500" style={{position: 'absolute', bottom: '1rem', }}>
+            <p>Backend-first · Pensamento estruturado</p>
+            <p className="mt-1">Rafael Brito — SAP Utilities Consultant</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Painel direito — formulário */}
+      <div className="lg:w-1/2 bg-blue-800 flex items-center justify-center px-8 py-16 lg:py-0">
+        <div className="w-full max-w-md">
+          <h2 className="text-2xl font-semibold text-white mb-8">Entrar na sua conta</h2>
 
           {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className="mb-5 bg-red-500/20 border border-red-400/40 text-red-200 px-4 py-3 rounded-lg text-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="mb-5">
+              <label htmlFor="email" className="block text-sm font-medium text-blue-200 mb-2">
                 Email
               </label>
               <input
@@ -64,13 +78,13 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2.5 bg-blue-700/50 border border-blue-600 rounded-lg text-white placeholder-blue-400 focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="seu.email@exemplo.com"
               />
             </div>
 
-            <div className="mb-6">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="mb-7">
+              <label htmlFor="password" className="block text-sm font-medium text-blue-200 mb-2">
                 Senha
               </label>
               <input
@@ -80,7 +94,7 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2.5 bg-blue-700/50 border border-blue-600 rounded-lg text-white placeholder-blue-400 focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="••••••••"
               />
             </div>
@@ -88,39 +102,38 @@ export default function Login() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
+              className="w-full bg-white hover:bg-blue-50 text-blue-800 font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
 
           {/* Demo credentials */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-600 mb-2">Credenciais de demonstração:</p>
-            <div className="bg-gray-50 rounded p-3 text-sm space-y-1">
+          <div className="mt-8 pt-6 border-t border-blue-700">
+            <p className="text-sm text-blue-300 mb-3">Credenciais de demonstração:</p>
+            <div className="bg-blue-900/50 rounded-lg p-3 text-sm space-y-1">
               <p className="font-mono text-xs">
-                <span className="inline-block w-20 text-purple-600 font-semibold">Admin:</span> admin@ancoro.app
+                <span className="inline-block w-24 text-purple-300 font-semibold">Admin:</span>
+                <span className="text-blue-200">admin@ancoro.app</span>
               </p>
               <p className="font-mono text-xs">
-                <span className="inline-block w-20 text-blue-600 font-semibold">Manager:</span> rafael.brito@ancoro.com
+                <span className="inline-block w-24 text-blue-300 font-semibold">Manager:</span>
+                <span className="text-blue-200">rafael.brito@ancoro.com</span>
               </p>
               <p className="font-mono text-xs">
-                <span className="inline-block w-20 text-teal-600 font-semibold">Consultant:</span> joao.silva@ancoro.com
+                <span className="inline-block w-24 text-teal-300 font-semibold">Consultant:</span>
+                <span className="text-blue-200">joao.silva@ancoro.com</span>
               </p>
               <p className="font-mono text-xs">
-                <span className="inline-block w-20 text-gray-600 font-semibold">Client:</span> ana.costa@cliente.com
+                <span className="inline-block w-24 text-gray-300 font-semibold">Client:</span>
+                <span className="text-blue-200">ana.costa@cliente.com</span>
               </p>
-              <p className="font-mono text-xs mt-2 pt-2 border-t border-gray-200">
-                <strong>Senha (todos):</strong> demo123
+              <p className="font-mono text-xs mt-2 pt-2 border-t border-blue-700">
+                <span className="text-blue-300 font-semibold">Senha (todos):</span>
+                <span className="text-blue-200"> demo123</span>
               </p>
             </div>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-600">
-          <p>Backend-first | Pensamento estruturado &gt; Cerimônia burocrática</p>
-          <p className="mt-2">Rafael Brito - SAP Utilities Consultant</p>
         </div>
       </div>
     </div>
