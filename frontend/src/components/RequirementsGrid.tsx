@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
@@ -11,6 +11,9 @@ import {
 } from '@tanstack/react-table'
 import { Requirement } from '../services/api'
 import { useUpdateRequirement, useDeleteRequirement } from '../hooks/useRequirements'
+import { useAuth } from '../contexts/AuthContext'
+import { canDeleteRequirement, canEditRequirement } from '../hooks/useCapabilities'
+import { useProjectMembers } from '../hooks/useProjectMembers'
 import ConfirmDialog from './ConfirmDialog'
 import { SkeletonRequirementsGrid } from './Skeleton'
 
@@ -20,6 +23,7 @@ interface RequirementsGridProps {
   data: Requirement[]
   isLoading: boolean
   onRowSelect?: (requirement: Requirement | null) => void
+  projectId: string
   userRole?: string // Role do usuário logado para controle de permissões
 }
 
@@ -52,9 +56,10 @@ interface EditableStatusCellProps {
   value: string
   rowId: string
   onUpdate: (id: string, field: string, value: string) => void
+  disabled?: boolean
 }
 
-const EditableStatusCell = ({ value, rowId, onUpdate }: EditableStatusCellProps) => {
+const EditableStatusCell = ({ value, rowId, onUpdate, disabled = false }: EditableStatusCellProps) => {
   const [isEditing, setIsEditing] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -72,6 +77,7 @@ const EditableStatusCell = ({ value, rowId, onUpdate }: EditableStatusCellProps)
         value={value}
         onChange={handleChange}
         onBlur={() => setIsEditing(false)}
+        disabled={disabled}
         autoFocus
         title="Selecionar status do requisito"
         aria-label="Status do requisito"
@@ -87,12 +93,13 @@ const EditableStatusCell = ({ value, rowId, onUpdate }: EditableStatusCellProps)
 
   return (
     <div
-      className="cursor-pointer hover:opacity-80 transition-opacity"
+      className={`${disabled ? 'cursor-default opacity-70' : 'cursor-pointer hover:opacity-80'} transition-opacity`}
       onClick={(e) => {
+        if (disabled) return
         e.stopPropagation() // Evita selecionar a row ao clicar no status
         setIsEditing(true)
       }}
-      title="Clique para alterar o status"
+      title={disabled ? 'Sem permissão para alterar o status' : 'Clique para alterar o status'}
     >
       <StatusBadge status={value} />
     </div>
@@ -129,9 +136,10 @@ interface EditableModuleCellProps {
   value: string
   rowId: string
   onUpdate: (id: string, field: string, value: string) => void
+  disabled?: boolean
 }
 
-const EditableModuleCell = ({ value, rowId, onUpdate }: EditableModuleCellProps) => {
+const EditableModuleCell = ({ value, rowId, onUpdate, disabled = false }: EditableModuleCellProps) => {
   const [isEditing, setIsEditing] = useState(false)
   const [isCustom, setIsCustom] = useState(false)
   const [customValue, setCustomValue] = useState('')
@@ -179,6 +187,7 @@ const EditableModuleCell = ({ value, rowId, onUpdate }: EditableModuleCellProps)
         value={SAP_MODULES.includes(value) ? value : '__custom__'}
         onChange={handleSelectChange}
         onBlur={() => setIsEditing(false)}
+        disabled={disabled}
         autoFocus
         title="Selecionar módulo SAP"
         aria-label="Módulo SAP"
@@ -195,15 +204,49 @@ const EditableModuleCell = ({ value, rowId, onUpdate }: EditableModuleCellProps)
 
   return (
     <div
-      className="cursor-pointer px-2 py-1 bg-gray-50 hover:bg-gray-100 rounded font-medium text-gray-700"
+      className={`px-2 py-1 bg-gray-50 rounded font-medium text-gray-700 ${disabled ? 'cursor-default opacity-70' : 'cursor-pointer hover:bg-gray-100'}`}
       onClick={(e) => {
+        if (disabled) return
         e.stopPropagation()
         setIsEditing(true)
       }}
-      title="Clique para alterar o módulo"
+      title={disabled ? 'Sem permissão para alterar o módulo' : 'Clique para alterar o módulo'}
     >
       {value || '—'}
     </div>
+  )
+}
+
+interface EditableResponsibleConsultantCellProps {
+  value?: string | null
+  rowId: string
+  options: Array<{ id: string; name: string }>
+  onUpdate: (id: string, field: string, value: string | null) => void
+  disabled?: boolean
+}
+
+const EditableResponsibleConsultantCell = ({
+  value,
+  rowId,
+  options,
+  onUpdate,
+  disabled = false,
+}: EditableResponsibleConsultantCellProps) => {
+  return (
+    <select
+      className={`w-full px-2 py-1 border rounded text-sm ${disabled ? 'bg-gray-100 cursor-not-allowed border-gray-200' : 'bg-white border-gray-300'}`}
+      value={value || ''}
+      disabled={disabled}
+      onChange={(e) => onUpdate(rowId, 'responsibleConsultantId', e.target.value || null)}
+      aria-label="Responsável consultor"
+    >
+      <option value="">Não atribuído</option>
+      {options.map((option) => (
+        <option key={option.id} value={option.id}>
+          {option.name}
+        </option>
+      ))}
+    </select>
   )
 }
 
@@ -222,9 +265,9 @@ const ExpandedEditModal = ({ isOpen, title, value, onSave, onClose }: ExpandedEd
   const [localValue, setLocalValue] = useState(value)
 
   // Atualiza valor local quando modal abre com novo valor
-  useState(() => {
+  useEffect(() => {
     setLocalValue(value)
-  })
+  }, [value, isOpen])
 
   if (!isOpen) return null
 
@@ -317,9 +360,10 @@ interface EditableCellProps {
   onUpdate: (id: string, field: string, value: any) => void
   multiline?: boolean
   isArray?: boolean
+  disabled?: boolean
 }
 
-const EditableCell = ({ value, rowId, columnId, columnLabel, onUpdate, multiline, isArray }: EditableCellProps) => {
+const EditableCell = ({ value, rowId, columnId, columnLabel, onUpdate, multiline, isArray, disabled = false }: EditableCellProps) => {
   const [isEditing, setIsEditing] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [localValue, setLocalValue] = useState(isArray ? (value as string[]).join(', ') : (value as string))
@@ -329,14 +373,14 @@ const EditableCell = ({ value, rowId, columnId, columnLabel, onUpdate, multiline
   const handleBlur = () => {
     setIsEditing(false)
     const finalValue = isArray ? localValue.split(',').map((s) => s.trim()).filter(Boolean) : localValue
-    if (finalValue !== value) {
+    if (!disabled && finalValue !== value) {
       onUpdate(rowId, columnId, finalValue)
     }
   }
 
   const handleModalSave = (newValue: string) => {
     const finalValue = isArray ? newValue.split(',').map((s) => s.trim()).filter(Boolean) : newValue
-    if (finalValue !== value) {
+    if (!disabled && finalValue !== value) {
       onUpdate(rowId, columnId, finalValue)
     }
   }
@@ -353,10 +397,11 @@ const EditableCell = ({ value, rowId, columnId, columnLabel, onUpdate, multiline
         {multiline ? (
           <textarea
             className="w-full px-2 py-1 pr-8 bg-white text-gray-900 border border-teal-400 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
-            value={localValue}
-            onChange={(e) => setLocalValue(e.target.value)}
-            onBlur={handleBlur}
-            autoFocus
+              value={localValue}
+              onChange={(e) => setLocalValue(e.target.value)}
+              onBlur={handleBlur}
+              disabled={disabled}
+              autoFocus
             rows={3}
             aria-label={`Editar ${columnId}`}
             placeholder={`Digite o valor para ${columnId}`}
@@ -365,10 +410,11 @@ const EditableCell = ({ value, rowId, columnId, columnLabel, onUpdate, multiline
           <input
             type="text"
             className="w-full px-2 py-1 pr-8 bg-white text-gray-900 border border-teal-400 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
-            value={localValue}
-            onChange={(e) => setLocalValue(e.target.value)}
-            onBlur={handleBlur}
-            autoFocus
+              value={localValue}
+              onChange={(e) => setLocalValue(e.target.value)}
+              onBlur={handleBlur}
+              disabled={disabled}
+              autoFocus
             aria-label={`Editar ${columnId}`}
             placeholder={`Digite o valor para ${columnId}`}
           />
@@ -400,8 +446,9 @@ const EditableCell = ({ value, rowId, columnId, columnLabel, onUpdate, multiline
   return (
     <>
       <div
-        className="cursor-text px-2 py-1 bg-gray-50 hover:bg-gray-100 rounded min-h-[32px] text-gray-900 group relative"
+        className={`px-2 py-1 bg-gray-50 rounded min-h-[32px] text-gray-900 group relative ${disabled ? 'cursor-default opacity-70' : 'cursor-text hover:bg-gray-100'}`}
         onClick={() => {
+          if (disabled) return
           setLocalValue(displayValue)
           setIsEditing(true)
         }}
@@ -436,7 +483,9 @@ const EditableCell = ({ value, rowId, columnId, columnLabel, onUpdate, multiline
 
 // ===== MAIN COMPONENT =====
 
-export default function RequirementsGrid({ data, isLoading, onRowSelect, userRole }: RequirementsGridProps) {
+export default function RequirementsGrid({ data, isLoading, onRowSelect, projectId, userRole }: RequirementsGridProps) {
+  const { user } = useAuth()
+  const { data: projectMembers = [] } = useProjectMembers(projectId)
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [globalFilter, setGlobalFilter] = useState('')
@@ -449,8 +498,13 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
   const updateMutation = useUpdateRequirement()
   const deleteMutation = useDeleteRequirement()
 
-  // Verifica se usuário pode deletar (ADMIN ou MANAGER)
-  const canDelete = userRole === 'ADMIN' || userRole === 'MANAGER'
+  const consultantOptions = useMemo(
+    () =>
+      projectMembers
+        .filter((member) => member.user.role === 'CONSULTANT')
+        .map((member) => ({ id: member.user.id, name: member.user.name })),
+    [projectMembers]
+  )
 
   // Handler para abrir dialog de delete
   const handleDeleteClick = (requirement: Requirement, e: React.MouseEvent) => {
@@ -489,6 +543,19 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
 
   // Handler para atualizar célula
   const handleCellUpdate = (id: string, field: string, value: any) => {
+    const requirement = data.find((item) => item.id === id)
+    if (!requirement) return
+
+    const canEditThisRequirement = canEditRequirement(
+      userRole,
+      user?.id,
+      requirement.responsibleConsultantId
+    )
+
+    if (!canEditThisRequirement) {
+      return
+    }
+
     updateMutation.mutate({ id, data: { [field]: value } })
   }
 
@@ -497,7 +564,15 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
 
   // Definição de colunas
   const columns = useMemo(
-    () => [
+    () => {
+      const shouldShowActionsColumn =
+        userRole === 'ADMIN' ||
+        (userRole === 'CONSULTANT' &&
+          data.some((requirement) =>
+            canDeleteRequirement(userRole, user?.id, requirement.responsibleConsultantId)
+          ))
+
+      const baseColumns = [
       columnHelper.accessor('reqId', {
         header: 'Req ID',
         size: 120,
@@ -516,6 +591,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
             columnId="shortDesc"
             columnLabel="Descrição"
             onUpdate={handleCellUpdate}
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -528,6 +604,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
             value={info.getValue()}
             rowId={info.row.original.id}
             onUpdate={handleCellUpdate}
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -540,6 +617,35 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
             value={info.getValue()}
             rowId={info.row.original.id}
             onUpdate={handleCellUpdate}
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+          />
+        ),
+      }),
+      columnHelper.display({
+        id: 'responsibleConsultant',
+        header: 'Responsável Consultor',
+        size: 220,
+        cell: (info) => (
+          <EditableResponsibleConsultantCell
+            value={info.row.original.responsibleConsultantId}
+            rowId={info.row.original.id}
+            options={consultantOptions}
+            onUpdate={handleCellUpdate}
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+          />
+        ),
+      }),
+      columnHelper.accessor('responsibleBusiness', {
+        header: 'Responsável Negócio',
+        size: 220,
+        cell: (info) => (
+          <EditableCell
+            value={info.getValue() || ''}
+            rowId={info.row.original.id}
+            columnId="responsibleBusiness"
+            columnLabel="Responsável Negócio"
+            onUpdate={handleCellUpdate}
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -555,6 +661,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
             columnLabel="What (O que)"
             onUpdate={handleCellUpdate}
             multiline
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -570,6 +677,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
             columnLabel="Why (Por que)"
             onUpdate={handleCellUpdate}
             multiline
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -584,6 +692,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
             columnId="who"
             columnLabel="Who (Quem)"
             onUpdate={handleCellUpdate}
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -598,6 +707,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
             columnId="when"
             columnLabel="When (Quando)"
             onUpdate={handleCellUpdate}
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -612,6 +722,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
             columnId="where"
             columnLabel="Where (Onde)"
             onUpdate={handleCellUpdate}
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -627,6 +738,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
             columnLabel="How (Como é hoje)"
             onUpdate={handleCellUpdate}
             multiline
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -641,6 +753,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
             columnId="howMuch"
             columnLabel="How Much (Quanto)"
             onUpdate={handleCellUpdate}
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -656,6 +769,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
             columnLabel="Depende De"
             onUpdate={handleCellUpdate}
             isArray
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -671,6 +785,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
             columnLabel="Fornece Para"
             onUpdate={handleCellUpdate}
             isArray
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -686,6 +801,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
             columnLabel="Dúvidas do Consultor"
             onUpdate={handleCellUpdate}
             multiline
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -701,6 +817,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
             columnLabel="Observações"
             onUpdate={handleCellUpdate}
             multiline
+            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -721,13 +838,19 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
         },
       }),
 
-      // Coluna de ações (delete) - apenas visível para ADMIN/MANAGER
+      // Coluna de ações (delete) - ADMIN sempre pode, CONSULTANT só próprios requisitos
       columnHelper.display({
         id: 'actions',
         header: 'Ações',
         size: 80,
         cell: (info) => {
-          if (!canDelete) return null
+          // Verifica se pode excluir este requisito específico
+          const canDeleteThis = canDeleteRequirement(
+            userRole,
+            user?.id,
+            info.row.original.responsibleConsultantId
+          )
+          if (!canDeleteThis) return null
 
           return (
             <button
@@ -756,8 +879,15 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, userRol
           )
         },
       }),
-    ],
-    [canDelete] // Dependência: recriar colunas se permissão mudar
+      ]
+
+      if (shouldShowActionsColumn) {
+        return baseColumns
+      }
+
+      return baseColumns.filter((column) => column.id !== 'actions')
+    },
+    [columnHelper, consultantOptions, data, userRole, user?.id]
   )
 
   // Inicializar tabela

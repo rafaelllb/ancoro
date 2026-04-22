@@ -77,15 +77,16 @@ export interface Requirement {
   howMuch: string
   dependsOn: string[]
   providesFor: string[]
-  consultantId: string
+  responsibleConsultantId?: string | null
+  responsibleBusiness?: string
   consultantNotes?: string
   status: string
   observations?: string
-  consultant: {
+  responsibleConsultant?: {
     id: string
     name: string
     email: string
-  }
+  } | null
   _count?: {
     comments: number
   }
@@ -107,6 +108,8 @@ export interface CreateRequirementRequest {
   howMuch: string
   dependsOn?: string[]
   providesFor?: string[]
+  responsibleConsultantId?: string
+  responsibleBusiness?: string
   consultantNotes?: string
   status?: string
   observations?: string
@@ -124,6 +127,8 @@ export interface UpdateRequirementRequest {
   howMuch?: string
   dependsOn?: string[]
   providesFor?: string[]
+  responsibleConsultantId?: string | null
+  responsibleBusiness?: string
   consultantNotes?: string
   status?: string
   observations?: string

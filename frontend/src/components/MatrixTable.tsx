@@ -23,6 +23,7 @@ import { useUpdateCrossMatrixEntry } from '../hooks/useCrossMatrix'
 interface MatrixTableProps {
   data: CrossMatrixEntry[]
   projectId: string
+  userRole?: string  // Role do usuário para controle de edição
 }
 
 // Badge de status
@@ -56,16 +57,18 @@ const EditableCell = ({
   row,
   column,
   onUpdate,
+  disabled = false,
 }: {
   value: any
   row: any
   column: any
   onUpdate: (rowId: string, columnId: string, value: any) => void
+  disabled?: boolean
 }) => {
   const [value, setValue] = useState(initialValue)
 
   const onBlur = () => {
-    if (value !== initialValue) {
+    if (!disabled && value !== initialValue) {
       onUpdate(row.original.id, column.id, value)
     }
   }
@@ -75,7 +78,10 @@ const EditableCell = ({
       value={value || ''}
       onChange={(e) => setValue(e.target.value)}
       onBlur={onBlur}
-      className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+      disabled={disabled}
+      className={`w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:border-blue-500 ${
+        disabled ? 'bg-gray-100 cursor-not-allowed' : ''
+      }`}
     />
   )
 }
@@ -87,14 +93,17 @@ const EditableSelect = ({
   column,
   options,
   onUpdate,
+  disabled = false,
 }: {
   value: any
   row: any
   column: any
   options: { value: string; label: string }[]
   onUpdate: (rowId: string, columnId: string, value: any) => void
+  disabled?: boolean
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (disabled) return
     const newValue = e.target.value
     onUpdate(row.original.id, column.id, newValue)
   }
@@ -103,7 +112,10 @@ const EditableSelect = ({
     <select
       value={initialValue || ''}
       onChange={handleChange}
-      className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+      disabled={disabled}
+      className={`w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:border-blue-500 ${
+        disabled ? 'bg-gray-100 cursor-not-allowed' : ''
+      }`}
     >
       <option value="">-</option>
       {options.map((opt) => (
@@ -115,14 +127,18 @@ const EditableSelect = ({
   )
 }
 
-export default function MatrixTable({ data, projectId }: MatrixTableProps) {
+export default function MatrixTable({ data, projectId, userRole }: MatrixTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
 
   const updateMutation = useUpdateCrossMatrixEntry(projectId)
 
-  // Handler de update
+  // CLIENT não pode editar a matriz
+  const canEdit = userRole !== 'CLIENT'
+
+  // Handler de update (só executa se puder editar)
   const handleUpdate = (rowId: string, columnId: string, value: any) => {
+    if (!canEdit) return
     updateMutation.mutate({
       entryId: rowId,
       data: { [columnId]: value },
@@ -168,6 +184,7 @@ export default function MatrixTable({ data, projectId }: MatrixTableProps) {
             row={row}
             column={column}
             onUpdate={handleUpdate}
+            disabled={!canEdit}
           />
         ),
       },
@@ -189,6 +206,7 @@ export default function MatrixTable({ data, projectId }: MatrixTableProps) {
               { value: 'OTHER', label: 'Other' },
             ]}
             onUpdate={handleUpdate}
+            disabled={!canEdit}
           />
         ),
       },
@@ -202,6 +220,7 @@ export default function MatrixTable({ data, projectId }: MatrixTableProps) {
             row={row}
             column={column}
             onUpdate={handleUpdate}
+            disabled={!canEdit}
           />
         ),
       },
@@ -222,6 +241,7 @@ export default function MatrixTable({ data, projectId }: MatrixTableProps) {
               { value: 'REALTIME', label: 'Real-time' },
             ]}
             onUpdate={handleUpdate}
+            disabled={!canEdit}
           />
         ),
       },
@@ -241,11 +261,12 @@ export default function MatrixTable({ data, projectId }: MatrixTableProps) {
             row={row}
             column={column}
             onUpdate={handleUpdate}
+            disabled={!canEdit}
           />
         ),
       },
     ],
-    []
+    [canEdit, handleUpdate]
   )
 
   const table = useReactTable({

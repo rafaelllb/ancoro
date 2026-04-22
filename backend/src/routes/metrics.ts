@@ -20,7 +20,7 @@ import {
   getRefinementIterations,
 } from '../services/metricsService';
 import { authenticate } from '../middleware/auth';
-import { requireProjectAccess, requireAdminOrManager } from '../middleware/permissions';
+import { requireProjectAccess, requireMetricsAccess } from '../middleware/permissions';
 
 const router = express.Router();
 
@@ -34,7 +34,7 @@ router.use(authenticate);
 router.get(
   '/projects/:id/metrics',
   requireProjectAccess,
-  requireAdminOrManager,
+  requireMetricsAccess,
   async (req, res, next) => {
     try {
       const { id: projectId } = req.params;
@@ -59,7 +59,7 @@ router.get(
 router.get(
   '/projects/:id/metrics/consultants',
   requireProjectAccess,
-  requireAdminOrManager,
+  requireMetricsAccess,
   async (req, res, next) => {
     try {
       const { id: projectId } = req.params;
@@ -92,7 +92,7 @@ const timelineQuerySchema = z.object({
 router.get(
   '/projects/:id/metrics/timeline',
   requireProjectAccess,
-  requireAdminOrManager,
+  requireMetricsAccess,
   async (req, res, next) => {
     try {
       const { id: projectId } = req.params;
@@ -125,7 +125,7 @@ router.get(
 router.get(
   '/projects/:id/metrics/heatmap',
   requireProjectAccess,
-  requireAdminOrManager,
+  requireMetricsAccess,
   async (req, res, next) => {
     try {
       const { id: projectId } = req.params;
@@ -159,7 +159,7 @@ router.get(
 router.get(
   '/projects/:id/metrics/comments',
   requireProjectAccess,
-  requireAdminOrManager,
+  requireMetricsAccess,
   async (req, res, next) => {
     try {
       const { id: projectId } = req.params;
@@ -183,7 +183,7 @@ router.get(
 router.get(
   '/projects/:id/metrics/lead-time',
   requireProjectAccess,
-  requireAdminOrManager,
+  requireMetricsAccess,
   async (req, res, next) => {
     try {
       const { id: projectId } = req.params;
@@ -226,7 +226,7 @@ router.get(
 router.get(
   '/projects/:id/metrics/rejections',
   requireProjectAccess,
-  requireAdminOrManager,
+  requireMetricsAccess,
   async (req, res, next) => {
     try {
       const { id: projectId } = req.params;
@@ -254,7 +254,7 @@ router.get(
 router.get(
   '/projects/:id/metrics/refinements',
   requireProjectAccess,
-  requireAdminOrManager,
+  requireMetricsAccess,
   async (req, res, next) => {
     try {
       const { id: projectId } = req.params;

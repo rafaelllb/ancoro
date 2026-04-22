@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useRequirements } from '../hooks/useRequirements'
 import { useCurrentProject } from '../hooks/useProjects'
+import { useCapabilities } from '../hooks/useCapabilities'
 import RequirementsGrid from '../components/RequirementsGrid'
 import CommentPanel from '../components/CommentPanel'
 import CreateRequirementModal from '../components/CreateRequirementModal'
@@ -49,12 +50,17 @@ export default function Dashboard() {
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false)
   const [isListConfigModalOpen, setIsListConfigModalOpen] = useState(false)
 
-  // Verifica se usuário pode gerenciar membros (ADMIN ou MANAGER)
-  const canManageMembers = user?.role === 'ADMIN' || user?.role === 'MANAGER'
-  // ADMIN e MANAGER podem criar projetos
-  const canCreateProject = user?.role === 'ADMIN' || user?.role === 'MANAGER'
-  // Métricas são restritas a ADMIN e MANAGER
-  const canViewMetrics = canManageMembers
+  // Capacidades centralizadas do usuário
+  const {
+    canManageMembers,
+    canCreateProject,
+    canViewMetrics,
+    canViewMatrix,
+    canConfigureLists,
+    canConfigureIdPattern,
+    canImportRequirements,
+    canExportBPD,
+  } = useCapabilities()
 
   // Determina filtro de módulo
   // Se showAllModules = false, filtra pelo módulo do usuário (se disponível)
@@ -80,7 +86,11 @@ export default function Dashboard() {
           <div className="flex items-center gap-3">
             {/* Mobile Nav - visível apenas em telas pequenas */}
             <MobileNav
-              items={navItems.filter(item => item.path !== '/metrics' || canViewMetrics)}
+              items={navItems.filter(item => {
+                if (item.path === '/metrics' && !canViewMetrics) return false
+                if (item.path === '/cross-matrix' && !canViewMatrix) return false
+                return true
+              })}
               userName={user?.name}
               userRole={user?.role}
               onLogout={logout}
@@ -104,12 +114,14 @@ export default function Dashboard() {
 
           {/* Navegação desktop - oculta em mobile */}
           <div className="hidden lg:flex items-center gap-3">
-            <Link
-              to="/cross-matrix"
-              className="px-4 py-2 bg-ancoro-teal-500 hover:bg-ancoro-teal-600 text-white rounded-lg text-sm font-medium transition-colors"
-            >
-              Matriz de Cruzamento
-            </Link>
+            {canViewMatrix && (
+              <Link
+                to="/cross-matrix"
+                className="px-4 py-2 bg-ancoro-teal-500 hover:bg-ancoro-teal-600 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Matriz de Cruzamento
+              </Link>
+            )}
             {canViewMetrics && (
               <Link
                 to="/metrics"
@@ -201,21 +213,23 @@ export default function Dashboard() {
                 <span className="hidden sm:inline">Novo Requisito</span>
                 <span className="sm:hidden">Novo</span>
               </button>
-              {/* Botão de configurações do padrão de ID */}
-              <button
-                type="button"
-                onClick={() => setIsSettingsModalOpen(true)}
-                disabled={!projectId}
-                className="p-2 border border-gray-300 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Configurar padrão de ID"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </button>
+              {/* Botão de configurações do padrão de ID - apenas ADMIN */}
+              {canConfigureIdPattern && (
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsModalOpen(true)}
+                  disabled={!projectId}
+                  className="p-2 border border-gray-300 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Configurar padrão de ID"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+              )}
               {/* Botão de configurar listas (ADMIN/MANAGER) */}
-              {canManageMembers && (
+              {canConfigureLists && (
                 <button
                   type="button"
                   onClick={() => setIsListConfigModalOpen(true)}
@@ -248,6 +262,7 @@ export default function Dashboard() {
                 {/* Dropdown menu */}
                 {isSpreadsheetMenuOpen && (
                   <div className="absolute top-full left-0 mt-1 w-full min-w-[160px] bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                    {/* Exportar planilha - sempre visível pois todos podem exportar planilha */}
                     <button
                       type="button"
                       onClick={() => {
@@ -262,36 +277,41 @@ export default function Dashboard() {
                       </svg>
                       Exportar
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSpreadsheetMode('import')
-                        setIsSpreadsheetModalOpen(true)
-                        setIsSpreadsheetMenuOpen(false)
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-ancoro-teal-50 hover:text-ancoro-teal-600 flex items-center gap-2 last:rounded-b-lg"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                      </svg>
-                      Importar
-                    </button>
+                    {/* Importar planilha - apenas ADMIN/MANAGER */}
+                    {canImportRequirements && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSpreadsheetMode('import')
+                          setIsSpreadsheetModalOpen(true)
+                          setIsSpreadsheetMenuOpen(false)
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-ancoro-teal-50 hover:text-ancoro-teal-600 flex items-center gap-2 last:rounded-b-lg"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        Importar
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Exportar BPD (documento) - mantido separado */}
-              <button
-                type="button"
-                onClick={() => setIsExportModalOpen(true)}
-                className="flex-1 sm:flex-initial px-3 lg:px-4 py-2 border border-ancoro-teal-500 text-ancoro-teal-600 hover:bg-ancoro-teal-50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span className="hidden sm:inline">Exportar BPD</span>
-                <span className="sm:hidden">BPD</span>
-              </button>
+              {/* Exportar BPD (documento) - apenas quem pode exportar BPD */}
+              {canExportBPD && (
+                <button
+                  type="button"
+                  onClick={() => setIsExportModalOpen(true)}
+                  className="flex-1 sm:flex-initial px-3 lg:px-4 py-2 border border-ancoro-teal-500 text-ancoro-teal-600 hover:bg-ancoro-teal-50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="hidden sm:inline">Exportar BPD</span>
+                  <span className="sm:hidden">BPD</span>
+                </button>
+              )}
 
               {/* Botão Gerenciar Membros - visível apenas para ADMIN ou MANAGER */}
               {canManageMembers && (
@@ -315,6 +335,7 @@ export default function Dashboard() {
                 data={requirements}
                 isLoading={isLoading}
                 onRowSelect={setSelectedRequirement}
+                projectId={projectId}
                 userRole={user?.role}
               />
             </div>

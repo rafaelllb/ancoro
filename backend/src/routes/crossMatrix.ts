@@ -19,7 +19,8 @@ import {
   ConflictType,
 } from '../services/conflictDetectionService';
 import { authenticate } from '../middleware/auth';
-import { requireProjectAccess, canViewProject } from '../middleware/permissions';
+import { requireProjectAccess, requireMatrixAccess, canViewProject } from '../middleware/permissions';
+import { hasCapability } from '../utils/roleCapabilities';
 import { prisma } from '../index';
 
 const router = express.Router();
@@ -31,10 +32,13 @@ router.use(authenticate);
  * GET /api/projects/:id/cross-matrix
  * Lista a matriz de cruzamento de um projeto
  * Query params: module (opcional) - filtrar por módulo
+ *
+ * Permissões: ADMIN, MANAGER, CONSULTANT podem acessar; CLIENT bloqueado
  */
 router.get(
   '/projects/:id/cross-matrix',
   requireProjectAccess,
+  requireMatrixAccess,
   async (req, res, next) => {
     try {
       const { id: projectId } = req.params;
@@ -60,10 +64,13 @@ router.get(
  * POST /api/projects/:id/cross-matrix/regenerate
  * Force regeneration da matriz
  * Útil quando dados foram alterados manualmente ou para refresh
+ *
+ * Permissões: ADMIN, MANAGER, CONSULTANT podem regenerar; CLIENT bloqueado
  */
 router.post(
   '/projects/:id/cross-matrix/regenerate',
   requireProjectAccess,
+  requireMatrixAccess,
   async (req, res, next) => {
     try {
       const { id: projectId } = req.params;
@@ -127,6 +134,14 @@ router.patch('/cross-matrix/:id', async (req, res, next) => {
       });
     }
 
+    // CLIENT não pode editar a matriz
+    if (!hasCapability(req.user!.role, 'canEditMatrix')) {
+      return res.status(403).json({
+        success: false,
+        error: 'Clientes não podem editar a matriz de cruzamento',
+      });
+    }
+
     // Verifica se o usuário tem acesso ao projeto
     // CONSULTANT, MANAGER e ADMIN podem editar entries do projeto
     const hasAccess = await canViewProject(
@@ -169,10 +184,13 @@ router.patch('/cross-matrix/:id', async (req, res, next) => {
  * GET /api/projects/:id/semantic-conflicts
  * Detecta conflitos semânticos entre requisitos do projeto
  * Query params: type (opcional) - WHO_OVERLAP | WHERE_INCOMPATIBLE | HOWMUCH_CONTRADICTORY
+ *
+ * Permissões: ADMIN, MANAGER, CONSULTANT podem acessar; CLIENT bloqueado
  */
 router.get(
   '/projects/:id/semantic-conflicts',
   requireProjectAccess,
+  requireMatrixAccess,
   async (req, res, next) => {
     try {
       const { id: projectId } = req.params;
@@ -220,10 +238,13 @@ router.get(
  * - Dependências circulares
  * - Conflitos semânticos
  * - Requisitos órfãos
+ *
+ * Permissões: ADMIN, MANAGER, CONSULTANT podem acessar; CLIENT bloqueado
  */
 router.post(
   '/projects/:id/validate-pipeline',
   requireProjectAccess,
+  requireMatrixAccess,
   async (req, res, next) => {
     try {
       const { id: projectId } = req.params;

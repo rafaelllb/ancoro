@@ -32,6 +32,8 @@ const TRACKED_FIELDS: (keyof Requirement)[] = [
   'howMuch',
   'dependsOn',
   'providesFor',
+  'responsibleConsultantId',
+  'responsibleBusiness',
   'consultantNotes',
   'status',
   'observations',

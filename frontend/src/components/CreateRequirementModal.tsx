@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { useCreateRequirement } from '../hooks/useRequirements'
 import { useProjectModules, useProjectStatuses } from '../hooks/useProjectLists'
+import { useProjectMembers } from '../hooks/useProjectMembers'
 import {
   RequirementIdPattern,
   DEFAULT_PATTERN,
@@ -80,6 +81,8 @@ const initialFormState = {
   howMuch: '',
   dependsOn: '',
   providesFor: '',
+  responsibleConsultantId: '',
+  responsibleBusiness: '',
   status: 'PENDING',
   observations: '',
   consultantNotes: '',
@@ -146,6 +149,7 @@ export default function CreateRequirementModal({
   // Busca módulos e status configurados para o projeto
   const { data: projectModules } = useProjectModules(projectId)
   const { data: projectStatuses } = useProjectStatuses(projectId)
+  const { data: projectMembers = [] } = useProjectMembers(projectId)
 
   // Usa módulos do projeto se disponíveis, senão usa fallback
   const moduleOptions = projectModules?.length
@@ -156,6 +160,10 @@ export default function CreateRequirementModal({
   const statusOptions = projectStatuses?.length
     ? projectStatuses.map(s => ({ value: s.code, label: s.name }))
     : DEFAULT_STATUS_OPTIONS
+
+  const consultantOptions = projectMembers
+    .filter((member) => member.user.role === 'CONSULTANT')
+    .map((member) => ({ value: member.user.id, label: member.user.name }))
 
   // Gera próximo reqId quando modal abre, usando padrão do projeto
   useEffect(() => {
@@ -239,6 +247,8 @@ export default function CreateRequirementModal({
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean),
+      responsibleConsultantId: form.responsibleConsultantId || undefined,
+      responsibleBusiness: form.responsibleBusiness.trim() || undefined,
       status: form.status,
       observations: form.observations.trim() || undefined,
       consultantNotes: form.consultantNotes.trim() || undefined,
@@ -379,6 +389,42 @@ export default function CreateRequirementModal({
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label htmlFor="responsibleConsultantId" className="block text-sm font-medium text-gray-700 mb-1">
+                  Responsável Consultor
+                </label>
+                <select
+                  id="responsibleConsultantId"
+                  name="responsibleConsultantId"
+                  value={form.responsibleConsultantId}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Não atribuído</option>
+                  {consultantOptions.map((consultant) => (
+                    <option key={consultant.value} value={consultant.value}>
+                      {consultant.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="responsibleBusiness" className="block text-sm font-medium text-gray-700 mb-1">
+                  Responsável Negócio
+                </label>
+                <input
+                  type="text"
+                  id="responsibleBusiness"
+                  name="responsibleBusiness"
+                  value={form.responsibleBusiness}
+                  onChange={handleChange}
+                  maxLength={255}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nome do responsável de negócio"
+                />
               </div>
             </div>
 

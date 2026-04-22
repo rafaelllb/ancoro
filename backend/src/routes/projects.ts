@@ -210,7 +210,7 @@ router.get('/projects/:id/settings', authenticate, async (req: Request, res: Res
 /**
  * PATCH /api/projects/:id/settings
  * Atualiza configurações do projeto (padrão de ID de requisitos)
- * Requer: autenticação + role ADMIN ou MANAGER
+ * Requer: autenticação + role ADMIN
  *
  * Body (todos opcionais):
  * - reqIdPrefix: string (1-10 chars alfanumérico)
@@ -219,17 +219,18 @@ router.get('/projects/:id/settings', authenticate, async (req: Request, res: Res
  *
  * AVISO: Alterar padrão com requisitos existentes pode causar inconsistências
  * (requisitos antigos não serão renomeados automaticamente)
+ *
+ * MUDANÇA: Apenas ADMIN pode alterar padrão de ID (conforme ANALISE_PERMISSOES_POR_ROLE.md)
  */
 router.patch('/projects/:id/settings', authenticate, async (req: Request, res: Response) => {
   try {
     const { id } = req.params
 
-    // Apenas ADMIN ou MANAGER podem alterar configurações
-    const allowedRoles = ['ADMIN', 'MANAGER']
-    if (!allowedRoles.includes(req.user!.role)) {
+    // Apenas ADMIN pode alterar configurações de padrão de ID
+    if (req.user!.role !== 'ADMIN') {
       return res.status(403).json({
         error: 'Forbidden',
-        message: 'Apenas gerentes e administradores podem alterar configurações do projeto',
+        message: 'Apenas administradores podem alterar o padrão de ID do projeto',
       })
     }
 

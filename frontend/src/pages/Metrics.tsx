@@ -11,6 +11,7 @@ import { Link, Navigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { useProjects } from '../hooks/useProjects'
+import { useCapabilities } from '../hooks/useCapabilities'
 import { metricsAPI, ProjectMetrics } from '../services/api'
 import MetricsCharts from '../components/MetricsCharts'
 import { NotificationBell } from '../components/NotificationBell'
@@ -39,10 +40,10 @@ const MODULE_NAMES: Record<string, string> = {
 
 export default function Metrics() {
   const { user, logout } = useAuth()
+  const { canViewMetrics } = useCapabilities()
 
-  // Métricas são restritas a ADMIN e MANAGER
-  // Redireciona para dashboard se usuário não tiver permissão
-  const canViewMetrics = user?.role === 'ADMIN' || user?.role === 'MANAGER'
+  // Métricas são restritas a ADMIN, MANAGER e CONSULTANT
+  // CLIENT é redirecionado para dashboard
   if (!canViewMetrics) {
     return <Navigate to="/dashboard" replace />
   }

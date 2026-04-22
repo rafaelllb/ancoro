@@ -288,9 +288,9 @@ export async function getConsultantsPendencies(
   const requirements = await prisma.requirement.findMany({
     where: { projectId },
     select: {
-      consultantId: true,
+      responsibleConsultantId: true,
       status: true,
-      consultant: {
+      responsibleConsultant: {
         select: {
           id: true,
           name: true,
@@ -312,8 +312,12 @@ export async function getConsultantsPendencies(
   >();
 
   for (const req of requirements) {
-    const existing = consultantMap.get(req.consultantId) || {
-      consultant: req.consultant,
+    if (!req.responsibleConsultantId || !req.responsibleConsultant) {
+      continue;
+    }
+
+    const existing = consultantMap.get(req.responsibleConsultantId) || {
+      consultant: req.responsibleConsultant,
       pending: 0,
       conflict: 0,
       total: 0,
@@ -327,7 +331,7 @@ export async function getConsultantsPendencies(
       existing.conflict++;
     }
 
-    consultantMap.set(req.consultantId, existing);
+    consultantMap.set(req.responsibleConsultantId, existing);
   }
 
   // Converte para array e ordena por pendências

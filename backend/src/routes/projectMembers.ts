@@ -11,13 +11,12 @@ import express from 'express'
 import { z } from 'zod'
 import { prisma } from '../index'
 import { authenticate } from '../middleware/auth'
-import { requireAdminOrManager } from '../middleware/permissions'
+import { requireAdminOrManager, requireProjectAccess } from '../middleware/permissions'
 
 const router = express.Router()
 
-// Todas as rotas requerem autenticação + permissão de admin/manager
+// Todas as rotas requerem autenticação
 router.use(authenticate)
-router.use(requireAdminOrManager)
 
 // Schema de validação para adicionar membro
 const addMemberSchema = z.object({
@@ -34,7 +33,7 @@ const updateMemberSchema = z.object({
  * GET /api/projects/:projectId/members
  * Lista todos os membros de um projeto
  */
-router.get('/projects/:projectId/members', async (req, res, next) => {
+router.get('/projects/:projectId/members', requireProjectAccess, async (req, res, next) => {
   try {
     const { projectId } = req.params
 
@@ -94,7 +93,7 @@ router.get('/projects/:projectId/members', async (req, res, next) => {
  * Lista usuários que NÃO estão associados ao projeto
  * Query param: projectId (obrigatório)
  */
-router.get('/users/available', async (req, res, next) => {
+router.get('/users/available', requireAdminOrManager, async (req, res, next) => {
   try {
     const { projectId } = req.query
 
@@ -141,7 +140,7 @@ router.get('/users/available', async (req, res, next) => {
  * POST /api/projects/:projectId/members
  * Adiciona um membro ao projeto
  */
-router.post('/projects/:projectId/members', async (req, res, next) => {
+router.post('/projects/:projectId/members', requireAdminOrManager, async (req, res, next) => {
   try {
     const { projectId } = req.params
 
@@ -234,7 +233,7 @@ router.post('/projects/:projectId/members', async (req, res, next) => {
  * PATCH /api/projects/:projectId/members/:userId
  * Atualiza módulo de um membro
  */
-router.patch('/projects/:projectId/members/:userId', async (req, res, next) => {
+router.patch('/projects/:projectId/members/:userId', requireAdminOrManager, async (req, res, next) => {
   try {
     const { projectId, userId } = req.params
 
@@ -299,7 +298,7 @@ router.patch('/projects/:projectId/members/:userId', async (req, res, next) => {
  * DELETE /api/projects/:projectId/members/:userId
  * Remove um membro do projeto
  */
-router.delete('/projects/:projectId/members/:userId', async (req, res, next) => {
+router.delete('/projects/:projectId/members/:userId', requireAdminOrManager, async (req, res, next) => {
   try {
     const { projectId, userId } = req.params
     const currentUserId = req.user?.userId

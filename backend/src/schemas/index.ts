@@ -77,6 +77,8 @@ export function createRequirementSchemaForProject(pattern: RequirementIdPattern)
     howMuchActual: z.string().min(3).optional(),
     dependsOn: z.array(z.string()).optional().default([]),
     providesFor: z.array(z.string()).optional().default([]),
+    responsibleConsultantId: z.string().cuid().optional(),
+    responsibleBusiness: z.string().max(255).optional(),
     consultantNotes: z.string().optional(),
     status: z
       .enum([
@@ -142,6 +144,8 @@ export const updateRequirementSchema = z.object({
   howMuchActual: z.string().min(3).optional(),
   dependsOn: z.array(z.string()).optional(),
   providesFor: z.array(z.string()).optional(),
+  responsibleConsultantId: z.string().cuid().nullable().optional(),
+  responsibleBusiness: z.string().max(255).optional(),
   consultantNotes: z.string().optional(),
   status: z
     .enum([
@@ -251,6 +255,9 @@ export function createBulkImportItemSchemaForProject(pattern: RequirementIdPatte
     howMuch: z.string().min(3, 'Campo "How Much" deve ter no mínimo 3 caracteres'),
     dependsOn: z.array(z.string()).optional().default([]),
     providesFor: z.array(z.string()).optional().default([]),
+    responsibleConsultantId: z.string().cuid().optional(),
+    responsibleBusiness: z.string().max(255).optional(),
+    consultantNotes: z.string().optional(),
     status: z
       .enum([
         ReqStatus.PENDING,

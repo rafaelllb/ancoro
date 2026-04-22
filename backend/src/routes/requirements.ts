@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../index'
 import { authenticate } from '../middleware/auth'
-import { requireEditPermission, requireProjectAccess } from '../middleware/permissions'
+import { requireEditPermission, requireDeletePermission, requireProjectAccess } from '../middleware/permissions'
 import {
   createRequirementSchemaForProject,
   updateRequirementSchema,
@@ -39,6 +39,38 @@ interface BulkImportResponse {
 
 const router = Router()
 
+async function validateResponsibleConsultant(projectId: string, responsibleConsultantId?: string | null) {
+  if (!responsibleConsultantId) {
+    return { valid: true as const }
+  }
+
+  const projectMember = await prisma.projectUser.findFirst({
+    where: {
+      projectId,
+      userId: responsibleConsultantId,
+      user: {
+        is: {
+          role: 'CONSULTANT',
+        },
+      },
+    },
+    include: {
+      user: {
+        select: { id: true, name: true, role: true },
+      },
+    },
+  })
+
+  if (!projectMember) {
+    return {
+      valid: false as const,
+      message: 'Responsável consultor deve ser um consultor membro do projeto',
+    }
+  }
+
+  return { valid: true as const, user: projectMember.user }
+}
+
 /**
  * GET /api/projects/:projectId/requirements
  * Lista todos os requisitos de um projeto
@@ -65,7 +97,7 @@ router.get(
       const requirements = await prisma.requirement.findMany({
         where,
         include: {
-          consultant: {
+          responsibleConsultant: {
             select: { id: true, name: true, email: true },
           },
           _count: {
@@ -105,7 +137,7 @@ router.get('/requirements/:id', authenticate, async (req: Request, res: Response
     const requirement = await prisma.requirement.findUnique({
       where: { id },
       include: {
-        consultant: {
+        responsibleConsultant: {
           select: { id: true, name: true, email: true },
         },
         comments: {
@@ -129,6 +161,22 @@ router.get('/requirements/:id', authenticate, async (req: Request, res: Response
       })
     }
 
+    if (req.user!.role !== 'ADMIN') {
+      const isProjectMember = await prisma.projectUser.findFirst({
+        where: {
+          projectId: requirement.projectId,
+          userId: req.user!.userId,
+        },
+      })
+
+      if (!isProjectMember) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Você não tem acesso a este requisito',
+        })
+      }
+    }
+
     // Parse arrays
     const formatted = {
       ...requirement,
@@ -150,9 +198,6 @@ router.get('/requirements/:id', authenticate, async (req: Request, res: Response
  * POST /api/requirements
  * Cria um novo requisito
  * Requer: autenticação
- *
- * NOTA: consultantId é definido automaticamente como o usuário logado
- * (a não ser que seja Manager/Admin criando para outro consultor)
  *
  * Validação de reqId é dinâmica baseada no padrão configurado no projeto
  */
@@ -196,6 +241,17 @@ router.post('/requirements', authenticate, async (req: Request, res: Response) =
 
     const data = validationResult.data as CreateRequirementRequest
 
+    const responsibleConsultantValidation = await validateResponsibleConsultant(
+      data.projectId,
+      data.responsibleConsultantId
+    )
+    if (!responsibleConsultantValidation.valid) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: responsibleConsultantValidation.message,
+      })
+    }
+
     // Verificar se o usuário tem acesso ao projeto
     // ADMIN tem acesso global a todos os projetos
     if (req.user!.role !== 'ADMIN') {
@@ -235,12 +291,13 @@ router.post('/requirements', authenticate, async (req: Request, res: Response) =
     const requirement = await prisma.requirement.create({
       data: {
         ...data,
-        consultantId: req.user!.userId, // Sempre o usuário logado por padrão
+        responsibleConsultantId: data.responsibleConsultantId ?? null,
+        responsibleBusiness: data.responsibleBusiness?.trim() || null,
         dependsOn: JSON.stringify(data.dependsOn || []),
         providesFor: JSON.stringify(data.providesFor || []),
       },
       include: {
-        consultant: {
+        responsibleConsultant: {
           select: { id: true, name: true, email: true },
         },
       },
@@ -323,6 +380,22 @@ router.patch(
         })
       }
 
+      const targetResponsibleConsultantId =
+        data.responsibleConsultantId === undefined
+          ? oldRequirement.responsibleConsultantId
+          : data.responsibleConsultantId
+
+      const responsibleConsultantValidation = await validateResponsibleConsultant(
+        oldRequirement.projectId,
+        targetResponsibleConsultantId
+      )
+      if (!responsibleConsultantValidation.valid) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: responsibleConsultantValidation.message,
+        })
+      }
+
       // Converter arrays para JSON strings se fornecidos
       const updateData: any = { ...data }
       if (data.dependsOn) {
@@ -331,12 +404,18 @@ router.patch(
       if (data.providesFor) {
         updateData.providesFor = JSON.stringify(data.providesFor)
       }
+      if (data.responsibleBusiness !== undefined) {
+        updateData.responsibleBusiness = data.responsibleBusiness?.trim() || null
+      }
+      if (data.responsibleConsultantId !== undefined) {
+        updateData.responsibleConsultantId = data.responsibleConsultantId || null
+      }
 
       const requirement = await prisma.requirement.update({
         where: { id },
         data: updateData,
         include: {
-          consultant: {
+          responsibleConsultant: {
             select: { id: true, name: true, email: true },
           },
         },
@@ -400,26 +479,21 @@ router.patch(
 /**
  * DELETE /api/requirements/:id
  * Deleta um requisito
- * Requer: autenticação + permissão de editar requisito
+ * Requer: autenticação + permissão de exclusão
  *
- * NOTA: apenas ADMIN ou MANAGER podem deletar requisitos
+ * Regras de permissão (conforme ANALISE_PERMISSOES_POR_ROLE.md):
+ * - ADMIN: pode excluir qualquer requisito
+ * - CONSULTANT: pode excluir apenas seus próprios requisitos
+ * - MANAGER: NÃO pode excluir
+ * - CLIENT: NÃO pode excluir
  */
 router.delete(
   '/requirements/:id',
   authenticate,
-  requireEditPermission,
+  requireDeletePermission,
   async (req: Request, res: Response) => {
     try {
       const { id } = req.params
-
-      // Apenas ADMIN ou MANAGER podem deletar
-      const allowedRoles = ['ADMIN', 'MANAGER']
-      if (!allowedRoles.includes(req.user!.role)) {
-        return res.status(403).json({
-          error: 'Forbidden',
-          message: 'Apenas gerentes e administradores podem deletar requisitos',
-        })
-      }
 
       // Verifica dependências na matriz cruzada antes de deletar
       // Se existirem entradas referenciando este requisito, bloqueia a exclusão
@@ -546,7 +620,7 @@ router.post(
       const itemsToUpdate: { id: string; data: any }[] = []
       const seenReqIds = new Set<string>() // Para detectar duplicatas no próprio batch
 
-      requirements.forEach((item: any, index: number) => {
+      for (const [index, item] of requirements.entries()) {
         const rowNumber = index + 1
         const rowErrors: string[] = []
 
@@ -566,6 +640,17 @@ router.post(
         }
         seenReqIds.add(reqId)
 
+        if (result.success) {
+          const consultantValidation = await validateResponsibleConsultant(
+            projectId,
+            result.data.responsibleConsultantId
+          )
+
+          if (!consultantValidation.valid) {
+            rowErrors.push(consultantValidation.message)
+          }
+        }
+
         if (rowErrors.length > 0) {
           errors.push({
             row: rowNumber,
@@ -581,7 +666,7 @@ router.post(
             itemsToCreate.push(result.data)
           }
         }
-      })
+      }
 
       // Se houver erros de validação, retorna sem processar
       if (errors.length > 0) {
@@ -618,8 +703,9 @@ router.post(
               providesFor: JSON.stringify(data.providesFor || []),
               status: data.status || 'PENDING',
               observations: data.observations,
+              responsibleConsultantId: data.responsibleConsultantId || null,
+              responsibleBusiness: data.responsibleBusiness?.trim() || null,
               consultantNotes: data.consultantNotes,
-              consultantId: req.user!.userId,
             },
           })
         }
@@ -640,6 +726,8 @@ router.post(
               howMuch: data.howMuch,
               dependsOn: JSON.stringify(data.dependsOn || []),
               providesFor: JSON.stringify(data.providesFor || []),
+              responsibleConsultantId: data.responsibleConsultantId || null,
+              responsibleBusiness: data.responsibleBusiness?.trim() || null,
               status: data.status || 'PENDING',
               observations: data.observations,
               consultantNotes: data.consultantNotes,

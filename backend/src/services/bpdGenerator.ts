@@ -47,9 +47,10 @@ interface RequirementForBPD {
   status: string;
   consultantNotes: string | null;
   observations: string | null;
-  consultant: {
+  responsibleBusiness: string | null;
+  responsibleConsultant: {
     name: string;
-  };
+  } | null;
   comments: {
     type: string;
     content: string;
@@ -159,11 +160,11 @@ async function fetchProjectData(
 
   const requirements = await prisma.requirement.findMany({
     where: requirementsWhere,
-    include: {
-      consultant: {
-        select: { name: true },
-      },
-      comments: {
+      include: {
+        responsibleConsultant: {
+          select: { name: true },
+        },
+        comments: {
         select: {
           type: true,
           content: true,
@@ -308,7 +309,10 @@ function generateRequirementsSection(requirements: RequirementForBPD[]): string 
     for (const req of reqs) {
       markdown += `#### ${req.reqId}: ${req.shortDesc}\n\n`;
       markdown += `**Status:** ${STATUS_DISPLAY[req.status] || req.status}  \n`;
-      markdown += `**Consultor:** ${req.consultant.name}\n\n`;
+      markdown += `**Responsavel consultor:** ${req.responsibleConsultant?.name || 'Nao atribuido'}\n\n`;
+      if (req.responsibleBusiness) {
+        markdown += `**Responsavel negocio:** ${req.responsibleBusiness}\n\n`;
+      }
 
       markdown += `| Campo | Descrição |\n`;
       markdown += `|-------|----------|\n`;
@@ -442,7 +446,7 @@ function generateConclusionSection(
     if (pendingReqs.length > 0) {
       markdown += `### Requisitos Pendentes de Validação (${pendingReqs.length})\n\n`;
       for (const req of pendingReqs.slice(0, 10)) {
-        markdown += `- **${req.reqId}:** ${req.shortDesc} (${req.consultant.name})\n`;
+        markdown += `- **${req.reqId}:** ${req.shortDesc} (${req.responsibleConsultant?.name || 'Nao atribuido'})\n`;
       }
       if (pendingReqs.length > 10) {
         markdown += `- _... e mais ${pendingReqs.length - 10} requisitos_\n`;
@@ -673,7 +677,7 @@ function createRequirementsParagraphs(requirements: RequirementForBPD[]): Paragr
             new TextRun({ text: 'Status: ', bold: true }),
             new TextRun({ text: req.status }),
             new TextRun({ text: '  |  Consultor: ', bold: true }),
-            new TextRun({ text: req.consultant.name }),
+            new TextRun({ text: req.responsibleConsultant?.name || 'Nao atribuido' }),
           ],
         })
       );

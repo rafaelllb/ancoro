@@ -139,7 +139,8 @@ export async function seedFromDataset(
         // dependsOn e providesFor armazenam reqIds (REQ-001, etc.), não keys
         dependsOn: JSON.stringify(req.dependsOn),
         providesFor: JSON.stringify(req.providesFor),
-        consultantId: idMap[req.consultantKey],
+        responsibleConsultantId: req.consultantKey ? idMap[req.consultantKey] : null,
+        responsibleBusiness: req.responsibleBusiness ?? null,
         consultantNotes: req.consultantNotes,
         status: req.status,
         observations: req.observations,

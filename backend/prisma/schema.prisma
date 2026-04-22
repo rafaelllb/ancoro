@@ -51,7 +51,7 @@ model User {
   role        String   @default("CONSULTANT") // CONSULTANT | CLIENT | MANAGER | ADMIN
 
   projects    ProjectUser[]
-  requirements Requirement[] @relation("AssignedTo")
+  assignedRequirements Requirement[] @relation("ResponsibleConsultant")
   comments    Comment[]
   changes     ChangeLog[]
   ownedIntegrations CrossMatrixEntry[] @relation("IntegrationOwner")
@@ -108,7 +108,8 @@ model Requirement {
   providesFor     String   @default("") // JSON array string: ["REQ-005"]
 
   // Collaboration
-  consultantId    String
+  responsibleConsultantId String?
+  responsibleBusiness String?
   consultantNotes String?  // Dúvidas do consultor
   status          String   @default("PENDING") // PENDING | IN_PROGRESS | VALIDATED | CONFLICT | REJECTED | APPROVED
   observations    String?
@@ -119,7 +120,7 @@ model Requirement {
 
   // Relations
   project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  consultant      User     @relation("AssignedTo", fields: [consultantId], references: [id])
+  responsibleConsultant User? @relation("ResponsibleConsultant", fields: [responsibleConsultantId], references: [id])
   comments        Comment[]
   changes         ChangeLog[]
   crossMatrixFrom CrossMatrixEntry[] @relation("FromRequirement")

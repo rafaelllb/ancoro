@@ -7,9 +7,10 @@
  */
 
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrentProject } from '../hooks/useProjects'
+import { useCapabilities } from '../hooks/useCapabilities'
 import {
   useCrossMatrix,
   useRegenerateCrossMatrix,
@@ -26,8 +27,13 @@ export default function CrossMatrix() {
   const { currentProject } = useCurrentProject()
   const projectId = currentProject?.id || ''
 
-  // Verifica se usuário pode gerenciar membros (ADMIN ou MANAGER)
-  const canManageMembers = user?.role === 'ADMIN' || user?.role === 'MANAGER'
+  // Capacidades centralizadas do usuário
+  const { canManageMembers, canViewMatrix, canViewMetrics, canEditMatrix, role } = useCapabilities()
+
+  // CLIENT não pode acessar a matriz - redireciona para dashboard
+  if (!canViewMatrix) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   const { data: entries, isLoading, error } = useCrossMatrix(projectId, moduleFilter || undefined)
   const regenerateMutation = useRegenerateCrossMatrix()
@@ -68,12 +74,14 @@ export default function CrossMatrix() {
             >
               ← Requisitos
             </Link>
-            <Link
-              to="/metrics"
-              className="px-4 py-2 text-sm text-ancoro-teal-500 hover:text-ancoro-teal-600 border border-ancoro-teal-300 rounded-lg hover:bg-ancoro-teal-50"
-            >
-              Métricas
-            </Link>
+            {canViewMetrics && (
+              <Link
+                to="/metrics"
+                className="px-4 py-2 text-sm text-ancoro-teal-500 hover:text-ancoro-teal-600 border border-ancoro-teal-300 rounded-lg hover:bg-ancoro-teal-50"
+              >
+                Métricas
+              </Link>
+            )}
             {canManageMembers && (
               <button
                 type="button"
@@ -231,7 +239,7 @@ export default function CrossMatrix() {
             </div>
           )}
 
-          {entries && <MatrixTable data={entries} projectId={projectId} />}
+          {entries && <MatrixTable data={entries} projectId={projectId} userRole={role} />}
         </div>
       </main>
 

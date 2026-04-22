@@ -148,6 +148,8 @@ export interface CreateRequirementRequest {
   howMuch: string
   dependsOn?: string[] // Array de Req IDs
   providesFor?: string[] // Array de Req IDs
+  responsibleConsultantId?: string
+  responsibleBusiness?: string
   consultantNotes?: string
   status?: ReqStatusType
   observations?: string
@@ -165,6 +167,8 @@ export interface UpdateRequirementRequest {
   howMuch?: string
   dependsOn?: string[]
   providesFor?: string[]
+  responsibleConsultantId?: string | null
+  responsibleBusiness?: string
   consultantNotes?: string
   status?: ReqStatusType
   observations?: string
