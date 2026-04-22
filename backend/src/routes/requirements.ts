@@ -19,6 +19,7 @@ import {
   logRequirementCreate,
   logRequirementChanges,
 } from '../middleware/changelog'
+import { hasCapability } from '../utils/roleCapabilities'
 
 // Interface para resposta do bulk import
 interface BulkImportError {
@@ -377,6 +378,16 @@ router.patch(
         return res.status(404).json({
           error: 'Not Found',
           message: 'Requisito não encontrado',
+        })
+      }
+
+      if (
+        data.responsibleConsultantId !== undefined &&
+        !hasCapability(req.user!.role, 'canAssignRequirementResponsible')
+      ) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Você não tem permissão para alocar responsáveis a requisitos',
         })
       }
 

@@ -12,7 +12,11 @@ import {
 import { Requirement } from '../services/api'
 import { useUpdateRequirement, useDeleteRequirement } from '../hooks/useRequirements'
 import { useAuth } from '../contexts/AuthContext'
-import { canDeleteRequirement, canEditRequirement } from '../hooks/useCapabilities'
+import {
+  canAssignRequirementResponsible,
+  canDeleteRequirement,
+  canEditRequirement,
+} from '../hooks/useCapabilities'
 import { useProjectMembers } from '../hooks/useProjectMembers'
 import ConfirmDialog from './ConfirmDialog'
 import { SkeletonRequirementsGrid } from './Skeleton'
@@ -631,7 +635,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             rowId={info.row.original.id}
             options={consultantOptions}
             onUpdate={handleCellUpdate}
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={!canAssignRequirementResponsible(userRole)}
           />
         ),
       }),
