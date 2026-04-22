@@ -383,7 +383,11 @@ router.patch(
 
       if (
         data.responsibleConsultantId !== undefined &&
-        !hasCapability(req.user!.role, 'canAssignRequirementResponsible')
+        !(
+          hasCapability(req.user!.role, 'canAssignRequirementResponsible') ||
+          (req.user!.role === 'CONSULTANT' &&
+            oldRequirement.responsibleConsultantId === req.user!.userId)
+        )
       ) {
         return res.status(403).json({
           error: 'Forbidden',

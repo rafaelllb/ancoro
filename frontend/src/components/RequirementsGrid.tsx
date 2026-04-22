@@ -13,9 +13,9 @@ import { Requirement } from '../services/api'
 import { useUpdateRequirement, useDeleteRequirement } from '../hooks/useRequirements'
 import { useAuth } from '../contexts/AuthContext'
 import {
-  canAssignRequirementResponsible,
   canDeleteRequirement,
   canEditRequirement,
+  canEditResponsibleConsultant,
 } from '../hooks/useCapabilities'
 import { useProjectMembers } from '../hooks/useProjectMembers'
 import ConfirmDialog from './ConfirmDialog'
@@ -558,13 +558,23 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
     const requirement = data.find((item) => item.id === id)
     if (!requirement) return
 
+    const canEditResponsibleConsultantField = canEditResponsibleConsultant(
+      userRole,
+      user?.id,
+      requirement.responsibleConsultantId
+    )
+
     const canEditThisRequirement = canEditRequirement(
       userRole,
       user?.id,
       requirement.responsibleConsultantId
     )
 
-    if (!canEditThisRequirement) {
+    if (field === 'responsibleConsultantId') {
+      if (!canEditResponsibleConsultantField) {
+        return
+      }
+    } else if (!canEditThisRequirement) {
       return
     }
 
@@ -643,7 +653,11 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             rowId={info.row.original.id}
             options={consultantOptions}
             onUpdate={handleCellUpdate}
-            disabled={!canAssignRequirementResponsible(userRole)}
+            disabled={!canEditResponsibleConsultant(
+              userRole,
+              user?.id,
+              info.row.original.responsibleConsultantId
+            )}
           />
         ),
       }),

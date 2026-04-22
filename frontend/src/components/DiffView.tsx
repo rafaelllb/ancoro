@@ -25,7 +25,7 @@ export function DiffView({ oldValue, newValue, field, compact = false }: DiffVie
 
   // Formata valor para exibição
   const formatValue = (val: string | null) => {
-    if (val === null) return <span className="italic text-gray-400">null</span>
+    if (val === null) return <span className="italic text-gray-400">Não atribuído</span>
     if (val === '') return <span className="italic text-gray-400">(vazio)</span>
     return val
   }

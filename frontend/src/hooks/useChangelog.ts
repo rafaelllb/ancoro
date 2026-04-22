@@ -176,6 +176,8 @@ export function formatFieldName(field: string): string {
     howMuch: 'Quanto',
     dependsOn: 'Depende de',
     providesFor: 'Fornece para',
+    responsibleConsultantId: 'Responsável Consultor',
+    responsibleBusiness: 'Responsável Negócio',
     consultantNotes: 'Notas do Consultor',
     status: 'Status',
     observations: 'Observações',

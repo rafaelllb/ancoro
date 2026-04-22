@@ -168,6 +168,49 @@ export async function logRequirementDelete(
 }
 
 /**
+ * Resolve IDs de usuários para nomes nos valores de changelog
+ * Para campos como responsibleConsultantId, substitui o ID pelo nome do usuário
+ */
+async function resolveUserNames(
+  prisma: PrismaClient,
+  changes: Array<ChangeLog & { user: { id: string; name: string; email: string } }>
+): Promise<Array<ChangeLog & { user: { id: string; name: string; email: string } }>> {
+  // Coleta todos os IDs de usuários que precisam ser resolvidos
+  const userIds = new Set<string>()
+
+  for (const change of changes) {
+    if (change.field === 'responsibleConsultantId') {
+      if (change.oldValue) userIds.add(change.oldValue)
+      if (change.newValue) userIds.add(change.newValue)
+    }
+  }
+
+  if (userIds.size === 0) {
+    return changes
+  }
+
+  // Busca nomes dos usuários
+  const users = await prisma.user.findMany({
+    where: { id: { in: Array.from(userIds) } },
+    select: { id: true, name: true },
+  })
+
+  const userNameMap = new Map(users.map((u) => [u.id, u.name]))
+
+  // Substitui IDs por nomes, ou "Não atribuído" para null
+  return changes.map((change) => {
+    if (change.field === 'responsibleConsultantId') {
+      return {
+        ...change,
+        oldValue: change.oldValue ? (userNameMap.get(change.oldValue) || change.oldValue) : null,
+        newValue: change.newValue ? (userNameMap.get(change.newValue) || change.newValue) : null,
+      }
+    }
+    return change
+  })
+}
+
+/**
  * Busca histórico de mudanças de um requisito
  */
 export async function getRequirementChanges(
@@ -220,7 +263,10 @@ export async function getRequirementChanges(
     prisma.changeLog.count({ where }),
   ])
 
-  return { changes, total }
+  // Resolve IDs de usuários para nomes em campos como responsibleConsultantId
+  const resolvedChanges = await resolveUserNames(prisma, changes)
+
+  return { changes: resolvedChanges, total }
 }
 
 /**

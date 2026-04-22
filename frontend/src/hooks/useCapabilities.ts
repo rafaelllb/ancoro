@@ -86,11 +86,12 @@ export function canEditRequirement(
   userId: string | undefined,
   responsibleConsultantId: string | null | undefined
 ): boolean {
-  // Admin SEMPRE pode editar - verificação prioritária antes de userId
+  // Admin SEMPRE pode editar tudo - verificação prioritária antes de userId
   if (userRole === 'ADMIN') return true
 
-  // Manager SEMPRE pode editar
-  if (userRole === 'MANAGER') return true
+  // Manager NÃO pode editar campos gerais, apenas o responsável consultor
+  // (usar canAssignRequirementResponsible para esse campo)
+  if (userRole === 'MANAGER') return false
 
   // Outros roles precisam de userId válido
   if (!userRole || !userId) return false
@@ -108,4 +109,16 @@ export function canEditRequirement(
 
 export function canAssignRequirementResponsible(userRole: string | undefined): boolean {
   return hasCapability(userRole, 'canAssignRequirementResponsible')
+}
+
+export function canEditResponsibleConsultant(
+  userRole: string | undefined,
+  userId: string | undefined,
+  responsibleConsultantId: string | null | undefined
+): boolean {
+  if (canAssignRequirementResponsible(userRole)) return true
+
+  if (!userRole || !userId) return false
+
+  return userRole === 'CONSULTANT' && responsibleConsultantId === userId
 }
