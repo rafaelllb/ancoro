@@ -68,9 +68,11 @@ export function canDeleteRequirement(
   userId: string | undefined,
   responsibleConsultantId: string | null | undefined
 ): boolean {
-  if (!userRole || !userId) return false
-
+  // Admin SEMPRE pode deletar - verificação prioritária antes de userId
   if (userRole === 'ADMIN') return true
+
+  // Outros roles precisam de userId válido
+  if (!userRole || !userId) return false
 
   if (userRole === 'CONSULTANT') {
     return responsibleConsultantId === userId
@@ -84,11 +86,14 @@ export function canEditRequirement(
   userId: string | undefined,
   responsibleConsultantId: string | null | undefined
 ): boolean {
-  if (!userRole || !userId) return false
+  // Admin SEMPRE pode editar - verificação prioritária antes de userId
+  if (userRole === 'ADMIN') return true
 
-  if (userRole === 'ADMIN' || userRole === 'MANAGER') {
-    return true
-  }
+  // Manager SEMPRE pode editar
+  if (userRole === 'MANAGER') return true
+
+  // Outros roles precisam de userId válido
+  if (!userRole || !userId) return false
 
   if (userRole === 'CLIENT') {
     return !responsibleConsultantId

@@ -81,6 +81,8 @@ const EditableStatusCell = ({ value, rowId, onUpdate, disabled = false }: Editab
         value={value}
         onChange={handleChange}
         onBlur={() => setIsEditing(false)}
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
         disabled={disabled}
         autoFocus
         title="Selecionar status do requisito"
@@ -191,6 +193,8 @@ const EditableModuleCell = ({ value, rowId, onUpdate, disabled = false }: Editab
         value={SAP_MODULES.includes(value) ? value : '__custom__'}
         onChange={handleSelectChange}
         onBlur={() => setIsEditing(false)}
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
         disabled={disabled}
         autoFocus
         title="Selecionar módulo SAP"
@@ -401,11 +405,13 @@ const EditableCell = ({ value, rowId, columnId, columnLabel, onUpdate, multiline
         {multiline ? (
           <textarea
             className="w-full px-2 py-1 pr-8 bg-white text-gray-900 border border-teal-400 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
-              value={localValue}
-              onChange={(e) => setLocalValue(e.target.value)}
-              onBlur={handleBlur}
-              disabled={disabled}
-              autoFocus
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value)}
+            onBlur={handleBlur}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            disabled={disabled}
+            autoFocus
             rows={3}
             aria-label={`Editar ${columnId}`}
             placeholder={`Digite o valor para ${columnId}`}
@@ -414,11 +420,13 @@ const EditableCell = ({ value, rowId, columnId, columnLabel, onUpdate, multiline
           <input
             type="text"
             className="w-full px-2 py-1 pr-8 bg-white text-gray-900 border border-teal-400 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
-              value={localValue}
-              onChange={(e) => setLocalValue(e.target.value)}
-              onBlur={handleBlur}
-              disabled={disabled}
-              autoFocus
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value)}
+            onBlur={handleBlur}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            disabled={disabled}
+            autoFocus
             aria-label={`Editar ${columnId}`}
             placeholder={`Digite o valor para ${columnId}`}
           />
