@@ -29,7 +29,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Painel esquerdo — branding */}
-      <div className="lg:w-1/2 bg-blue-50 flex flex-col items-center justify-center px-10 py-16 lg:py-0">
+      <div className="lg:w-1/2 bg-ancoro-navy-50 flex flex-col items-center justify-center px-10 py-16 lg:py-0">
         <div className="w-full flex flex-col items-center">
           {/* Lockup horizontal — logo + título/subtítulo */}
           <div className="flex items-center gap-5">
@@ -39,24 +39,24 @@ export default function Login() {
               className="h-52 flex-shrink-0"
             />
             <div>
-              <h1 className="text-8xl font-extrabold text-blue-900 leading-none tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              <h1 className="text-8xl font-extrabold text-ancoro-navy-800 leading-none tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 Ancoro
               </h1>
-              <p className="text-blue-700 text-sm leading-snug mt-1.5" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                Gestão Colaborativa de Requisitos SAP S/4 Utilities
+              <p className="text-ancoro-navy-600 text-sm leading-snug mt-1.5" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                Gestão Colaborativa de Requisitos
               </p>
             </div>
           </div>
 
-          <div className="text-sm text-blue-500" style={{position: 'absolute', bottom: '1rem', }}>
-            <p>Backend-first · Pensamento estruturado</p>
-            <p className="mt-1">Rafael Brito — SAP Utilities Consultant</p>
+          <div className="text-sm text-ancoro-teal-500" style={{position: 'absolute', bottom: '1rem', }}>
+            <p>Pensamento estruturado</p>
+            <p className="mt-1">Ancora ReqOps Method</p>
           </div>
         </div>
       </div>
 
       {/* Painel direito — formulário */}
-      <div className="lg:w-1/2 bg-blue-800 flex items-center justify-center px-8 py-16 lg:py-0">
+      <div className="lg:w-1/2 bg-ancoro-navy-800 flex items-center justify-center px-8 py-16 lg:py-0">
         <div className="w-full max-w-md">
           <h2 className="text-2xl font-semibold text-white mb-8">Entrar na sua conta</h2>
 
@@ -68,7 +68,7 @@ export default function Login() {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-5">
-              <label htmlFor="email" className="block text-sm font-medium text-blue-200 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-ancoro-navy-200 mb-2">
                 Email
               </label>
               <input
@@ -78,13 +78,13 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
-                className="w-full px-4 py-2.5 bg-blue-700/50 border border-blue-600 rounded-lg text-white placeholder-blue-400 focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2.5 bg-ancoro-navy-700/50 border border-ancoro-navy-600 rounded-lg text-white placeholder-ancoro-navy-400 focus:ring-2 focus:ring-ancoro-teal-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="seu.email@exemplo.com"
               />
             </div>
 
             <div className="mb-7">
-              <label htmlFor="password" className="block text-sm font-medium text-blue-200 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-ancoro-navy-200 mb-2">
                 Senha
               </label>
               <input
@@ -94,7 +94,7 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
-                className="w-full px-4 py-2.5 bg-blue-700/50 border border-blue-600 rounded-lg text-white placeholder-blue-400 focus:ring-2 focus:ring-blue-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2.5 bg-ancoro-navy-700/50 border border-ancoro-navy-600 rounded-lg text-white placeholder-ancoro-navy-400 focus:ring-2 focus:ring-ancoro-teal-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="••••••••"
               />
             </div>
@@ -102,35 +102,35 @@ export default function Login() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-white hover:bg-blue-50 text-blue-800 font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-ancoro-teal-500 hover:bg-ancoro-teal-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
 
           {/* Demo credentials */}
-          <div className="mt-8 pt-6 border-t border-blue-700">
-            <p className="text-sm text-blue-300 mb-3">Credenciais de demonstração:</p>
-            <div className="bg-blue-900/50 rounded-lg p-3 text-sm space-y-1">
+          <div className="mt-8 pt-6 border-t border-ancoro-navy-700">
+            <p className="text-sm text-ancoro-navy-300 mb-3">Credenciais de demonstração:</p>
+            <div className="bg-ancoro-navy-900/50 rounded-lg p-3 text-sm space-y-1">
               <p className="font-mono text-xs">
-                <span className="inline-block w-24 text-purple-300 font-semibold">Admin:</span>
-                <span className="text-blue-200">admin@ancoro.app</span>
+                <span className="inline-block w-24 text-ancoro-teal-300 font-semibold">Admin:</span>
+                <span className="text-ancoro-navy-200">admin@ancoro.app</span>
               </p>
               <p className="font-mono text-xs">
-                <span className="inline-block w-24 text-blue-300 font-semibold">Manager:</span>
-                <span className="text-blue-200">rafael.brito@ancoro.com</span>
+                <span className="inline-block w-24 text-ancoro-teal-400 font-semibold">Manager:</span>
+                <span className="text-ancoro-navy-200">rafael.brito@ancoro.com</span>
               </p>
               <p className="font-mono text-xs">
-                <span className="inline-block w-24 text-teal-300 font-semibold">Consultant:</span>
-                <span className="text-blue-200">joao.silva@ancoro.com</span>
+                <span className="inline-block w-24 text-ancoro-teal-500 font-semibold">Consultant:</span>
+                <span className="text-ancoro-navy-200">joao.silva@ancoro.com</span>
               </p>
               <p className="font-mono text-xs">
                 <span className="inline-block w-24 text-gray-300 font-semibold">Client:</span>
-                <span className="text-blue-200">ana.costa@cliente.com</span>
+                <span className="text-ancoro-navy-200">ana.costa@cliente.com</span>
               </p>
-              <p className="font-mono text-xs mt-2 pt-2 border-t border-blue-700">
-                <span className="text-blue-300 font-semibold">Senha (todos):</span>
-                <span className="text-blue-200"> demo123</span>
+              <p className="font-mono text-xs mt-2 pt-2 border-t border-ancoro-navy-700">
+                <span className="text-ancoro-navy-300 font-semibold">Senha (todos):</span>
+                <span className="text-ancoro-navy-200"> demo123</span>
               </p>
             </div>
           </div>

@@ -22,10 +22,10 @@ const sizeClasses = {
 }
 
 const colorClasses = {
-  primary: 'text-blue-600',
+  primary: 'text-ancoro-teal-500',
   white: 'text-white',
   gray: 'text-gray-400',
-  success: 'text-green-600',
+  success: 'text-ancoro-teal-600',
   danger: 'text-red-600',
 }
 
@@ -71,10 +71,10 @@ interface LoadingButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const buttonVariants = {
-  primary: 'bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400',
+  primary: 'bg-ancoro-teal-500 hover:bg-ancoro-teal-600 text-white disabled:bg-ancoro-teal-300',
   secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-800 disabled:bg-gray-100',
   danger: 'bg-red-600 hover:bg-red-700 text-white disabled:bg-red-400',
-  success: 'bg-green-600 hover:bg-green-700 text-white disabled:bg-green-400',
+  success: 'bg-ancoro-teal-600 hover:bg-ancoro-teal-700 text-white disabled:bg-ancoro-teal-400',
 }
 
 const buttonSizes = {
@@ -101,7 +101,7 @@ export function LoadingButton({
       disabled={isDisabled}
       className={`
         inline-flex items-center justify-center gap-2 font-medium rounded-md
-        transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+        transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ancoro-teal-500
         disabled:cursor-not-allowed disabled:opacity-70
         ${buttonVariants[variant]}
         ${buttonSizes[size]}

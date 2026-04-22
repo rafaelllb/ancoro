@@ -8,8 +8,9 @@
   font-weight: 400;
 
   color-scheme: light;
-  color: #1f2937;
-  background-color: #f9fafb;
+  /* Cores Ancoro - alinhadas com a logo */
+  color: #1B3A5F; /* ancoro-navy-800 */
+  background-color: #E8F4F8; /* ancoro-navy-50 */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;

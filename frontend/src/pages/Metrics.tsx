@@ -18,7 +18,7 @@ import { NotificationBell } from '../components/NotificationBell'
 // Mapeamento de status para labels e cores
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
   PENDING: { label: 'Pendente', color: 'text-yellow-700', bgColor: 'bg-yellow-100' },
-  IN_PROGRESS: { label: 'Em Progresso', color: 'text-blue-700', bgColor: 'bg-blue-100' },
+  IN_PROGRESS: { label: 'Em Progresso', color: 'text-ancoro-navy-700', bgColor: 'bg-ancoro-navy-100' },
   VALIDATED: { label: 'Validado', color: 'text-green-700', bgColor: 'bg-green-100' },
   APPROVED: { label: 'Aprovado', color: 'text-emerald-700', bgColor: 'bg-emerald-100' },
   CONFLICT: { label: 'Conflito', color: 'text-red-700', bgColor: 'bg-red-100' },
@@ -97,7 +97,7 @@ export default function Metrics() {
             </Link>
             <Link
               to="/cross-matrix"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+              className="px-4 py-2 bg-ancoro-teal-500 hover:bg-ancoro-teal-600 text-white rounded text-sm transition-colors"
             >
               Matriz de Cruzamento
             </Link>
@@ -124,7 +124,7 @@ export default function Metrics() {
         {metricsQuery.isLoading ? (
           <div className="flex items-center justify-center py-12">
             <svg
-              className="animate-spin h-8 w-8 text-blue-500"
+              className="animate-spin h-8 w-8 text-ancoro-teal-500"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -314,13 +314,13 @@ export default function Metrics() {
               {/* Atividade 24h */}
               <div className="bg-white rounded-lg shadow p-4">
                 <p className="text-sm font-medium text-gray-500">Mudanças (24h)</p>
-                <p className="text-2xl font-bold text-blue-600">{metrics.recentChanges}</p>
+                <p className="text-2xl font-bold text-ancoro-teal-500">{metrics.recentChanges}</p>
               </div>
 
               {/* Comentários 24h */}
               <div className="bg-white rounded-lg shadow p-4">
                 <p className="text-sm font-medium text-gray-500">Comentários (24h)</p>
-                <p className="text-2xl font-bold text-blue-600">{metrics.recentComments}</p>
+                <p className="text-2xl font-bold text-ancoro-teal-500">{metrics.recentComments}</p>
               </div>
             </div>
 
@@ -380,12 +380,12 @@ export default function Metrics() {
 
                       return (
                         <div key={module} className="flex items-center gap-3">
-                          <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700 w-16 text-center">
+                          <span className="px-2 py-1 rounded text-xs font-medium bg-ancoro-navy-100 text-ancoro-navy-700 w-16 text-center">
                             {MODULE_NAMES[module] || module}
                           </span>
                           <div className="flex-1 bg-gray-200 rounded-full h-2">
                             <div
-                              className="h-2 rounded-full bg-blue-500"
+                              className="h-2 rounded-full bg-ancoro-teal-500"
                               style={{ width: `${percentage}%` }}
                             />
                           </div>

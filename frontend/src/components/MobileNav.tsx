@@ -121,7 +121,7 @@ export function MobileNav({ items, userName, userRole, onLogout }: MobileNavProp
         {userName && (
           <div className="p-4 border-b border-gray-200 bg-gray-50">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
+              <div className="w-10 h-10 rounded-full bg-ancoro-teal-500 flex items-center justify-center text-white font-medium">
                 {userName.charAt(0).toUpperCase()}
               </div>
               <div>
@@ -143,7 +143,7 @@ export function MobileNav({ items, userName, userRole, onLogout }: MobileNavProp
                 className={`
                   flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
                   ${isActive
-                    ? 'bg-blue-50 text-blue-700'
+                    ? 'bg-ancoro-teal-50 text-ancoro-teal-600'
                     : 'text-gray-700 hover:bg-gray-100'
                   }
                 `}

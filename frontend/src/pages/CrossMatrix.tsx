@@ -64,13 +64,13 @@ export default function CrossMatrix() {
           <div className="flex items-center gap-4">
             <Link
               to="/dashboard"
-              className="px-4 py-2 text-sm text-blue-600 hover:text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50"
+              className="px-4 py-2 text-sm text-ancoro-navy-600 hover:text-ancoro-navy-700 border border-ancoro-navy-300 rounded-lg hover:bg-ancoro-navy-50"
             >
               ← Requisitos
             </Link>
             <Link
               to="/metrics"
-              className="px-4 py-2 text-sm text-emerald-600 hover:text-emerald-700 border border-emerald-300 rounded-lg hover:bg-emerald-50"
+              className="px-4 py-2 text-sm text-ancoro-teal-500 hover:text-ancoro-teal-600 border border-ancoro-teal-300 rounded-lg hover:bg-ancoro-teal-50"
             >
               Métricas
             </Link>
@@ -113,7 +113,7 @@ export default function CrossMatrix() {
                 <select
                   value={moduleFilter}
                   onChange={(e) => setModuleFilter(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-ancoro-teal-500"
                 >
                   <option value="">Todos</option>
                   <option value="ISU">ISU</option>
@@ -129,7 +129,7 @@ export default function CrossMatrix() {
             <button
               onClick={handleRegenerate}
               disabled={!projectId || regenerateMutation.isPending}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-ancoro-teal-500 text-white rounded-lg hover:bg-ancoro-teal-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {regenerateMutation.isPending ? 'Regerando...' : '🔄 Regerar Matriz'}
             </button>

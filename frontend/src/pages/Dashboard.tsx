@@ -106,14 +106,14 @@ export default function Dashboard() {
           <div className="hidden lg:flex items-center gap-3">
             <Link
               to="/cross-matrix"
-              className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-2 bg-ancoro-teal-500 hover:bg-ancoro-teal-600 text-white rounded-lg text-sm font-medium transition-colors"
             >
               Matriz de Cruzamento
             </Link>
             {canViewMetrics && (
               <Link
                 to="/metrics"
-                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors"
+                className="px-4 py-2 bg-ancoro-teal-600 hover:bg-ancoro-teal-700 text-white rounded-lg text-sm font-medium transition-colors"
               >
                 Métricas
               </Link>
@@ -163,7 +163,7 @@ export default function Dashboard() {
                   id="showAllModules"
                   checked={showAllModules}
                   onChange={(e) => setShowAllModules(e.target.checked)}
-                  className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500 border-gray-300"
+                  className="w-4 h-4 text-ancoro-teal-500 rounded focus:ring-ancoro-teal-500 border-gray-300"
                 />
                 <label htmlFor="showAllModules" className="text-sm text-gray-600">
                   Ver todos os módulos
@@ -193,7 +193,7 @@ export default function Dashboard() {
                 onClick={() => setIsCreateModalOpen(true)}
                 disabled={!projectId}
                 title={!projectId ? 'Selecione um projeto primeiro' : 'Criar novo requisito'}
-                className="flex-1 sm:flex-initial px-3 lg:px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-emerald-500"
+                className="flex-1 sm:flex-initial px-3 lg:px-4 py-2 bg-ancoro-teal-600 hover:bg-ancoro-teal-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-emerald-500"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -234,7 +234,7 @@ export default function Dashboard() {
                   type="button"
                   onClick={() => setIsSpreadsheetMenuOpen(!isSpreadsheetMenuOpen)}
                   onBlur={() => setTimeout(() => setIsSpreadsheetMenuOpen(false), 150)}
-                  className="w-full px-3 lg:px-4 py-2 border border-teal-600 text-teal-700 hover:bg-teal-50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  className="w-full px-3 lg:px-4 py-2 border border-ancoro-teal-500 text-ancoro-teal-600 hover:bg-ancoro-teal-50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -255,7 +255,7 @@ export default function Dashboard() {
                         setIsSpreadsheetModalOpen(true)
                         setIsSpreadsheetMenuOpen(false)
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 flex items-center gap-2 first:rounded-t-lg"
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-ancoro-teal-50 hover:text-ancoro-teal-600 flex items-center gap-2 first:rounded-t-lg"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -269,7 +269,7 @@ export default function Dashboard() {
                         setIsSpreadsheetModalOpen(true)
                         setIsSpreadsheetMenuOpen(false)
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700 flex items-center gap-2 last:rounded-b-lg"
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-ancoro-teal-50 hover:text-ancoro-teal-600 flex items-center gap-2 last:rounded-b-lg"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -284,7 +284,7 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={() => setIsExportModalOpen(true)}
-                className="flex-1 sm:flex-initial px-3 lg:px-4 py-2 border border-teal-600 text-teal-700 hover:bg-teal-50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                className="flex-1 sm:flex-initial px-3 lg:px-4 py-2 border border-ancoro-teal-500 text-ancoro-teal-600 hover:bg-ancoro-teal-50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -298,7 +298,7 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setIsManageMembersModalOpen(true)}
-                  className="flex-1 sm:flex-initial px-3 lg:px-4 py-2 border border-teal-600 text-teal-700 hover:bg-teal-50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 sm:flex-initial px-3 lg:px-4 py-2 border border-ancoro-teal-500 text-ancoro-teal-600 hover:bg-ancoro-teal-50 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
