@@ -49,7 +49,7 @@ export default function Login() {
           </div>
 
           <div className="text-sm text-ancoro-teal-500" style={{position: 'absolute', bottom: '1rem', }}>
-            <p>Pensamento estruturado</p>
+            <p>Foundation-first . Estabilidade, Precisão e Confiabilidade</p>
             <p className="mt-1">Ancora ReqOps Method</p>
           </div>
         </div>
