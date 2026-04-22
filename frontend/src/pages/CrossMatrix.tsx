@@ -28,7 +28,7 @@ export default function CrossMatrix() {
   const projectId = currentProject?.id || ''
 
   // Capacidades centralizadas do usuário
-  const { canManageMembers, canViewMatrix, canViewMetrics, canEditMatrix, role } = useCapabilities()
+  const { canManageMembers, canViewMatrix, canViewMetrics, role } = useCapabilities()
 
   // CLIENT não pode acessar a matriz - redireciona para dashboard
   if (!canViewMatrix) {

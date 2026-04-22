@@ -10,8 +10,30 @@
 // Tipos de role disponíveis
 export type UserRole = 'ADMIN' | 'MANAGER' | 'CONSULTANT' | 'CLIENT'
 
+type CapabilityMap = {
+  canCreateRequirement: boolean
+  canEditAnyRequirement: boolean
+  canDeleteAnyRequirement: boolean
+  canEditOwnRequirement: boolean
+  canDeleteOwnRequirement: boolean
+  canViewMatrix: boolean
+  canRegenerateMatrix: boolean
+  canEditMatrix: boolean
+  canViewMetrics: boolean
+  canConfigureLists: boolean
+  canConfigureIdPattern: boolean
+  canCreateProject: boolean
+  canEditProject: boolean
+  canDeleteProject: boolean
+  canManageMembers: boolean
+  canImportRequirements: boolean
+  canExportBPD: boolean
+}
+
+type RoleCapabilityMap = Record<UserRole, Partial<CapabilityMap>>
+
 // Mapa de capacidades por role
-export const RoleCapabilities = {
+export const RoleCapabilities: RoleCapabilityMap = {
   ADMIN: {
     // Requisitos
     canCreateRequirement: true,
@@ -119,10 +141,10 @@ export const RoleCapabilities = {
     canImportRequirements: false,
     canExportBPD: false,
   },
-} as const
+}
 
 // Tipo para capacidades
-export type CapabilityKey = keyof typeof RoleCapabilities.ADMIN
+export type CapabilityKey = keyof CapabilityMap
 
 /**
  * Verifica se um role possui determinada capacidade
@@ -144,7 +166,7 @@ export function hasCapability(
  */
 export function getCapabilities(
   role: string | undefined
-): Partial<typeof RoleCapabilities.ADMIN> {
+): Partial<CapabilityMap> {
   if (!role) return {}
 
   return RoleCapabilities[role as keyof typeof RoleCapabilities] ?? {}
