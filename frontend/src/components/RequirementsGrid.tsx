@@ -246,6 +246,8 @@ const EditableResponsibleConsultantCell = ({
       value={value || ''}
       disabled={disabled}
       onChange={(e) => onUpdate(rowId, 'responsibleConsultantId', e.target.value || null)}
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
       aria-label="Responsável consultor"
     >
       <option value="">Não atribuído</option>
@@ -304,8 +306,12 @@ const ExpandedEditModal = ({ isOpen, title, value, onSave, onClose }: ExpandedEd
         aria-hidden="true"
       />
 
-      {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+      {/* Modal - stopPropagation impede que cliques no modal fechem via overlay */}
+      <div
+        className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
