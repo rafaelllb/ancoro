@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../index'
 import { authenticate } from '../middleware/auth'
-import { requireEditPermission, requireDeletePermission, requireProjectAccess } from '../middleware/permissions'
+import { requireEditPermission, requireDeletePermission, requireProjectAccess, canEditResponsibleBusiness } from '../middleware/permissions'
 import {
   createRequirementSchemaForProject,
   updateRequirementSchema,
@@ -393,6 +393,24 @@ router.patch(
           error: 'Forbidden',
           message: 'Você não tem permissão para alocar responsáveis a requisitos',
         })
+      }
+
+      // Validação específica para CLIENT quando há responsável consultor atribuído
+      // CLIENT pode editar qualquer campo se não houver responsável, mas apenas
+      // responsibleBusiness se já houver um responsável consultor
+      if (req.user!.role === 'CLIENT' && oldRequirement.responsibleConsultantId) {
+        const allowedFieldsForClient = ['responsibleBusiness']
+        const fieldsBeingEdited = Object.keys(data)
+        const unauthorizedFields = fieldsBeingEdited.filter(
+          (field) => !allowedFieldsForClient.includes(field)
+        )
+
+        if (unauthorizedFields.length > 0) {
+          return res.status(403).json({
+            error: 'Forbidden',
+            message: `Você não tem permissão para editar os campos: ${unauthorizedFields.join(', ')}. Apenas o campo "Responsável Negócio" pode ser editado quando há um consultor responsável.`,
+          })
+        }
       }
 
       const targetResponsibleConsultantId =

@@ -37,7 +37,10 @@ export async function requireAdminOrManager(req: Request, res: Response, next: N
  * - ADMIN: qualquer requisito
  * - MANAGER: qualquer requisito do projeto que participa
  * - CONSULTANT: apenas requisitos em que é o responsável consultor
- * - CLIENT: apenas requisitos sem responsável consultor definido
+ * - CLIENT: pode editar (campo responsibleBusiness sempre; outros campos apenas se não houver responsável)
+ *
+ * Nota: A validação de campos específicos é feita na rota, este middleware apenas
+ * verifica se o usuário pode potencialmente editar algo no requisito.
  */
 export async function canEditRequirement(
   userId: string,
@@ -75,9 +78,10 @@ export async function canEditRequirement(
     return true
   }
 
-  // CLIENT só pode editar requisitos ainda não atribuídos a um consultor
+  // CLIENT pode acessar a rota de edição (validação de campos é feita na rota)
+  // Permite editar responsibleBusiness sempre; outros campos apenas se não houver responsável
   if (userRole === UserRole.CLIENT) {
-    return !requirement.responsibleConsultantId
+    return true
   }
 
   // CONSULTANT pode editar apenas requisitos em que é o responsável
@@ -234,6 +238,48 @@ export async function canViewProject(userId: string, userRole: string, projectId
   })
 
   return !!isProjectMember
+}
+
+/**
+ * Verifica se o usuário pode editar o campo "Responsável Negócio"
+ *
+ * Regras:
+ * - ADMIN, MANAGER, CLIENT: sempre podem editar
+ * - CONSULTANT: apenas se for o responsável do requisito
+ */
+export async function canEditResponsibleBusiness(
+  userId: string,
+  userRole: string,
+  requirementId: string
+): Promise<boolean> {
+  // Admin, Manager e Client podem editar qualquer responsável negócio
+  if (userRole === UserRole.ADMIN || userRole === UserRole.MANAGER || userRole === UserRole.CLIENT) {
+    return true
+  }
+
+  // Consultant só pode editar se for o responsável do requisito
+  if (userRole === UserRole.CONSULTANT) {
+    const requirement = await prisma.requirement.findUnique({
+      where: { id: requirementId },
+      select: { responsibleConsultantId: true, projectId: true },
+    })
+
+    if (!requirement) return false
+
+    // Verifica se é membro do projeto
+    const isProjectMember = await prisma.projectUser.findFirst({
+      where: {
+        projectId: requirement.projectId,
+        userId: userId,
+      },
+    })
+
+    if (!isProjectMember) return false
+
+    return requirement.responsibleConsultantId === userId
+  }
+
+  return false
 }
 
 /**

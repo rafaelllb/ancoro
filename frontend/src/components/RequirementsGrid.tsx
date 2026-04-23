@@ -16,6 +16,7 @@ import {
   canDeleteRequirement,
   canEditRequirement,
   canEditResponsibleConsultant,
+  canEditResponsibleBusiness,
 } from '../hooks/useCapabilities'
 import { useProjectMembers } from '../hooks/useProjectMembers'
 import ConfirmDialog from './ConfirmDialog'
@@ -570,16 +571,23 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
       requirement.responsibleConsultantId
     )
 
+    const canEditResponsibleBusinessField = canEditResponsibleBusiness(
+      userRole,
+      user?.id,
+      requirement.responsibleConsultantId
+    )
+
     const canEditThisRequirement = canEditRequirement(
       userRole,
       user?.id,
       requirement.responsibleConsultantId
     )
 
+    // Verificação de permissão por campo
     if (field === 'responsibleConsultantId') {
-      if (!canEditResponsibleConsultantField) {
-        return
-      }
+      if (!canEditResponsibleConsultantField) return
+    } else if (field === 'responsibleBusiness') {
+      if (!canEditResponsibleBusinessField) return
     } else if (!canEditThisRequirement) {
       return
     }
@@ -677,7 +685,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             columnId="responsibleBusiness"
             columnLabel="Responsável Negócio"
             onUpdate={handleCellUpdate}
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={!canEditResponsibleBusiness(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),

@@ -122,3 +122,29 @@ export function canEditResponsibleConsultant(
 
   return userRole === 'CONSULTANT' && responsibleConsultantId === userId
 }
+
+/**
+ * Verifica se o usuário pode editar o campo "Responsável Negócio"
+ * - ADMIN, MANAGER, CLIENT: sempre podem editar
+ * - CONSULTANT: apenas se for o responsável do requisito
+ */
+export function canEditResponsibleBusiness(
+  userRole: string | undefined,
+  userId: string | undefined,
+  responsibleConsultantId: string | null | undefined
+): boolean {
+  if (!userRole) return false
+
+  // Admin, Manager e Client podem editar qualquer responsável negócio
+  if (userRole === 'ADMIN' || userRole === 'MANAGER' || userRole === 'CLIENT') {
+    return true
+  }
+
+  // Consultant só pode editar se for o responsável do requisito
+  if (userRole === 'CONSULTANT') {
+    if (!userId) return false
+    return responsibleConsultantId === userId
+  }
+
+  return false
+}
