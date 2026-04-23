@@ -273,11 +273,10 @@ router.patch('/projects/:projectId/lists/:listType/:itemId', authenticate, async
 
 /**
  * DELETE /api/projects/:projectId/lists/:listType/:itemId
- * Desativa um item da lista (soft delete)
+ * Exclui permanentemente um item da lista
  * Requer: autenticação + role ADMIN ou MANAGER
  *
- * Não remove fisicamente, apenas seta isActive=false.
- * Itens em uso por requisitos/integrações não podem ser desativados.
+ * Itens em uso por requisitos/integrações não podem ser excluídos.
  */
 router.delete('/projects/:projectId/lists/:listType/:itemId', authenticate, async (req: Request, res: Response) => {
   try {
@@ -335,20 +334,18 @@ router.delete('/projects/:projectId/lists/:listType/:itemId', authenticate, asyn
     if (inUseCount > 0) {
       return res.status(409).json({
         error: 'Conflict',
-        message: `Este item está em uso por ${inUseCount} registro(s). Remova as referências antes de desativar.`,
+        message: `Este item está em uso por ${inUseCount} registro(s). Remova as referências antes de excluir.`,
         inUseCount,
       })
     }
 
-    // Desativa o item (soft delete)
-    await prisma.projectListItem.update({
+    await prisma.projectListItem.delete({
       where: { id: itemId },
-      data: { isActive: false },
     })
 
     res.json({
       success: true,
-      message: 'Item desativado com sucesso',
+      message: 'Item excluído com sucesso',
     })
   } catch (error) {
     console.error('Error deleting list item:', error)

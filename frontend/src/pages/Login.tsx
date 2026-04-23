@@ -29,26 +29,26 @@ export default function Login() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Painel esquerdo — branding */}
-      <div className="lg:w-1/2 bg-ancoro-navy-50 flex flex-col items-center justify-center px-10 py-16 lg:py-0">
-        <div className="w-full flex flex-col items-center">
+      <div className="relative lg:w-1/2 bg-ancoro-navy-50 flex items-center justify-center px-6 py-16 sm:px-10 lg:px-12 lg:py-12 overflow-hidden">
+        <div className="w-full max-w-3xl flex flex-col items-center justify-center text-center">
           {/* Lockup horizontal — logo + título/subtítulo */}
-          <div className="flex items-center gap-5">
+          <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-center lg:justify-center lg:gap-5">
             <img
               src="/logo-new.png"
               alt="Ancoro Logo"
-              className="h-52 flex-shrink-0"
+              className="h-40 sm:h-44 lg:h-52 flex-shrink-0"
             />
-            <div>
-              <h1 className="text-8xl font-extrabold text-ancoro-navy-800 leading-none tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+            <div className="text-center">
+              <h1 className="text-6xl sm:text-7xl lg:text-8xl font-extrabold text-ancoro-navy-800 leading-none tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 Ancoro
               </h1>
-              <p className="text-ancoro-navy-600 text-sm leading-snug mt-1.5" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              <p className="text-ancoro-navy-600 text-sm sm:text-base leading-snug mt-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
                 Gestão Colaborativa de Requisitos
               </p>
             </div>
           </div>
 
-          <div className="text-sm text-ancoro-teal-500" style={{position: 'absolute', bottom: '1rem', }}>
+          <div className="mt-16 lg:mt-20 text-center text-sm text-ancoro-teal-500 lg:absolute lg:left-1/2 lg:bottom-6 lg:mt-0 lg:-translate-x-1/2">
             <p>Foundation-first . Estabilidade, Precisão e Confiabilidade</p>
             <p className="mt-1">Ancora ReqOps Method</p>
           </div>
