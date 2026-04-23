@@ -466,18 +466,23 @@ const EditableCell = ({ value, rowId, columnId, columnLabel, onUpdate, multiline
     <>
       <div
         className={`px-2 py-1 bg-gray-50 rounded min-h-[32px] text-gray-900 group relative ${disabled ? 'cursor-default opacity-70' : 'cursor-text hover:bg-gray-100'}`}
-        onClick={() => {
+        onClick={(e) => {
+          e.stopPropagation()
           if (disabled) return
           setLocalValue(displayValue)
           setIsEditing(true)
         }}
+        title={disabled ? 'Sem permissão para editar este campo' : 'Clique para editar'}
       >
         <span className="line-clamp-2 pr-6">{displayValue || '—'}</span>
         {/* Botão expandir visível no hover - sempre disponível para todos os campos */}
         {displayValue && (
           <button
             type="button"
-            onClick={handleExpandClick}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleExpandClick(e)
+            }}
             className="absolute top-1 right-1 p-1 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded transition-colors opacity-0 group-hover:opacity-100"
             title="Expandir para ver completo"
           >
