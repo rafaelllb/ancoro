@@ -28,7 +28,7 @@ export default function CrossMatrix() {
   const projectId = currentProject?.id || ''
 
   // Capacidades centralizadas do usuário
-  const { canManageMembers, canViewMatrix, canViewMetrics, role } = useCapabilities()
+  const { canManageMembers, canViewMatrix, canViewMetrics, canRegenerateMatrix, role } = useCapabilities()
 
   // CLIENT não pode acessar a matriz - redireciona para dashboard
   if (!canViewMatrix) {
@@ -134,13 +134,13 @@ export default function CrossMatrix() {
             </div>
 
             {/* Regenerate button */}
-            <button
+            {canRegenerateMatrix && <button
               onClick={handleRegenerate}
               disabled={!projectId || regenerateMutation.isPending}
               className="px-6 py-2 bg-ancoro-teal-500 text-white rounded-lg hover:bg-ancoro-teal-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {regenerateMutation.isPending ? 'Regerando...' : '🔄 Regerar Matriz'}
-            </button>
+            </button>}
           </div>
 
           {/* Stats */}

@@ -26,6 +26,57 @@ interface RequirementForMatrix {
   providesFor: string | null;
 }
 
+interface ExistingMatrixEntry {
+  fromReqId: string;
+  toReqId: string;
+  dataFlow: string | null;
+  dataFlowBack: string | null;
+  integrationType: string;
+  trigger: string;
+  timing: string;
+  ownerUserId: string | null;
+  status: string;
+  manualNotes: string | null;
+}
+
+const AUTO_CIRCULAR_NOTE_PREFIX = '[AUTO:CIRCULAR]';
+
+function buildEntryKey(fromId: string, toId: string): string {
+  return `${fromId}->${toId}`;
+}
+
+function stripAutoCircularNote(notes: string | null): string | null {
+  if (!notes) return null;
+
+  const sanitized = notes
+    .replace(
+      new RegExp(`\\n\\n${AUTO_CIRCULAR_NOTE_PREFIX}[\\s\\S]*$`),
+      ''
+    )
+    .trim();
+
+  return sanitized.length > 0 ? sanitized : null;
+}
+
+function buildCircularNotes(
+  manualNotes: string | null,
+  cycleDescriptions: string[]
+): string | null {
+  const sanitizedManualNotes = stripAutoCircularNote(manualNotes);
+
+  if (cycleDescriptions.length === 0) {
+    return sanitizedManualNotes;
+  }
+
+  const autoNote = `${AUTO_CIRCULAR_NOTE_PREFIX} Dependência circular detectada: ${cycleDescriptions.join(
+    '; '
+  )}`;
+
+  return sanitizedManualNotes
+    ? `${sanitizedManualNotes}\n\n${autoNote}`
+    : autoNote;
+}
+
 /**
  * Extrai IDs de requisitos de uma string separada por vírgulas
  * Exemplo: "ISU-001, ISU-002, FI-001" → ["ISU-001", "ISU-002", "FI-001"]
@@ -123,6 +174,29 @@ function findRequirementId(
 export async function regenerateCrossMatrix(
   projectId: string
 ): Promise<{ created: number; circular: number; cycles: CircularDependency[] }> {
+  const existingEntries = await prisma.crossMatrixEntry.findMany({
+    where: { projectId },
+    select: {
+      fromReqId: true,
+      toReqId: true,
+      dataFlow: true,
+      dataFlowBack: true,
+      integrationType: true,
+      trigger: true,
+      timing: true,
+      ownerUserId: true,
+      status: true,
+      manualNotes: true,
+    },
+  });
+
+  const existingEntriesByKey = new Map<string, ExistingMatrixEntry>(
+    existingEntries.map((entry) => [
+      buildEntryKey(entry.fromReqId, entry.toReqId),
+      entry,
+    ])
+  );
+
   // 1. Buscar requisitos do projeto
   const requirements = await prisma.requirement.findMany({
     where: { projectId },
@@ -136,11 +210,36 @@ export async function regenerateCrossMatrix(
   });
 
   if (requirements.length === 0) {
+    await prisma.crossMatrixEntry.deleteMany({
+      where: { projectId },
+    });
+
     return { created: 0, circular: 0, cycles: [] };
   }
 
   // 2. Extrair dependências
   const edges = extractDependencies(requirements);
+
+  // 2.1 Detectar ciclos antes de recriar as entries
+  const cycles = detectCircularDependencies(edges);
+  const circularEdgeKeys = new Set<string>();
+  const cycleDescriptionsByEdge = new Map<string, string[]>();
+
+  cycles.forEach((cycle) => {
+    const formattedCycle = formatCycle(cycle.cycle);
+
+    for (let index = 0; index < cycle.cycle.length - 1; index++) {
+      const fromReqId = cycle.cycle[index];
+      const toReqId = cycle.cycle[index + 1];
+      const edgeKey = buildEntryKey(fromReqId, toReqId);
+
+      circularEdgeKeys.add(edgeKey);
+      cycleDescriptionsByEdge.set(edgeKey, [
+        ...(cycleDescriptionsByEdge.get(edgeKey) ?? []),
+        formattedCycle,
+      ]);
+    }
+  });
 
   // 3. Deletar entries antigas
   await prisma.crossMatrixEntry.deleteMany({
@@ -160,13 +259,33 @@ export async function regenerateCrossMatrix(
         return null;
       }
 
+      const existingEntry = existingEntriesByKey.get(buildEntryKey(fromId, toId));
+      const humanReadableEdgeKey = buildEntryKey(edge.fromReqId, edge.toReqId);
+      const isCircular = circularEdgeKeys.has(humanReadableEdgeKey);
+      const cycleDescriptions =
+        cycleDescriptionsByEdge.get(humanReadableEdgeKey) ?? [];
+
       return {
         projectId,
         fromReqId: fromId,
         toReqId: toId,
         fromModule,
         toModule,
-        status: 'PENDING' as const,
+        dataFlow: existingEntry?.dataFlow ?? null,
+        dataFlowBack: existingEntry?.dataFlowBack ?? null,
+        integrationType: existingEntry?.integrationType ?? 'OTHER',
+        trigger: existingEntry?.trigger ?? '',
+        timing: existingEntry?.timing ?? 'SYNC',
+        ownerUserId: existingEntry?.ownerUserId ?? null,
+        status: isCircular
+          ? 'CIRCULAR'
+          : existingEntry?.status === 'CIRCULAR'
+            ? 'PENDING'
+            : existingEntry?.status ?? 'PENDING',
+        manualNotes: buildCircularNotes(
+          existingEntry?.manualNotes ?? null,
+          cycleDescriptions
+        ),
       };
     })
     .filter((entry) => entry !== null);
@@ -176,46 +295,15 @@ export async function regenerateCrossMatrix(
       data: entriesToCreate,
     });
   }
-
-  // 5. Detectar dependências circulares
-  const cycles = detectCircularDependencies(edges);
-
-  // 6. Atualizar status para CIRCULAR e emitir notificação
-  let circularCount = 0;
   if (cycles.length > 0) {
     // Emite notificação real-time sobre ciclos detectados
     const cycleArrays = cycles.map((c) => c.cycle);
     emitCircularDependency(projectId, cycleArrays);
-    const affectedReqIds = new Set<string>();
-    cycles.forEach((cycle) => {
-      cycle.affectedReqIds.forEach((reqId) => affectedReqIds.add(reqId));
-    });
-
-    // Atualizar entries envolvidas em ciclos
-    for (const reqId of affectedReqIds) {
-      const requirementId = findRequirementId(reqId, requirements);
-      if (!requirementId) continue;
-
-      await prisma.crossMatrixEntry.updateMany({
-        where: {
-          projectId,
-          OR: [{ fromReqId: requirementId }, { toReqId: requirementId }],
-        },
-        data: {
-          status: 'CIRCULAR',
-          manualNotes: `Dependência circular detectada: ${cycles
-            .filter((c) => c.affectedReqIds.has(reqId))
-            .map((c) => formatCycle(c.cycle))
-            .join('; ')}`,
-        },
-      });
-      circularCount++;
-    }
   }
 
   return {
     created: entriesToCreate.length,
-    circular: circularCount,
+    circular: circularEdgeKeys.size,
     cycles,
   };
 }
@@ -269,6 +357,7 @@ export async function updateCrossMatrixEntry(
   entryId: string,
   data: {
     dataFlow?: string;
+    dataFlowBack?: string;
     integrationType?: string;
     trigger?: string;
     timing?: string;
@@ -277,9 +366,14 @@ export async function updateCrossMatrixEntry(
     manualNotes?: string;
   }
 ) {
+  const { ownerId, ...rest } = data;
+
   return await prisma.crossMatrixEntry.update({
     where: { id: entryId },
-    data,
+    data: {
+      ...rest,
+      ...(ownerId !== undefined ? { ownerUserId: ownerId || null } : {}),
+    },
   });
 }
 
