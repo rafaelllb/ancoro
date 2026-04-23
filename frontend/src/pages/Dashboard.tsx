@@ -336,7 +336,6 @@ export default function Dashboard() {
                 isLoading={isLoading}
                 onRowSelect={setSelectedRequirement}
                 projectId={projectId}
-                userRole={user?.role}
               />
             </div>
           </div>

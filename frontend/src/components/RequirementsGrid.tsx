@@ -29,7 +29,7 @@ interface RequirementsGridProps {
   isLoading: boolean
   onRowSelect?: (requirement: Requirement | null) => void
   projectId: string
-  userRole?: string // Role do usuário logado para controle de permissões
+  // userRole removido: agora obtido diretamente do AuthContext para garantir sincronização
 }
 
 // ===== STATUS INDICATORS =====
@@ -502,8 +502,10 @@ const EditableCell = ({ value, rowId, columnId, columnLabel, onUpdate, multiline
 
 // ===== MAIN COMPONENT =====
 
-export default function RequirementsGrid({ data, isLoading, onRowSelect, projectId, userRole }: RequirementsGridProps) {
+export default function RequirementsGrid({ data, isLoading, onRowSelect, projectId }: RequirementsGridProps) {
   const { user } = useAuth()
+  // userRole obtido diretamente do contexto para evitar problemas de sincronização com props
+  const userRole = user?.role
   const { data: projectMembers = [] } = useProjectMembers(projectId)
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
