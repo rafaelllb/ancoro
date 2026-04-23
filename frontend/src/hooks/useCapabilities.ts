@@ -27,6 +27,10 @@ export interface Capabilities {
   role: string | undefined
 }
 
+function isRole(userRole: string | undefined, expectedRole: string): boolean {
+  return userRole?.toUpperCase() === expectedRole
+}
+
 export function useCapabilities(): Capabilities {
   const { user } = useAuth()
   const role = user?.role
@@ -68,13 +72,10 @@ export function canDeleteRequirement(
   userId: string | undefined,
   responsibleConsultantId: string | null | undefined
 ): boolean {
-  // Admin SEMPRE pode deletar - verificação prioritária antes de userId
-  if (userRole === 'ADMIN') return true
-
-  // Outros roles precisam de userId válido
+  if (hasCapability(userRole, 'canDeleteAnyRequirement')) return true
   if (!userRole || !userId) return false
 
-  if (userRole === 'CONSULTANT') {
+  if (hasCapability(userRole, 'canDeleteOwnRequirement' as CapabilityKey)) {
     return responsibleConsultantId === userId
   }
 
@@ -86,21 +87,13 @@ export function canEditRequirement(
   userId: string | undefined,
   responsibleConsultantId: string | null | undefined
 ): boolean {
-  // Admin SEMPRE pode editar tudo - verificação prioritária antes de userId
-  if (userRole === 'ADMIN') return true
-
-  // Manager NÃO pode editar campos gerais, apenas o responsável consultor
-  // (usar canAssignRequirementResponsible para esse campo)
-  if (userRole === 'MANAGER') return false
-
-  // Outros roles precisam de userId válido
-  if (!userRole || !userId) return false
-
-  if (userRole === 'CLIENT') {
-    return !responsibleConsultantId
+  if (hasCapability(userRole, 'canEditAnyRequirement')) {
+    return !isRole(userRole, 'CLIENT') || !responsibleConsultantId
   }
 
-  if (userRole === 'CONSULTANT') {
+  if (!userRole || !userId) return false
+
+  if (hasCapability(userRole, 'canEditOwnRequirement' as CapabilityKey)) {
     return responsibleConsultantId === userId
   }
 
@@ -117,34 +110,31 @@ export function canEditResponsibleConsultant(
   responsibleConsultantId: string | null | undefined
 ): boolean {
   if (canAssignRequirementResponsible(userRole)) return true
-
   if (!userRole || !userId) return false
 
-  return userRole === 'CONSULTANT' && responsibleConsultantId === userId
+  return (
+    hasCapability(userRole, 'canEditOwnRequirement' as CapabilityKey) &&
+    responsibleConsultantId === userId
+  )
 }
 
 /**
- * Verifica se o usuário pode editar o campo "Responsável Negócio"
+ * Verifica se o usuario pode editar o campo "Responsavel Negocio"
  * - ADMIN, MANAGER, CLIENT: sempre podem editar
- * - CONSULTANT: apenas se for o responsável do requisito
+ * - CONSULTANT: apenas se for o responsavel do requisito
  */
 export function canEditResponsibleBusiness(
   userRole: string | undefined,
   userId: string | undefined,
   responsibleConsultantId: string | null | undefined
 ): boolean {
-  if (!userRole) return false
-
-  // Admin, Manager e Client podem editar qualquer responsável negócio
-  if (userRole === 'ADMIN' || userRole === 'MANAGER' || userRole === 'CLIENT') {
+  if (
+    hasCapability(userRole, 'canAssignRequirementResponsible') ||
+    isRole(userRole, 'ADMIN') ||
+    isRole(userRole, 'CLIENT')
+  ) {
     return true
   }
 
-  // Consultant só pode editar se for o responsável do requisito
-  if (userRole === 'CONSULTANT') {
-    if (!userId) return false
-    return responsibleConsultantId === userId
-  }
-
-  return false
+  return canEditResponsibleConsultant(userRole, userId, responsibleConsultantId)
 }

@@ -112,13 +112,21 @@ export const RoleCapabilities: RoleCapabilityMap = {
 
 export type CapabilityKey = keyof CapabilityMap
 
+function normalizeRole(role: string | undefined): UserRole | undefined {
+  if (!role) return undefined
+
+  const normalizedRole = role.toUpperCase() as UserRole
+  return normalizedRole in RoleCapabilities ? normalizedRole : undefined
+}
+
 export function hasCapability(
   role: string | undefined,
   capability: CapabilityKey
 ): boolean {
-  if (!role) return false
+  const normalizedRole = normalizeRole(role)
+  if (!normalizedRole) return false
 
-  const caps = RoleCapabilities[role as keyof typeof RoleCapabilities]
+  const caps = RoleCapabilities[normalizedRole]
   if (!caps) return false
 
   return (caps as Record<string, boolean>)[capability] ?? false
@@ -127,7 +135,8 @@ export function hasCapability(
 export function getCapabilities(
   role: string | undefined
 ): Partial<CapabilityMap> {
-  if (!role) return {}
+  const normalizedRole = normalizeRole(role)
+  if (!normalizedRole) return {}
 
-  return RoleCapabilities[role as keyof typeof RoleCapabilities] ?? {}
+  return RoleCapabilities[normalizedRole] ?? {}
 }
