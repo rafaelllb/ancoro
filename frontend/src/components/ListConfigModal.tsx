@@ -17,9 +17,9 @@ interface ListConfigModalProps {
 
 // Configuração das tabs
 const LIST_TABS: { type: ListType; label: string; description: string }[] = [
-  { type: 'MODULE', label: 'Módulos', description: 'Módulos SAP para categorizar requisitos' },
+  { type: 'MODULE', label: 'Módulos', description: 'Módulos para categorizar requisitos' },
   { type: 'REQ_STATUS', label: 'Status', description: 'Estados do workflow de requisitos' },
-  { type: 'INTEGRATION_TYPE', label: 'Tipo Integração', description: 'Tipos de integração SAP' },
+  { type: 'INTEGRATION_TYPE', label: 'Tipo Integração', description: 'Tipos de integração' },
   { type: 'INTEGRATION_TIMING', label: 'Timing', description: 'Timing de execução da integração' },
 ]
 

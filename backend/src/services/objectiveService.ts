@@ -55,7 +55,7 @@ export interface OrphanValidationResult {
   matchScore: number;
 }
 
-// Fases do SAP Activate válidas
+// Fases do projeto válidas (metodologia Activate)
 const VALID_ACTIVATE_PHASES = ['DISCOVER', 'EXPLORE', 'REALIZE', 'DEPLOY', 'RUN'];
 
 /**
@@ -99,9 +99,9 @@ export async function getObjectiveById(objectiveId: string): Promise<ProjectObje
  * Cria um novo objetivo de projeto
  */
 export async function createObjective(projectId: string, input: CreateObjectiveInput): Promise<ProjectObjective> {
-  // Valida fase SAP Activate se fornecida
+  // Valida fase Activate se fornecida
   if (input.activatePhase && !VALID_ACTIVATE_PHASES.includes(input.activatePhase)) {
-    throw new Error(`Fase SAP Activate inválida: ${input.activatePhase}. Válidas: ${VALID_ACTIVATE_PHASES.join(', ')}`);
+    throw new Error(`Fase Activate inválida: ${input.activatePhase}. Válidas: ${VALID_ACTIVATE_PHASES.join(', ')}`);
   }
 
   const objective = await prisma.projectObjective.create({
@@ -126,9 +126,9 @@ export async function createObjective(projectId: string, input: CreateObjectiveI
  * Atualiza um objetivo existente
  */
 export async function updateObjective(objectiveId: string, input: UpdateObjectiveInput): Promise<ProjectObjective> {
-  // Valida fase SAP Activate se fornecida
+  // Valida fase Activate se fornecida
   if (input.activatePhase && !VALID_ACTIVATE_PHASES.includes(input.activatePhase)) {
-    throw new Error(`Fase SAP Activate inválida: ${input.activatePhase}. Válidas: ${VALID_ACTIVATE_PHASES.join(', ')}`);
+    throw new Error(`Fase Activate inválida: ${input.activatePhase}. Válidas: ${VALID_ACTIVATE_PHASES.join(', ')}`);
   }
 
   const updateData: Record<string, unknown> = {};

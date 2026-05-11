@@ -186,8 +186,8 @@ export function useRemoveMember(projectId: string) {
   })
 }
 
-// Módulos SAP disponíveis para seleção
-export const SAP_MODULES = [
+// Módulos disponíveis para seleção
+export const MODULES = [
   { value: 'ISU', label: 'ISU - Industry Solution Utilities' },
   { value: 'CRM', label: 'CRM - Customer Relationship Management' },
   { value: 'FICA', label: 'FI-CA - Contract Accounts Receivable' },
@@ -198,4 +198,4 @@ export const SAP_MODULES = [
   { value: 'OTHER', label: 'Outro' },
 ] as const
 
-export type SAPModule = (typeof SAP_MODULES)[number]['value']
+export type ModuleType = (typeof MODULES)[number]['value']

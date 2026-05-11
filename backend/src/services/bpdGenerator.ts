@@ -99,7 +99,7 @@ const MATRIX_STATUS_DISPLAY: Record<string, string> = {
   CIRCULAR: '🔄 Circular',
 };
 
-// Mapeamento de módulos SAP para nomes completos
+// Mapeamento de módulos para nomes completos
 // Alinhado com backend/src/utils/defaultLists.ts
 const MODULE_NAMES: Record<string, string> = {
   // Financeiro
@@ -113,7 +113,7 @@ const MODULE_NAMES: Record<string, string> = {
   'ISU-EDM': 'ISU-EDM (Energy Data Management)',
   'ISU-DM': 'ISU-DM (Device Management)',
   'ISU-CS': 'ISU-CS (Customer Service)',
-  // Outros módulos SAP
+  // Outros módulos
   CRM: 'CRM (Customer Relationship Management)',
   SD: 'SD (Sales & Distribution)',
   MM: 'MM (Materials Management)',

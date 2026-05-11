@@ -114,10 +114,10 @@ const EditableStatusCell = ({ value, rowId, onUpdate, disabled = false }: Editab
 }
 
 // ===== EDITABLE MODULE CELL =====
-// Dropdown para seleção de módulo SAP
+// Dropdown para seleção de módulo
 // Permite tanto seleção de módulos pré-definidos quanto entrada customizada
 
-const SAP_MODULES = [
+const MODULES = [
   'FI-CA',
   'FI-AR',
   'FI-GL',
@@ -191,17 +191,17 @@ const EditableModuleCell = ({ value, rowId, onUpdate, disabled = false }: Editab
     return (
       <select
         className="w-full px-2 py-1 bg-white text-gray-900 border border-teal-400 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
-        value={SAP_MODULES.includes(value) ? value : '__custom__'}
+        value={MODULES.includes(value) ? value : '__custom__'}
         onChange={handleSelectChange}
         onBlur={() => setIsEditing(false)}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
         disabled={disabled}
         autoFocus
-        title="Selecionar módulo SAP"
-        aria-label="Módulo SAP"
+        title="Selecionar módulo"
+        aria-label="Módulo"
       >
-        {SAP_MODULES.map((mod) => (
+        {MODULES.map((mod) => (
           <option key={mod} value={mod}>
             {mod}
           </option>
@@ -1011,7 +1011,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             aria-label="Filtrar por módulo"
           >
             <option value="">Módulo</option>
-            {SAP_MODULES.map(mod => (
+            {MODULES.map(mod => (
               <option key={mod} value={mod}>{mod}</option>
             ))}
           </select>

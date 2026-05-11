@@ -33,7 +33,7 @@ const exportQuerySchema = z.object({
  * Exporta BPD (Business Process Design) do projeto
  *
  * Query params:
- *   - module: (opcional) Filtrar por módulo SAP (ISU, CRM, FICA, etc.)
+ *   - module: (opcional) Filtrar por módulo (ISU, CRM, FICA, etc.)
  *   - format: 'md' | 'docx' (default: 'md')
  *
  * Response:
@@ -91,7 +91,7 @@ router.get(
  * Preview do BPD em formato Markdown (para exibir no frontend)
  *
  * Query params:
- *   - module: (opcional) Filtrar por módulo SAP
+ *   - module: (opcional) Filtrar por módulo
  *
  * Response: JSON com o markdown
  */
@@ -124,7 +124,7 @@ router.get(
  * Retorna warnings sobre requisitos não validados ou conflitos
  *
  * Query params:
- *   - module: (opcional) Filtrar por módulo SAP
+ *   - module: (opcional) Filtrar por módulo
  *
  * Response: JSON com status de validação e warnings
  */

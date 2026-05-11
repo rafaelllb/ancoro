@@ -40,7 +40,7 @@ interface ImportSpreadsheetModalProps {
 const COLUMN_MAPPING: Record<string, string[]> = {
   reqId: ['reqid', 'req_id', 'id', 'requisito', 'req id', 'código', 'codigo'],
   shortDesc: ['shortdesc', 'short_desc', 'descricao', 'descrição', 'description', 'desc', 'titulo', 'título'],
-  module: ['module', 'modulo', 'módulo', 'sap module', 'sap_module'],
+  module: ['module', 'modulo', 'módulo'],
   what: ['what', 'o que', 'oque', 'o_que'],
   why: ['why', 'por que', 'porque', 'por_que', 'porquê'],
   who: ['who', 'quem'],

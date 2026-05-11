@@ -277,7 +277,7 @@ model ProjectObjective {
   // Descrição detalhada do objetivo de negócio
   description String?
 
-  // Fase SAP Activate relacionada (opcional)
+  // Fase Activate relacionada (opcional)
   // DISCOVER | EXPLORE | REALIZE | DEPLOY | RUN
   activatePhase String?
 
@@ -399,7 +399,7 @@ model ConfigChangeLog {
 
 // ProjectStatus: DISCOVERY | REALIZATION | GOLIVE | HYPERCARE | CLOSED
 // UserRole: CONSULTANT | CLIENT | MANAGER | ADMIN
-// SAPModule: ISU | CRM | FICA | DEVICE | SD | MM | PM | OTHER
+// Module: ISU | CRM | FICA | DEVICE | SD | MM | PM | OTHER
 // ReqStatus: PENDING | IN_PROGRESS | VALIDATED | CONFLICT | REJECTED | APPROVED
 // CommentType: QUESTION | ANSWER | OBSERVATION | CONFLICT
 // IntegrationType: BAPI | IDOC | FILE | API | BATCH | OTHER

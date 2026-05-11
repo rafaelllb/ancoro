@@ -19,8 +19,8 @@ export const UserRole = {
   ADMIN: 'ADMIN',
 } as const
 
-// Módulos SAP alinhados com frontend e defaultLists.ts
-export const SAPModule = {
+// Módulos alinhados com frontend e defaultLists.ts
+export const Module = {
   // Financeiro
   'FI-CA': 'FI-CA',
   'FI-AR': 'FI-AR',
@@ -32,7 +32,7 @@ export const SAPModule = {
   'ISU-EDM': 'ISU-EDM',
   'ISU-DM': 'ISU-DM',
   'ISU-CS': 'ISU-CS',
-  // Outros módulos SAP
+  // Outros módulos
   CRM: 'CRM',
   SD: 'SD',
   MM: 'MM',
@@ -95,7 +95,7 @@ export const ChangeType = {
 // Type derivados dos objetos const
 export type ProjectStatusType = (typeof ProjectStatus)[keyof typeof ProjectStatus]
 export type UserRoleType = (typeof UserRole)[keyof typeof UserRole]
-export type SAPModuleType = (typeof SAPModule)[keyof typeof SAPModule]
+export type ModuleType = (typeof Module)[keyof typeof Module]
 export type ReqStatusType = (typeof ReqStatus)[keyof typeof ReqStatus]
 export type CommentTypeType = (typeof CommentType)[keyof typeof CommentType]
 export type IntegrationTypeType = (typeof IntegrationType)[keyof typeof IntegrationType]
@@ -138,7 +138,7 @@ export interface CreateRequirementRequest {
   reqId: string
   projectId: string
   shortDesc: string
-  module: SAPModuleType
+  module: ModuleType
   what: string
   why: string
   who: string
@@ -157,7 +157,7 @@ export interface CreateRequirementRequest {
 
 export interface UpdateRequirementRequest {
   shortDesc?: string
-  module?: SAPModuleType
+  module?: ModuleType
   what?: string
   why?: string
   who?: string

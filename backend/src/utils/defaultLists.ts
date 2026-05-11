@@ -3,7 +3,7 @@
  * Estes valores são usados ao criar um novo projeto ou popular projetos existentes.
  *
  * listType define o tipo de lista:
- * - MODULE: Módulos SAP para requisitos e membros
+ * - MODULE: Módulos para requisitos e membros
  * - REQ_STATUS: Status do workflow de requisitos
  * - INTEGRATION_TYPE: Tipos de integração no cross-matrix
  * - INTEGRATION_TIMING: Timing de integração no cross-matrix
@@ -27,8 +27,8 @@ export interface DefaultListItem {
   isDefault?: boolean
 }
 
-// Módulos SAP padrão para projetos Utilities
-// Nomenclatura alinhada com estrutura SAP: ÁREA-SUBÁREA
+// Módulos padrão para projetos
+// Nomenclatura: ÁREA-SUBÁREA
 export const DEFAULT_MODULES: DefaultListItem[] = [
   // Financeiro
   { code: 'FI-CA', name: 'FI-CA - Contract Accounting', color: '#F59E0B', sortOrder: 1 },
@@ -66,7 +66,7 @@ export const DEFAULT_REQ_STATUSES: DefaultListItem[] = [
   { code: 'APPROVED', name: 'Aprovado', color: '#22C55E', icon: '✔️', sortOrder: 6 },
 ]
 
-// Tipos de integração SAP
+// Tipos de integração
 export const DEFAULT_INTEGRATION_TYPES: DefaultListItem[] = [
   { code: 'BAPI', name: 'BAPI', sortOrder: 1 },
   { code: 'IDOC', name: 'IDOC', sortOrder: 2 },

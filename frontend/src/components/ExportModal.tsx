@@ -18,8 +18,8 @@ interface ExportModalProps {
   projectId: string
 }
 
-// Módulos SAP disponíveis para filtro
-const SAP_MODULES = [
+// Módulos disponíveis para filtro
+const MODULES = [
   { value: '', label: 'Todos os Módulos' },
   { value: 'ISU', label: 'ISU - Industry Solution Utilities' },
   { value: 'CRM', label: 'CRM - Customer Relationship Management' },
@@ -292,7 +292,7 @@ export default function ExportModal({ isOpen, onClose, projectId }: ExportModalP
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {SAP_MODULES.map((module) => (
+                {MODULES.map((module) => (
                   <option key={module.value} value={module.value}>
                     {module.label}
                   </option>

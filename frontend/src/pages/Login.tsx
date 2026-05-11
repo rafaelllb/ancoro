@@ -43,7 +43,7 @@ export default function Login() {
                 Ancoro
               </h1>
               <p className="text-ancoro-navy-600 text-sm sm:text-base leading-snug mt-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                Gestão Colaborativa de Requisitos
+                Governança de Requisitos
               </p>
             </div>
           </div>

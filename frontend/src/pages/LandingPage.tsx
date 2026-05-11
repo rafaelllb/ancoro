@@ -46,7 +46,7 @@ const features = [
   {
     icon: icons.matrix,
     title: 'Matriz de Cruzamento',
-    description: 'Detecção automática de dependências entre módulos SAP. Identifica conflitos e dependências circulares.',
+    description: 'Detecção automática de dependências entre módulos. Identifica conflitos e dependências circulares.',
   },
   {
     icon: icons.collaboration,
@@ -70,7 +70,7 @@ const steps = [
   {
     number: '01',
     title: 'Cadastre os Requisitos',
-    description: 'Documente requisitos no formato 5W2H com campos estruturados e metadados do módulo SAP.',
+    description: 'Documente requisitos no formato 5W2H com campos estruturados e metadados organizados.',
   },
   {
     number: '02',
@@ -112,10 +112,10 @@ function HeroSection() {
               className="text-xl sm:text-2xl text-ancoro-navy-600 mt-3"
               style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
             >
-              Gestão Colaborativa de Requisitos
+              Governança de Requisitos
             </p>
             <p className="text-ancoro-teal-600 font-medium mt-4 text-lg">
-              Ancora ReqOps Method para projetos SAP S/4HANA
+              Ancora ReqOps Method para projetos
             </p>
 
             {/* CTAs */}
@@ -161,8 +161,8 @@ function FeaturesSection() {
             Por que Ancoro?
           </h2>
           <p className="text-ancoro-navy-600 mt-4 text-lg max-w-2xl mx-auto">
-            Operacionalize a gestão de requisitos com a metodologia ReqOps.
-            Reduza retrabalho e aumente a previsibilidade em projetos SAP.
+            Operacionalize a governança de requisitos com a metodologia ReqOps.
+            Reduza retrabalho e aumente a previsibilidade em projetos.
           </p>
         </div>
 
@@ -201,7 +201,7 @@ function HowItWorksSection() {
             Como Funciona
           </h2>
           <p className="text-ancoro-navy-300 mt-4 text-lg max-w-2xl mx-auto">
-            Três passos para transformar a gestão de requisitos do seu projeto.
+            Três passos para transformar a governança de requisitos do seu projeto.
           </p>
         </div>
 
@@ -243,7 +243,7 @@ function FooterSection() {
             Ancora ReqOps Method
           </p>
           <p className="text-ancoro-navy-500 text-xs mt-2">
-            Gestão de Requisitos para SAP S/4HANA Utilities
+            Governança de Requisitos
           </p>
         </div>
       </div>

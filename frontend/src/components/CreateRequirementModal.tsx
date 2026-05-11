@@ -29,9 +29,9 @@ interface CreateRequirementModalProps {
   reqIdPattern?: RequirementIdPattern
 }
 
-// Fallback: Módulos SAP para quando dados do projeto não estão disponíveis
+// Fallback: Módulos para quando dados do projeto não estão disponíveis
 // Alinhado com backend/src/utils/defaultLists.ts e frontend RequirementsGrid.tsx
-const DEFAULT_SAP_MODULES = [
+const DEFAULT_MODULES = [
   // Financeiro
   { value: 'FI-CA', label: 'FI-CA - Contract Accounting' },
   { value: 'FI-AR', label: 'FI-AR - Accounts Receivable' },
@@ -154,7 +154,7 @@ export default function CreateRequirementModal({
   // Usa módulos do projeto se disponíveis, senão usa fallback
   const moduleOptions = projectModules?.length
     ? projectModules.map(m => ({ value: m.code, label: m.name }))
-    : DEFAULT_SAP_MODULES
+    : DEFAULT_MODULES
 
   // Usa status do projeto se disponíveis, senão usa fallback
   const statusOptions = projectStatuses?.length
@@ -331,7 +331,7 @@ export default function CreateRequirementModal({
               {/* Módulo */}
               <div>
                 <label htmlFor="module" className="block text-sm font-medium text-gray-700 mb-1">
-                  Módulo SAP *
+                  Módulo *
                 </label>
                 <select
                   id="module"
