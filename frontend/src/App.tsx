@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import CrossMatrix from './pages/CrossMatrix'
 import Metrics from './pages/Metrics'
+import LandingPage from './pages/LandingPage'
 
 /**
  * Extrai mensagem de erro amigável de diferentes formatos de erro
@@ -204,8 +205,8 @@ function App() {
               }
             />
 
-            {/* Redirect raiz para dashboard */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Landing page (sempre acessível) */}
+            <Route path="/" element={<LandingPage />} />
 
             {/* 404 */}
             <Route
