@@ -163,10 +163,10 @@ export function getChangeTypeIcon(type: ChangeType): string {
 /**
  * Formata nome de campo para exibição
  */
-export function formatFieldName(field: string): string {
+export function formatFieldName(field: string, moduleLabel = 'Área'): string {
   const labels: Record<string, string> = {
     shortDesc: 'Descrição',
-    module: 'Módulo',
+    module: moduleLabel,
     what: 'O que',
     why: 'Por que',
     who: 'Quem',

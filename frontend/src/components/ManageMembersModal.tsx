@@ -14,9 +14,10 @@ import {
   useAddMember,
   useUpdateMember,
   useRemoveMember,
-  MODULES,
 } from '../hooks/useProjectMembers'
 import { useAuth } from '../contexts/AuthContext'
+import { useProjectModules } from '../hooks/useProjectLists'
+import { useProjectTerminology } from '../hooks/useProjectTerminology'
 
 interface ManageMembersModalProps {
   isOpen: boolean
@@ -46,6 +47,8 @@ export default function ManageMembersModal({
   projectId,
 }: ManageMembersModalProps) {
   const { user: currentUser } = useAuth()
+  const { data: projectModules = [] } = useProjectModules(projectId)
+  const { moduleLabel } = useProjectTerminology(projectId)
 
   // State para adicionar membro
   const [selectedUserId, setSelectedUserId] = useState<string>('')
@@ -172,17 +175,17 @@ export default function ManageMembersModal({
                   ))}
                 </select>
 
-                {/* Select Módulo */}
+                {/* Select configurável */}
                 <select
                   value={selectedModule}
                   onChange={(e) => setSelectedModule(e.target.value)}
                   disabled={addMemberMutation.isPending}
                   className="sm:w-48 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                 >
-                  <option value="">Sem módulo</option>
-                  {MODULES.map((mod) => (
-                    <option key={mod.value} value={mod.value}>
-                      {mod.value}
+                  <option value="">Sem {moduleLabel.toLowerCase()}</option>
+                  {projectModules.map((mod) => (
+                    <option key={mod.id} value={mod.code}>
+                      {mod.code}
                     </option>
                   ))}
                 </select>
@@ -273,7 +276,7 @@ export default function ManageMembersModal({
                           Usuário
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Módulo
+                          {moduleLabel}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Role
@@ -320,7 +323,7 @@ export default function ManageMembersModal({
                               </div>
                             </td>
 
-                            {/* Módulo (editável) */}
+                            {/* Campo configurável */}
                             <td className="px-4 py-3">
                               <select
                                 value={member.module || ''}
@@ -331,9 +334,9 @@ export default function ManageMembersModal({
                                 className="px-2 py-1 text-sm border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                               >
                                 <option value="">-</option>
-                                {MODULES.map((mod) => (
-                                  <option key={mod.value} value={mod.value}>
-                                    {mod.value}
+                                {projectModules.map((mod) => (
+                                  <option key={mod.id} value={mod.code}>
+                                    {mod.code}
                                   </option>
                                 ))}
                               </select>

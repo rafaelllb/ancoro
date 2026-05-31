@@ -69,7 +69,7 @@ export const createRequirementSchema = z.object({
     .min(1, 'Descrição é obrigatória')
     .max(50, 'Máximo 50 caracteres'),
 
-  module: z.string().min(1, 'Módulo é obrigatório'),
+  module: z.string().min(1, 'Campo obrigatório'),
 
   what: z.string().min(10, 'Mínimo 10 caracteres no campo "O Que"'),
 

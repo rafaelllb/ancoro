@@ -24,6 +24,8 @@ import {
   Cell,
 } from 'recharts'
 import { metricsAPI, ModuleHeatmapCell } from '../services/api'
+import { useProjectModules } from '../hooks/useProjectLists'
+import { useProjectTerminology } from '../hooks/useProjectTerminology'
 
 interface MetricsChartsProps {
   projectId: string
@@ -50,6 +52,12 @@ const MODULE_NAMES: Record<string, string> = {
 }
 
 export default function MetricsCharts({ projectId }: MetricsChartsProps) {
+  const { data: projectModules = [] } = useProjectModules(projectId)
+  const { moduleLabel } = useProjectTerminology(projectId)
+  const moduleNames = projectModules.reduce((acc, item) => {
+    acc[item.code] = item.name
+    return acc
+  }, {} as Record<string, string>)
   // Query de timeline
   const timelineQuery = useQuery({
     queryKey: ['metrics-timeline', projectId],
@@ -166,7 +174,7 @@ export default function MetricsCharts({ projectId }: MetricsChartsProps) {
       {/* Heatmap - Integrações Módulo × Módulo */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Matriz de Integrações por Módulo
+          Matriz de Integrações por {moduleLabel}
         </h3>
         {heatmapQuery.isLoading ? (
           <div className="h-64 flex items-center justify-center">
@@ -192,7 +200,7 @@ export default function MetricsCharts({ projectId }: MetricsChartsProps) {
             </svg>
           </div>
         ) : heatmapData && heatmapData.cells.length > 0 ? (
-          <HeatmapGrid data={heatmapData} />
+          <HeatmapGrid data={heatmapData} moduleNames={moduleNames} />
         ) : (
           <div className="h-64 flex items-center justify-center text-gray-400">
             Sem integrações mapeadas
@@ -215,7 +223,13 @@ export default function MetricsCharts({ projectId }: MetricsChartsProps) {
  * Componente de Heatmap Grid
  * Renderiza matriz visual de integrações módulo × módulo
  */
-function HeatmapGrid({ data }: { data: { cells: ModuleHeatmapCell[]; modules: string[] } }) {
+function HeatmapGrid({
+  data,
+  moduleNames,
+}: {
+  data: { cells: ModuleHeatmapCell[]; modules: string[] }
+  moduleNames: Record<string, string>
+}) {
   const { cells, modules } = data
 
   // Cria mapa de células para lookup rápido
@@ -232,7 +246,7 @@ function HeatmapGrid({ data }: { data: { cells: ModuleHeatmapCell[]; modules: st
             <th className="px-2 py-1 text-xs font-medium text-gray-500">De / Para</th>
             {modules.map((module) => (
               <th key={module} className="px-2 py-1 text-xs font-medium text-gray-500 text-center">
-                {MODULE_NAMES[module] || module}
+                {moduleNames[module] || MODULE_NAMES[module] || module}
               </th>
             ))}
           </tr>
@@ -241,7 +255,7 @@ function HeatmapGrid({ data }: { data: { cells: ModuleHeatmapCell[]; modules: st
           {modules.map((fromModule) => (
             <tr key={fromModule}>
               <td className="px-2 py-1 text-xs font-medium text-gray-500">
-                {MODULE_NAMES[fromModule] || fromModule}
+                {moduleNames[fromModule] || MODULE_NAMES[fromModule] || fromModule}
               </td>
               {modules.map((toModule) => {
                 const cell = cellMap.get(`${fromModule}->${toModule}`)

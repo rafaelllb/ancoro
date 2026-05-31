@@ -276,7 +276,12 @@ export const projectsAPI = {
 
   updateSettings: (
     projectId: string,
-    data: { reqIdPrefix?: string; reqIdSeparator?: string; reqIdDigitCount?: number }
+    data: {
+      reqIdPrefix?: string
+      reqIdSeparator?: string
+      reqIdDigitCount?: number
+      moduleLabel?: string
+    }
   ) => api.patch(`/api/projects/${projectId}/settings`, data),
 }
 

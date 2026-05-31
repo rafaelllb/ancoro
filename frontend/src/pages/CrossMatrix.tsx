@@ -15,6 +15,8 @@ import {
   useCrossMatrix,
   useRegenerateCrossMatrix,
 } from '../hooks/useCrossMatrix'
+import { useProjectModules } from '../hooks/useProjectLists'
+import { useProjectTerminology } from '../hooks/useProjectTerminology'
 import MatrixTable from '../components/MatrixTable'
 import ManageMembersModal from '../components/ManageMembersModal'
 
@@ -26,6 +28,8 @@ export default function CrossMatrix() {
   // Busca projetos disponíveis (mesmo que Dashboard)
   const { currentProject } = useCurrentProject()
   const projectId = currentProject?.id || ''
+  const { data: projectModules = [] } = useProjectModules(projectId)
+  const { moduleLabel } = useProjectTerminology(projectId)
 
   // Capacidades centralizadas do usuário
   const { canManageMembers, canViewMatrix, canViewMetrics, canRegenerateMatrix, role } = useCapabilities()
@@ -116,7 +120,7 @@ export default function CrossMatrix() {
               {/* Module filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Filtrar por módulo
+                  Filtrar por {moduleLabel.toLowerCase()}
                 </label>
                 <select
                   value={moduleFilter}
@@ -124,11 +128,9 @@ export default function CrossMatrix() {
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-ancoro-teal-500"
                 >
                   <option value="">Todos</option>
-                  <option value="ISU">ISU</option>
-                  <option value="FI">FI</option>
-                  <option value="CO">CO</option>
-                  <option value="SD">SD</option>
-                  <option value="MM">MM</option>
+                  {projectModules.map((item) => (
+                    <option key={item.id} value={item.code}>{item.name}</option>
+                  ))}
                 </select>
               </div>
             </div>

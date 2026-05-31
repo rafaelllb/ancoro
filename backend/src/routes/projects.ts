@@ -4,6 +4,7 @@ import { authenticate } from '../middleware/auth'
 import { updateProjectSettingsSchema, createProjectSchema, updateProjectSchema } from '../schemas'
 import { generateExample, patternFromProject } from '../utils/reqIdPattern'
 import { generateDefaultListItemsData } from '../utils/defaultLists'
+import { DEFAULT_MODULE_LABEL, getProjectModuleLabel, upsertProjectModuleLabel } from '../utils/projectTerminology'
 
 const router = Router()
 
@@ -191,11 +192,13 @@ router.get('/projects/:id/settings', authenticate, async (req: Request, res: Res
     const requirementCount = await prisma.requirement.count({
       where: { projectId: id },
     })
+    const moduleLabel = await getProjectModuleLabel(prisma, id)
 
     res.json({
       reqIdPrefix: project.reqIdPrefix,
       reqIdSeparator: project.reqIdSeparator,
       reqIdDigitCount: project.reqIdDigitCount,
+      moduleLabel,
       reqIdExample,
       hasExistingRequirements: requirementCount > 0,
       requirementCount,
@@ -264,33 +267,62 @@ router.patch('/projects/:id/settings', authenticate, async (req: Request, res: R
     if (data.reqIdPrefix !== undefined) updateData.reqIdPrefix = data.reqIdPrefix
     if (data.reqIdSeparator !== undefined) updateData.reqIdSeparator = data.reqIdSeparator
     if (data.reqIdDigitCount !== undefined) updateData.reqIdDigitCount = data.reqIdDigitCount
+    const shouldUpdateModuleLabel = data.moduleLabel !== undefined
 
     // Se nenhum campo foi fornecido, retorna erro
-    if (Object.keys(updateData).length === 0) {
+    if (Object.keys(updateData).length === 0 && !shouldUpdateModuleLabel) {
       return res.status(400).json({
         error: 'Validation Error',
         message: 'Nenhum campo de configuração fornecido',
       })
     }
 
-    const project = await prisma.project.update({
-      where: { id },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        reqIdPrefix: true,
-        reqIdSeparator: true,
-        reqIdDigitCount: true,
-      },
+    const project = await prisma.$transaction(async (tx) => {
+      const updatedProject = Object.keys(updateData).length > 0
+        ? await tx.project.update({
+            where: { id },
+            data: updateData,
+            select: {
+              id: true,
+              name: true,
+              reqIdPrefix: true,
+              reqIdSeparator: true,
+              reqIdDigitCount: true,
+            },
+          })
+        : await tx.project.findUniqueOrThrow({
+            where: { id },
+            select: {
+              id: true,
+              name: true,
+              reqIdPrefix: true,
+              reqIdSeparator: true,
+              reqIdDigitCount: true,
+            },
+          })
+
+      if (shouldUpdateModuleLabel) {
+        await upsertProjectModuleLabel(
+          tx,
+          id,
+          data.moduleLabel || DEFAULT_MODULE_LABEL,
+          req.user?.userId
+        )
+      }
+
+      return updatedProject
     })
 
     // Calcula novo exemplo
     const pattern = patternFromProject(project)
     const reqIdExample = generateExample(pattern)
+    const moduleLabel = shouldUpdateModuleLabel
+      ? (data.moduleLabel || DEFAULT_MODULE_LABEL)
+      : await getProjectModuleLabel(prisma, id)
 
     res.json({
       ...project,
+      moduleLabel,
       reqIdExample,
       message: 'Configurações atualizadas com sucesso',
     })

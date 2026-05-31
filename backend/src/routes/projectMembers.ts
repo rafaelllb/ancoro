@@ -12,6 +12,7 @@ import { z } from 'zod'
 import { prisma } from '../index'
 import { authenticate } from '../middleware/auth'
 import { requireAdminOrManager, requireProjectAccess } from '../middleware/permissions'
+import { getProjectModuleLabel } from '../utils/projectTerminology'
 
 const router = express.Router()
 
@@ -236,6 +237,7 @@ router.post('/projects/:projectId/members', requireAdminOrManager, async (req, r
 router.patch('/projects/:projectId/members/:userId', requireAdminOrManager, async (req, res, next) => {
   try {
     const { projectId, userId } = req.params
+    const moduleLabel = await getProjectModuleLabel(prisma, projectId)
 
     // Valida dados de entrada
     const validatedData = updateMemberSchema.parse(req.body)
@@ -280,7 +282,7 @@ router.patch('/projects/:projectId/members/:userId', requireAdminOrManager, asyn
         createdAt: updated.createdAt,
         user: updated.user,
       },
-      message: 'Módulo atualizado com sucesso',
+      message: `${moduleLabel} atualizada com sucesso`,
     })
   } catch (error) {
     if (error instanceof z.ZodError) {

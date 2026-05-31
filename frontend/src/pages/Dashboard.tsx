@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useRequirements } from '../hooks/useRequirements'
 import { useCurrentProject } from '../hooks/useProjects'
 import { useCapabilities } from '../hooks/useCapabilities'
+import { useProjectTerminology } from '../hooks/useProjectTerminology'
 import RequirementsGrid from '../components/RequirementsGrid'
 import CommentPanel from '../components/CommentPanel'
 import CreateRequirementModal from '../components/CreateRequirementModal'
@@ -32,6 +33,7 @@ export default function Dashboard() {
   // Buscar projetos e gerenciar projeto atual
   const { currentProject, projects, setCurrentProject } = useCurrentProject()
   const projectId = currentProject?.id || ''
+  const { moduleLabelPlural } = useProjectTerminology(projectId)
   // Extrai o padrão de ID do projeto para usar no modal de criação
   const reqIdPattern = currentProject ? patternFromProject(currentProject) : undefined
 
@@ -178,7 +180,7 @@ export default function Dashboard() {
                   className="w-4 h-4 text-ancoro-teal-500 rounded focus:ring-ancoro-teal-500 border-gray-300"
                 />
                 <label htmlFor="showAllModules" className="text-sm text-gray-600">
-                  Ver todos os módulos
+                  Ver todas as {moduleLabelPlural}
                 </label>
               </div>
             </div>
@@ -235,7 +237,7 @@ export default function Dashboard() {
                   onClick={() => setIsListConfigModalOpen(true)}
                   disabled={!projectId}
                   className="p-2 border border-gray-300 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Configurar listas (Módulos, Status, etc.)"
+                  title={`Configurar listas (${moduleLabelPlural}, Status, etc.)`}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />

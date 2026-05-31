@@ -19,6 +19,8 @@ import {
   canEditResponsibleBusiness,
 } from '../hooks/useCapabilities'
 import { useProjectMembers } from '../hooks/useProjectMembers'
+import { useProjectModules } from '../hooks/useProjectLists'
+import { useProjectTerminology } from '../hooks/useProjectTerminology'
 import ConfirmDialog from './ConfirmDialog'
 import { SkeletonRequirementsGrid } from './Skeleton'
 
@@ -142,11 +144,13 @@ const MODULES = [
 interface EditableModuleCellProps {
   value: string
   rowId: string
+  options: string[]
+  label: string
   onUpdate: (id: string, field: string, value: string) => void
   disabled?: boolean
 }
 
-const EditableModuleCell = ({ value, rowId, onUpdate, disabled = false }: EditableModuleCellProps) => {
+const EditableModuleCell = ({ value, rowId, options, label, onUpdate, disabled = false }: EditableModuleCellProps) => {
   const [isEditing, setIsEditing] = useState(false)
   const [isCustom, setIsCustom] = useState(false)
   const [customValue, setCustomValue] = useState('')
@@ -191,17 +195,17 @@ const EditableModuleCell = ({ value, rowId, onUpdate, disabled = false }: Editab
     return (
       <select
         className="w-full px-2 py-1 bg-white text-gray-900 border border-teal-400 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
-        value={MODULES.includes(value) ? value : '__custom__'}
+        value={options.includes(value) ? value : '__custom__'}
         onChange={handleSelectChange}
         onBlur={() => setIsEditing(false)}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
         disabled={disabled}
         autoFocus
-        title="Selecionar módulo"
-        aria-label="Módulo"
+        title={`Selecionar ${label}`}
+        aria-label={label}
       >
-        {MODULES.map((mod) => (
+        {options.map((mod) => (
           <option key={mod} value={mod}>
             {mod}
           </option>
@@ -219,7 +223,7 @@ const EditableModuleCell = ({ value, rowId, onUpdate, disabled = false }: Editab
         e.stopPropagation()
         setIsEditing(true)
       }}
-      title={disabled ? 'Sem permissão para alterar o módulo' : 'Clique para alterar o módulo'}
+      title={disabled ? `Sem permissão para alterar ${label.toLowerCase()}` : `Clique para alterar ${label.toLowerCase()}`}
     >
       {value || '—'}
     </div>
@@ -512,6 +516,8 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
   // userRole obtido diretamente do contexto para evitar problemas de sincronização com props
   const userRole = user?.role
   const { data: projectMembers = [] } = useProjectMembers(projectId)
+  const { data: projectModules = [] } = useProjectModules(projectId)
+  const { moduleLabel } = useProjectTerminology(projectId)
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [globalFilter, setGlobalFilter] = useState('')
@@ -530,6 +536,10 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
         .filter((member) => member.user.role === 'CONSULTANT')
         .map((member) => ({ id: member.user.id, name: member.user.name })),
     [projectMembers]
+  )
+  const moduleOptions = useMemo(
+    () => (projectModules.length ? projectModules.map((item) => item.code) : MODULES),
+    [projectModules]
   )
 
   // Handler para abrir dialog de delete
@@ -640,12 +650,14 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
       }),
 
       columnHelper.accessor('module', {
-        header: 'Módulo',
+        header: moduleLabel,
         size: 120,
         cell: (info) => (
           <EditableModuleCell
             value={info.getValue()}
             rowId={info.row.original.id}
+            options={moduleOptions}
+            label={moduleLabel}
             onUpdate={handleCellUpdate}
             disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
@@ -934,7 +946,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
 
       return baseColumns.filter((column) => column.id !== 'actions')
     },
-    [columnHelper, consultantOptions, data, userRole, user?.id]
+    [columnHelper, consultantOptions, data, moduleLabel, moduleOptions, userRole, user?.id]
   )
 
   // Inicializar tabela
@@ -994,7 +1006,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
         <div className="flex items-center gap-2 sm:gap-3">
           <span className="text-sm text-gray-500 font-medium hidden sm:inline">Filtros:</span>
 
-          {/* Filtro de módulo */}
+          {/* Filtro de área/módulo */}
           <select
             className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white text-gray-900 [&>option]:bg-white [&>option]:text-gray-900 [&>option:hover]:bg-gray-100"
             value={(columnFilters.find(f => f.id === 'module')?.value as string) || ''}
@@ -1008,10 +1020,10 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
                 return filtered
               })
             }}
-            aria-label="Filtrar por módulo"
+            aria-label={`Filtrar por ${moduleLabel.toLowerCase()}`}
           >
-            <option value="">Módulo</option>
-            {MODULES.map(mod => (
+            <option value="">{moduleLabel}</option>
+            {moduleOptions.map(mod => (
               <option key={mod} value={mod}>{mod}</option>
             ))}
           </select>

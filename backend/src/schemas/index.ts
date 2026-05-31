@@ -356,6 +356,12 @@ export const updateProjectSettingsSchema = z.object({
     .min(2, 'Mínimo 2 dígitos')
     .max(6, 'Máximo 6 dígitos')
     .optional(),
+  moduleLabel: z
+    .string()
+    .trim()
+    .min(1, 'Label da coluna deve ter no mínimo 1 caractere')
+    .max(30, 'Label da coluna deve ter no máximo 30 caracteres')
+    .optional(),
 })
 
 // ===== PROJECT LIST ITEM SCHEMAS =====

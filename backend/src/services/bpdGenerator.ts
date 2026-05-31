@@ -26,6 +26,7 @@ import {
   AlignmentType,
   PageBreak,
 } from 'docx';
+import { DEFAULT_MODULE_LABEL, getProjectModuleLabel } from '../utils/projectTerminology';
 
 const prisma = new PrismaClient();
 
@@ -136,6 +137,8 @@ async function fetchProjectData(
   project: ProjectForBPD;
   requirements: RequirementForBPD[];
   crossMatrix: CrossMatrixForBPD[];
+  moduleLabel: string;
+  moduleNames: Record<string, string>;
 }> {
   const project = await prisma.project.findUnique({
     where: { id: projectId },
@@ -197,7 +200,29 @@ async function fetchProjectData(
     orderBy: [{ fromModule: 'asc' }, { fromReqId: 'asc' }],
   });
 
-  return { project, requirements, crossMatrix };
+  const moduleLabel = await getProjectModuleLabel(prisma, projectId);
+  const moduleItems = await prisma.projectListItem.findMany({
+    where: {
+      projectId,
+      listType: 'MODULE',
+      isActive: true,
+    },
+    select: {
+      code: true,
+      name: true,
+    },
+  });
+
+  const moduleNames = moduleItems.reduce((acc, item) => {
+    acc[item.code] = item.name;
+    return acc;
+  }, {} as Record<string, string>);
+
+  return { project, requirements, crossMatrix, moduleLabel, moduleNames };
+}
+
+function getModuleDisplayName(moduleCode: string, moduleNames: Record<string, string>) {
+  return moduleNames[moduleCode] || MODULE_NAMES[moduleCode] || moduleCode;
 }
 
 /**
@@ -207,7 +232,9 @@ function generateSummary(
   project: ProjectForBPD,
   requirements: RequirementForBPD[],
   crossMatrix: CrossMatrixForBPD[],
-  moduleFilter?: string
+  moduleFilter?: string,
+  moduleLabel: string = DEFAULT_MODULE_LABEL,
+  moduleNames: Record<string, string> = {}
 ): string {
   const totalReqs = requirements.length;
   const byStatus = requirements.reduce((acc, req) => {
@@ -237,7 +264,7 @@ function generateSummary(
 **Status:** ${project.status}
 **Data de Início:** ${project.startDate.toLocaleDateString('pt-BR')}
 **Data do Documento:** ${new Date().toLocaleDateString('pt-BR')}
-${moduleFilter ? `**Módulo Filtrado:** ${MODULE_NAMES[moduleFilter] || moduleFilter}\n` : ''}
+${moduleFilter ? `**${moduleLabel} Filtrada:** ${getModuleDisplayName(moduleFilter, moduleNames)}\n` : ''}
 
 ### Métricas Gerais
 
@@ -257,12 +284,12 @@ ${Object.entries(byStatus)
   .map(([status, count]) => `| ${STATUS_DISPLAY[status] || status} | ${count} |`)
   .join('\n')}
 
-### Requisitos por Módulo
+### Requisitos por ${moduleLabel}
 
-| Módulo | Quantidade |
+| ${moduleLabel} | Quantidade |
 |--------|------------|
 ${Object.entries(byModule)
-  .map(([module, count]) => `| ${MODULE_NAMES[module] || module} | ${count} |`)
+  .map(([module, count]) => `| ${getModuleDisplayName(module, moduleNames)} | ${count} |`)
   .join('\n')}
 
 `;
@@ -289,7 +316,10 @@ ${Object.entries(byModule)
 /**
  * Gera seção de requisitos detalhados
  */
-function generateRequirementsSection(requirements: RequirementForBPD[]): string {
+function generateRequirementsSection(
+  requirements: RequirementForBPD[],
+  moduleNames: Record<string, string> = {}
+): string {
   if (requirements.length === 0) {
     return '## Requisitos\n\n_Nenhum requisito encontrado._\n\n';
   }
@@ -304,7 +334,7 @@ function generateRequirementsSection(requirements: RequirementForBPD[]): string 
   let markdown = '## Requisitos Detalhados\n\n';
 
   for (const [module, reqs] of Object.entries(byModule)) {
-    markdown += `### ${MODULE_NAMES[module] || module}\n\n`;
+    markdown += `### ${getModuleDisplayName(module, moduleNames)}\n\n`;
 
     for (const req of reqs) {
       markdown += `#### ${req.reqId}: ${req.shortDesc}\n\n`;
@@ -366,16 +396,19 @@ function generateRequirementsSection(requirements: RequirementForBPD[]): string 
 /**
  * Gera tabela da matriz de cruzamento
  */
-function generateMatrixSection(crossMatrix: CrossMatrixForBPD[]): string {
+function generateMatrixSection(
+  crossMatrix: CrossMatrixForBPD[],
+  moduleLabel: string = DEFAULT_MODULE_LABEL
+): string {
   if (crossMatrix.length === 0) {
     return '## Matriz de Cruzamento\n\n_Nenhuma integração mapeada._\n\n';
   }
 
   let markdown = `## Matriz de Cruzamento
 
-Esta seção documenta todas as integrações identificadas entre requisitos e módulos.
+Esta seção documenta todas as integrações identificadas entre requisitos e ${moduleLabel.toLowerCase()}s.
 
-| De | Para | Módulo Origem | Módulo Destino | Tipo | Timing | Status |
+| De | Para | ${moduleLabel} Origem | ${moduleLabel} Destino | Tipo | Timing | Status |
 |----|------|---------------|----------------|------|--------|--------|
 `;
 
@@ -481,20 +514,20 @@ export async function generateBPDMarkdown(
   projectId: string,
   moduleFilter?: string
 ): Promise<string> {
-  const { project, requirements, crossMatrix } = await fetchProjectData(
+  const { project, requirements, crossMatrix, moduleLabel, moduleNames } = await fetchProjectData(
     projectId,
     moduleFilter
   );
 
   const title = moduleFilter
-    ? `# BPD - ${project.name} (${MODULE_NAMES[moduleFilter] || moduleFilter})`
+    ? `# BPD - ${project.name} (${getModuleDisplayName(moduleFilter, moduleNames)})`
     : `# BPD - ${project.name}`;
 
   const sections = [
     title + '\n\n',
-    generateSummary(project, requirements, crossMatrix, moduleFilter),
-    generateRequirementsSection(requirements),
-    generateMatrixSection(crossMatrix),
+    generateSummary(project, requirements, crossMatrix, moduleFilter, moduleLabel, moduleNames),
+    generateRequirementsSection(requirements, moduleNames),
+    generateMatrixSection(crossMatrix, moduleLabel),
     generateConclusionSection(requirements, crossMatrix),
   ];
 
@@ -509,7 +542,7 @@ export async function generateBPDDocx(
   projectId: string,
   moduleFilter?: string
 ): Promise<Buffer> {
-  const { project, requirements, crossMatrix } = await fetchProjectData(
+  const { project, requirements, crossMatrix, moduleLabel, moduleNames } = await fetchProjectData(
     projectId,
     moduleFilter
   );
@@ -531,7 +564,7 @@ export async function generateBPDDocx(
           }),
           new Paragraph({
             text: moduleFilter
-              ? `Módulo: ${MODULE_NAMES[moduleFilter] || moduleFilter}`
+              ? `${moduleLabel}: ${getModuleDisplayName(moduleFilter, moduleNames)}`
               : 'Documento Completo',
             alignment: AlignmentType.CENTER,
           }),
@@ -587,7 +620,7 @@ export async function generateBPDDocx(
             text: 'Requisitos Detalhados',
             heading: HeadingLevel.HEADING_1,
           }),
-          ...createRequirementsParagraphs(requirements),
+          ...createRequirementsParagraphs(requirements, moduleNames),
 
           // Matriz de Cruzamento
           new Paragraph({
@@ -597,7 +630,7 @@ export async function generateBPDDocx(
             text: 'Matriz de Cruzamento',
             heading: HeadingLevel.HEADING_1,
           }),
-          createCrossMatrixTable(crossMatrix),
+          createCrossMatrixTable(crossMatrix, moduleLabel),
           new Paragraph({ text: '' }),
 
           // Rodapé
@@ -646,7 +679,10 @@ function createMetricsTable(
 /**
  * Cria parágrafos de requisitos para o documento Word
  */
-function createRequirementsParagraphs(requirements: RequirementForBPD[]): Paragraph[] {
+function createRequirementsParagraphs(
+  requirements: RequirementForBPD[],
+  moduleNames: Record<string, string> = {}
+): Paragraph[] {
   const paragraphs: Paragraph[] = [];
 
   // Agrupa por módulo
@@ -659,7 +695,7 @@ function createRequirementsParagraphs(requirements: RequirementForBPD[]): Paragr
   for (const [module, reqs] of Object.entries(byModule)) {
     paragraphs.push(
       new Paragraph({
-        text: MODULE_NAMES[module] || module,
+        text: getModuleDisplayName(module, moduleNames),
         heading: HeadingLevel.HEADING_2,
       })
     );
@@ -736,9 +772,12 @@ function createRequirementsParagraphs(requirements: RequirementForBPD[]): Paragr
 /**
  * Cria tabela da matriz de cruzamento para o documento Word
  */
-function createCrossMatrixTable(crossMatrix: CrossMatrixForBPD[]): Table {
+function createCrossMatrixTable(
+  crossMatrix: CrossMatrixForBPD[],
+  moduleLabel: string = DEFAULT_MODULE_LABEL
+): Table {
   const headerRow = createTableRow(
-    ['De', 'Para', 'Módulo Origem', 'Módulo Destino', 'Tipo', 'Timing', 'Status'],
+    ['De', 'Para', `${moduleLabel} Origem`, `${moduleLabel} Destino`, 'Tipo', 'Timing', 'Status'],
     true
   );
 

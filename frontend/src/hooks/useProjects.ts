@@ -27,6 +27,7 @@ export interface ProjectSettings {
   reqIdPrefix: string
   reqIdSeparator: string
   reqIdDigitCount: number
+  moduleLabel: string
   reqIdExample: string
   hasExistingRequirements: boolean
   requirementCount: number
@@ -37,6 +38,7 @@ export interface UpdateProjectSettingsData {
   reqIdPrefix?: string
   reqIdSeparator?: string
   reqIdDigitCount?: number
+  moduleLabel?: string
 }
 
 export const projectKeys = {

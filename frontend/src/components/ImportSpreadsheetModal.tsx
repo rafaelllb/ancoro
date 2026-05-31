@@ -21,6 +21,8 @@ import {
   validateReqId,
   generateExample,
 } from '../utils/reqIdPattern'
+import { useProjectModules } from '../hooks/useProjectLists'
+import { useProjectTerminology } from '../hooks/useProjectTerminology'
 
 // Tipos de operação do modal
 type SpreadsheetMode = 'import' | 'export'
@@ -102,7 +104,13 @@ function autoDetectMapping(headers: string[]): Record<string, number> {
  * @param rowNumber - Número da linha (para referência em erros)
  * @param pattern - Padrão de ID do projeto
  */
-function validateRow(data: Record<string, any>, rowNumber: number, pattern: RequirementIdPattern): ParsedRow {
+function validateRow(
+  data: Record<string, any>,
+  rowNumber: number,
+  pattern: RequirementIdPattern,
+  validModules: string[],
+  moduleLabel: string
+): ParsedRow {
   const errors: string[] = []
 
   // Verificar campos obrigatórios
@@ -120,8 +128,8 @@ function validateRow(data: Record<string, any>, rowNumber: number, pattern: Requ
   }
 
   // Validar module
-  if (data.module && !VALID_MODULES.includes(data.module.toUpperCase())) {
-    errors.push(`module deve ser um de: ${VALID_MODULES.join(', ')}`)
+  if (data.module && !validModules.includes(data.module.toUpperCase())) {
+    errors.push(`${moduleLabel} deve ser uma de: ${validModules.join(', ')}`)
   }
 
   // Validar status se fornecido
@@ -203,6 +211,8 @@ export default function ImportSpreadsheetModal({
   requirements = [],
   reqIdPattern = DEFAULT_PATTERN,
 }: ImportSpreadsheetModalProps) {
+  const { data: projectModules = [] } = useProjectModules(projectId)
+  const { moduleLabel } = useProjectTerminology(projectId)
   const [step, setStep] = useState<Step>('upload')
   const [file, setFile] = useState<File | null>(null)
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([])
@@ -212,6 +222,13 @@ export default function ImportSpreadsheetModal({
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const bulkImportMutation = useBulkImportRequirements()
+  const validModules = projectModules.length
+    ? projectModules.map((item) => item.code.toUpperCase())
+    : VALID_MODULES
+  const headerLabels: Record<string, string> = {
+    ...HEADER_LABELS,
+    module: moduleLabel,
+  }
 
   // Reset estado ao fechar
   const handleClose = useCallback(() => {
@@ -253,7 +270,7 @@ export default function ImportSpreadsheetModal({
     }))
 
     // Cria worksheet com headers amigáveis
-    const headers = EXPORT_HEADERS.map((h) => HEADER_LABELS[h] || h)
+    const headers = EXPORT_HEADERS.map((h) => headerLabels[h] || h)
     const wsData = [headers, ...data.map((row) => EXPORT_HEADERS.map((h) => row[h as keyof typeof row]))]
     const ws = XLSX.utils.aoa_to_sheet(wsData)
 
@@ -341,7 +358,7 @@ export default function ImportSpreadsheetModal({
           }
         }
 
-        const parsedRow = validateRow(rowData, i + 1, reqIdPattern)
+        const parsedRow = validateRow(rowData, i + 1, reqIdPattern, validModules, moduleLabel)
         rows.push(parsedRow)
       }
 
@@ -351,7 +368,7 @@ export default function ImportSpreadsheetModal({
       console.error('Error parsing file:', error)
       alert(error instanceof Error ? error.message : 'Erro ao processar arquivo')
     }
-  }, [reqIdPattern])
+  }, [moduleLabel, reqIdPattern, validModules])
 
   // Handler para drag & drop
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -497,7 +514,7 @@ export default function ImportSpreadsheetModal({
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h4 className="font-medium text-blue-900 mb-2">Colunas incluídas:</h4>
                   <div className="text-sm text-blue-700 font-mono bg-blue-100 rounded p-2 overflow-x-auto">
-                    {EXPORT_HEADERS.map((h) => HEADER_LABELS[h] || h).join(' | ')}
+                    {EXPORT_HEADERS.map((h) => headerLabels[h] || h).join(' | ')}
                   </div>
                   <p className="text-sm text-blue-600 mt-2">
                     Ao reimportar, requisitos com o mesmo Req ID serão atualizados automaticamente.
@@ -611,7 +628,7 @@ export default function ImportSpreadsheetModal({
                           <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Status</th>
                           <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Req ID</th>
                           <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Descrição</th>
-                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Módulo</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{moduleLabel}</th>
                           <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Erros</th>
                         </tr>
                       </thead>

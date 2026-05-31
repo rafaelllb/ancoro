@@ -11,25 +11,14 @@ import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { exportAPI, ExportValidation } from '../services/api'
+import { useProjectModules } from '../hooks/useProjectLists'
+import { useProjectTerminology } from '../hooks/useProjectTerminology'
 
 interface ExportModalProps {
   isOpen: boolean
   onClose: () => void
   projectId: string
 }
-
-// Módulos disponíveis para filtro
-const MODULES = [
-  { value: '', label: 'Todos os Módulos' },
-  { value: 'ISU', label: 'ISU - Industry Solution Utilities' },
-  { value: 'CRM', label: 'CRM - Customer Relationship Management' },
-  { value: 'FICA', label: 'FI-CA - Contract Accounting' },
-  { value: 'DEVICE', label: 'DEVICE - Device Management' },
-  { value: 'SD', label: 'SD - Sales & Distribution' },
-  { value: 'MM', label: 'MM - Materials Management' },
-  { value: 'PM', label: 'PM - Plant Maintenance' },
-  { value: 'OTHER', label: 'OTHER - Outro' },
-]
 
 // Formatos de exportação
 const EXPORT_FORMATS = [
@@ -50,6 +39,8 @@ const EXPORT_FORMATS = [
 type ExportFormat = (typeof EXPORT_FORMATS)[number]['value']
 
 export default function ExportModal({ isOpen, onClose, projectId }: ExportModalProps) {
+  const { data: projectModules = [] } = useProjectModules(projectId)
+  const { moduleLabel, moduleLabelPlural } = useProjectTerminology(projectId)
   const [selectedModule, setSelectedModule] = useState<string>('')
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('docx')
   const [isExporting, setIsExporting] = useState(false)
@@ -126,6 +117,10 @@ export default function ExportModal({ isOpen, onClose, projectId }: ExportModalP
   if (!isOpen) return null
 
   const validation = validationQuery.data as ExportValidation | undefined
+  const moduleOptions = [
+    { value: '', label: `Todas as ${moduleLabelPlural}` },
+    ...projectModules.map((item) => ({ value: item.code, label: item.name })),
+  ]
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -275,13 +270,13 @@ export default function ExportModal({ isOpen, onClose, projectId }: ExportModalP
               </div>
             ) : null}
 
-            {/* Seleção de Módulo */}
+            {/* Seleção configurável */}
             <div>
               <label
                 htmlFor="export-module"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Filtrar por Módulo
+                Filtrar por {moduleLabel}
               </label>
               <select
                 id="export-module"
@@ -292,7 +287,7 @@ export default function ExportModal({ isOpen, onClose, projectId }: ExportModalP
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {MODULES.map((module) => (
+                {moduleOptions.map((module) => (
                   <option key={module.value} value={module.value}>
                     {module.label}
                   </option>

@@ -7,6 +7,7 @@ import {
   ListType,
   ProjectListItem,
 } from '../hooks/useProjectLists'
+import { useProjectTerminology } from '../hooks/useProjectTerminology'
 
 interface ListConfigModalProps {
   isOpen: boolean
@@ -24,6 +25,7 @@ const LIST_TABS: { type: ListType; label: string; description: string }[] = [
 ]
 
 export default function ListConfigModal({ isOpen, onClose, projectId, projectName }: ListConfigModalProps) {
+  const { moduleLabelPlural } = useProjectTerminology(projectId)
   // Tab ativa
   const [activeTab, setActiveTab] = useState<ListType>('MODULE')
 
@@ -127,7 +129,12 @@ export default function ListConfigModal({ isOpen, onClose, projectId, projectNam
 
   if (!isOpen) return null
 
-  const activeConfig = LIST_TABS.find((t) => t.type === activeTab)
+  const tabs = LIST_TABS.map((tab) =>
+    tab.type === 'MODULE'
+      ? { ...tab, label: moduleLabelPlural, description: `${moduleLabelPlural} para categorizar requisitos` }
+      : tab
+  )
+  const activeConfig = tabs.find((t) => t.type === activeTab)
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -153,7 +160,7 @@ export default function ListConfigModal({ isOpen, onClose, projectId, projectNam
           {/* Tabs */}
           <div className="border-b">
             <div className="flex overflow-x-auto px-4">
-              {LIST_TABS.map((tab) => (
+              {tabs.map((tab) => (
                 <button
                   key={tab.type}
                   onClick={() => {

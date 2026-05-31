@@ -12,6 +12,7 @@ import { toast } from 'react-hot-toast'
 import { useCreateRequirement } from '../hooks/useRequirements'
 import { useProjectModules, useProjectStatuses } from '../hooks/useProjectLists'
 import { useProjectMembers } from '../hooks/useProjectMembers'
+import { useProjectTerminology } from '../hooks/useProjectTerminology'
 import {
   RequirementIdPattern,
   DEFAULT_PATTERN,
@@ -145,6 +146,7 @@ export default function CreateRequirementModal({
   const [touched, setTouched] = useState<Record<string, boolean>>({})
 
   const createMutation = useCreateRequirement()
+  const { moduleLabel } = useProjectTerminology(projectId)
 
   // Busca módulos e status configurados para o projeto
   const { data: projectModules } = useProjectModules(projectId)
@@ -328,10 +330,10 @@ export default function CreateRequirementModal({
                 )}
               </div>
 
-              {/* Módulo */}
+              {/* Campo configurável */}
               <div>
                 <label htmlFor="module" className="block text-sm font-medium text-gray-700 mb-1">
-                  Módulo *
+                  {moduleLabel} *
                 </label>
                 <select
                   id="module"

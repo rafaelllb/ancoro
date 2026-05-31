@@ -12,6 +12,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { useProjects } from '../hooks/useProjects'
 import { useCapabilities } from '../hooks/useCapabilities'
+import { useProjectModules } from '../hooks/useProjectLists'
+import { useProjectTerminology } from '../hooks/useProjectTerminology'
 import { metricsAPI, ProjectMetrics } from '../services/api'
 import MetricsCharts from '../components/MetricsCharts'
 import { NotificationBell } from '../components/NotificationBell'
@@ -51,6 +53,12 @@ export default function Metrics() {
   // Buscar projetos disponíveis
   const { data: projects = [] } = useProjects()
   const projectId = projects[0]?.id || ''
+  const { data: projectModules = [] } = useProjectModules(projectId)
+  const { moduleLabel } = useProjectTerminology(projectId)
+  const moduleNames = projectModules.reduce((acc, item) => {
+    acc[item.code] = item.name
+    return acc
+  }, {} as Record<string, string>)
 
   // Query de métricas
   const metricsQuery = useQuery({
@@ -367,9 +375,9 @@ export default function Metrics() {
                 </div>
               </div>
 
-              {/* Requisitos por Módulo */}
+              {/* Requisitos por área/módulo */}
               <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Requisitos por Módulo</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Requisitos por {moduleLabel}</h3>
                 <div className="space-y-3">
                   {Object.entries(metrics.requirementsByModule)
                     .sort(([, a], [, b]) => b - a)
@@ -382,7 +390,7 @@ export default function Metrics() {
                       return (
                         <div key={module} className="flex items-center gap-3">
                           <span className="px-2 py-1 rounded text-xs font-medium bg-ancoro-navy-100 text-ancoro-navy-700 w-16 text-center">
-                            {MODULE_NAMES[module] || module}
+                            {moduleNames[module] || MODULE_NAMES[module] || module}
                           </span>
                           <div className="flex-1 bg-gray-200 rounded-full h-2">
                             <div

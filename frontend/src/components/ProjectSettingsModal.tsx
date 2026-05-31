@@ -41,6 +41,7 @@ export default function ProjectSettingsModal({
   const [prefix, setPrefix] = useState('REQ')
   const [separator, setSeparator] = useState('-')
   const [digitCount, setDigitCount] = useState(3)
+  const [moduleLabel, setModuleLabel] = useState('Área')
   const [error, setError] = useState('')
 
   // Carrega valores do backend quando disponível
@@ -49,6 +50,7 @@ export default function ProjectSettingsModal({
       setPrefix(settings.reqIdPrefix)
       setSeparator(settings.reqIdSeparator)
       setDigitCount(settings.reqIdDigitCount)
+      setModuleLabel(settings.moduleLabel || 'Área')
     }
   }, [settings])
 
@@ -85,6 +87,7 @@ export default function ProjectSettingsModal({
           reqIdPrefix: prefix.toUpperCase(),
           reqIdSeparator: separator,
           reqIdDigitCount: digitCount,
+          moduleLabel: moduleLabel.trim(),
         },
       },
       {
@@ -120,7 +123,7 @@ export default function ProjectSettingsModal({
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h2 id="settings-modal-title" className="text-lg font-semibold text-gray-900">
-              Padrão de ID de Requisitos
+              Configurações do Projeto
             </h2>
             <button
               type="button"
@@ -149,6 +152,24 @@ export default function ProjectSettingsModal({
                 <div className="bg-gray-50 rounded-lg p-4 text-center">
                   <p className="text-sm text-gray-500 mb-2">Formato de ID gerado:</p>
                   <p className="text-3xl font-mono font-bold text-blue-600">{preview}</p>
+                </div>
+
+                <div>
+                  <label htmlFor="moduleLabel" className="block text-sm font-medium text-gray-700 mb-1">
+                    Label da coluna `module`
+                  </label>
+                  <input
+                    type="text"
+                    id="moduleLabel"
+                    value={moduleLabel}
+                    onChange={(e) => setModuleLabel(e.target.value)}
+                    maxLength={30}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Área"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Exemplo: Área, Frente, Disciplina, Squad ou Sistema
+                  </p>
                 </div>
 
                 {/* Warning se há requisitos existentes */}
