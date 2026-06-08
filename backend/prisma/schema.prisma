@@ -48,7 +48,7 @@ model User {
   name        String
   email       String   @unique
   password    String   // Hashed with bcrypt
-  role        String   @default("CONSULTANT") // CONSULTANT | CLIENT | MANAGER | ADMIN
+  role        String   // CONSULTANT | CLIENT | MANAGER | ADMIN
 
   projects    ProjectUser[]
   assignedRequirements Requirement[] @relation("ResponsibleConsultant")
@@ -62,6 +62,24 @@ model User {
   updatedAt   DateTime @updatedAt
 
   @@map("users")
+}
+
+model PendingProjectMembership {
+  id          String   @id @default(cuid())
+  projectId   String
+  email       String
+  role        String   // CONSULTANT | CLIENT | MANAGER | ADMIN
+  module      String?
+  createdBy   String?
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, email])
+  @@index([email])
+  @@map("pending_project_memberships")
 }
 
 model ProjectUser {

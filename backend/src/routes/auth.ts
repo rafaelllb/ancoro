@@ -2,9 +2,13 @@ import { Router, Request, Response } from 'express'
 import bcrypt from 'bcrypt'
 import { prisma } from '../index'
 import { generateToken } from '../middleware/auth'
-import { loginSchema } from '../schemas'
-import { LoginRequest, LoginResponse, UserPublic } from '../types'
+import { loginSchema, registerSchema } from '../schemas'
+import { LoginRequest, LoginResponse, RegisterRequest, UserPublic } from '../types'
 import { logger } from '../utils/logger'
+import {
+  deletePendingProjectMembershipsByEmail,
+  listPendingProjectMembershipsByEmail,
+} from '../utils/pendingProjectMemberships'
 
 const router = Router()
 const PRISMA_RECONNECT_DELAY_MS = 1500
@@ -125,10 +129,96 @@ router.post('/login', async (req: Request, res: Response) => {
  * Por enquanto, usuários são criados via seed ou diretamente no banco
  */
 router.post('/register', async (req: Request, res: Response) => {
-  res.status(501).json({
-    error: 'Not Implemented',
-    message: 'Registro de novos usuários ainda não implementado. Contate o administrador.',
-  })
+  try {
+    const validationResult = registerSchema.safeParse(req.body)
+    if (!validationResult.success) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: validationResult.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
+      })
+    }
+
+    const { name, email, password, role } = validationResult.data as RegisterRequest
+    const normalizedEmail = email.trim().toLowerCase()
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    })
+
+    if (existingUser) {
+      return res.status(409).json({
+        error: 'Conflict',
+        message: 'Já existe um usuário cadastrado com este e-mail',
+      })
+    }
+
+    const pendingMemberships = await listPendingProjectMembershipsByEmail(prisma, normalizedEmail)
+
+    const assignedRole = pendingMemberships[0]?.role || role
+    if (!assignedRole) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'O usuário deve ser criado com um perfil específico ou ter um perfil previamente atribuído por e-mail',
+      })
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    const user = await prisma.user.create({
+      data: {
+        name: name.trim(),
+        email: normalizedEmail,
+        password: hashedPassword,
+        role: assignedRole,
+      },
+    })
+
+    if (pendingMemberships.length > 0) {
+      await prisma.$transaction(async (tx) => {
+        for (const membership of pendingMemberships) {
+          await tx.projectUser.upsert({
+            where: {
+              projectId_userId: {
+                projectId: membership.projectId,
+                userId: user.id,
+              },
+            },
+            update: {
+              module: membership.module ?? null,
+            },
+            create: {
+              projectId: membership.projectId,
+              userId: user.id,
+              module: membership.module ?? null,
+            },
+          })
+        }
+
+        await deletePendingProjectMembershipsByEmail(tx, normalizedEmail)
+      })
+    }
+
+    const userPublic: UserPublic = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role as any,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    }
+
+    return res.status(201).json({
+      message: 'Usuário criado com sucesso',
+      user: userPublic,
+      pendingMembershipsApplied: pendingMemberships.length,
+    })
+  } catch (error) {
+    console.error('Register error:', error)
+    return res.status(500).json({
+      error: 'Internal Server Error',
+      message: error instanceof Error ? error.message : 'Erro ao criar usuário',
+    })
+  }
 })
 
 export default router

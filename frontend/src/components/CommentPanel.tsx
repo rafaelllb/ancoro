@@ -108,15 +108,9 @@ export default function CommentPanel({ requirement, onClose }: CommentPanelProps
   const deleteMutation = useDeleteComment()
 
   // Verifica se usuário pode deletar comentário
-  const canDeleteComment = (comment: Comment) => {
+  const canDeleteComment = (_comment: Comment) => {
     if (!user) return false
-    // Autor pode deletar seus próprios comentários
-    if (comment.userId === user.id) return true
-    // Admin pode deletar qualquer comentário
-    if (user.role === 'ADMIN') return true
-    // Manager pode deletar comentários do projeto (já verificado no backend)
-    if (user.role === 'MANAGER') return true
-    return false
+    return user.role === 'ADMIN'
   }
 
   const handleDelete = (comment: Comment) => {

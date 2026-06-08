@@ -151,7 +151,8 @@ export default function CreateRequirementModal({
   // Busca módulos e status configurados para o projeto
   const { data: projectModules } = useProjectModules(projectId)
   const { data: projectStatuses } = useProjectStatuses(projectId)
-  const { data: projectMembers = [] } = useProjectMembers(projectId)
+  const { data: membersResponse } = useProjectMembers(projectId)
+  const projectMembers = membersResponse?.data || []
 
   // Usa módulos do projeto se disponíveis, senão usa fallback
   const moduleOptions = projectModules?.length

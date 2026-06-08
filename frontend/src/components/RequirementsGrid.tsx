@@ -31,7 +31,9 @@ interface RequirementsGridProps {
   isLoading: boolean
   onRowSelect?: (requirement: Requirement | null) => void
   projectId: string
-  // userRole removido: agora obtido diretamente do AuthContext para garantir sincronização
+  scopedModule?: string
+  assignedModule?: string
+  showAllModules?: boolean
 }
 
 // ===== STATUS INDICATORS =====
@@ -511,11 +513,20 @@ const EditableCell = ({ value, rowId, columnId, columnLabel, onUpdate, multiline
 
 // ===== MAIN COMPONENT =====
 
-export default function RequirementsGrid({ data, isLoading, onRowSelect, projectId }: RequirementsGridProps) {
+export default function RequirementsGrid({
+  data,
+  isLoading,
+  onRowSelect,
+  projectId,
+  scopedModule,
+  assignedModule,
+  showAllModules = false,
+}: RequirementsGridProps) {
   const { user } = useAuth()
   // userRole obtido diretamente do contexto para evitar problemas de sincronização com props
   const userRole = user?.role
-  const { data: projectMembers = [] } = useProjectMembers(projectId)
+  const { data: membersResponse } = useProjectMembers(projectId)
+  const projectMembers = membersResponse?.data || []
   const { data: projectModules = [] } = useProjectModules(projectId)
   const { moduleLabel } = useProjectTerminology(projectId)
   const [sorting, setSorting] = useState<SortingState>([])
@@ -541,6 +552,16 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
     () => (projectModules.length ? projectModules.map((item) => item.code) : MODULES),
     [projectModules]
   )
+  const visibleData = useMemo(
+    () => (scopedModule ? data.filter((requirement) => requirement.module === scopedModule) : data),
+    [data, scopedModule]
+  )
+
+  const isReadOnlyExternalRequirement = (requirement: Requirement) =>
+    !!assignedModule &&
+    showAllModules &&
+    (userRole === 'CONSULTANT' || userRole === 'CLIENT') &&
+    requirement.module !== assignedModule
 
   // Handler para abrir dialog de delete
   const handleDeleteClick = (requirement: Requirement, e: React.MouseEvent) => {
@@ -579,8 +600,12 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
 
   // Handler para atualizar célula
   const handleCellUpdate = (id: string, field: string, value: any) => {
-    const requirement = data.find((item) => item.id === id)
+    const requirement = visibleData.find((item) => item.id === id) || data.find((item) => item.id === id)
     if (!requirement) return
+
+    if (isReadOnlyExternalRequirement(requirement)) {
+      return
+    }
 
     const canEditResponsibleConsultantField = canEditResponsibleConsultant(
       userRole,
@@ -621,7 +646,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
       const shouldShowActionsColumn =
         userRole === 'ADMIN' ||
         (userRole === 'CONSULTANT' &&
-          data.some((requirement) =>
+          visibleData.some((requirement) =>
             canDeleteRequirement(userRole, user?.id, requirement.responsibleConsultantId)
           ))
 
@@ -644,7 +669,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             columnId="shortDesc"
             columnLabel="Descrição"
             onUpdate={handleCellUpdate}
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -659,7 +684,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             options={moduleOptions}
             label={moduleLabel}
             onUpdate={handleCellUpdate}
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -672,7 +697,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             value={info.getValue()}
             rowId={info.row.original.id}
             onUpdate={handleCellUpdate}
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -686,7 +711,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             rowId={info.row.original.id}
             options={consultantOptions}
             onUpdate={handleCellUpdate}
-            disabled={!canEditResponsibleConsultant(
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditResponsibleConsultant(
               userRole,
               user?.id,
               info.row.original.responsibleConsultantId
@@ -704,7 +729,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             columnId="responsibleBusiness"
             columnLabel="Responsável Negócio"
             onUpdate={handleCellUpdate}
-            disabled={!canEditResponsibleBusiness(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditResponsibleBusiness(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -720,7 +745,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             columnLabel="What (O que)"
             onUpdate={handleCellUpdate}
             multiline
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -736,7 +761,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             columnLabel="Why (Por que)"
             onUpdate={handleCellUpdate}
             multiline
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -751,7 +776,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             columnId="who"
             columnLabel="Who (Quem)"
             onUpdate={handleCellUpdate}
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -766,7 +791,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             columnId="when"
             columnLabel="When (Quando)"
             onUpdate={handleCellUpdate}
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -781,7 +806,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             columnId="where"
             columnLabel="Where (Onde)"
             onUpdate={handleCellUpdate}
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -797,7 +822,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             columnLabel="How (Como é hoje)"
             onUpdate={handleCellUpdate}
             multiline
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -812,7 +837,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             columnId="howMuch"
             columnLabel="How Much (Quanto)"
             onUpdate={handleCellUpdate}
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -828,7 +853,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             columnLabel="Depende De"
             onUpdate={handleCellUpdate}
             isArray
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -844,7 +869,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             columnLabel="Fornece Para"
             onUpdate={handleCellUpdate}
             isArray
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -860,7 +885,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             columnLabel="Dúvidas do Consultor"
             onUpdate={handleCellUpdate}
             multiline
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -876,7 +901,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             columnLabel="Observações"
             onUpdate={handleCellUpdate}
             multiline
-            disabled={!canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
           />
         ),
       }),
@@ -909,7 +934,7 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
             user?.id,
             info.row.original.responsibleConsultantId
           )
-          if (!canDeleteThis) return null
+          if (!canDeleteThis || isReadOnlyExternalRequirement(info.row.original)) return null
 
           return (
             <button
@@ -946,12 +971,12 @@ export default function RequirementsGrid({ data, isLoading, onRowSelect, project
 
       return baseColumns.filter((column) => column.id !== 'actions')
     },
-    [columnHelper, consultantOptions, data, moduleLabel, moduleOptions, userRole, user?.id]
+    [columnHelper, consultantOptions, visibleData, moduleLabel, moduleOptions, userRole, user?.id, assignedModule, showAllModules]
   )
 
   // Inicializar tabela
   const table = useReactTable({
-    data,
+    data: visibleData,
     columns,
     state: {
       sorting,

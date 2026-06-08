@@ -618,12 +618,25 @@ export interface AvailableUser {
   role: string
 }
 
+export interface PendingProjectAssignment {
+  id: string
+  projectId: string
+  email: string
+  role: string
+  module: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 export interface AddMemberRequest {
-  userId: string
+  userId?: string
+  email?: string
+  role: string
   module?: string | null
 }
 
 export interface UpdateMemberRequest {
+  role?: string
   module?: string | null
 }
 
@@ -631,7 +644,7 @@ export interface UpdateMemberRequest {
 export const projectMembersAPI = {
   // Lista membros do projeto
   getMembers: (projectId: string) =>
-    api.get<{ success: boolean; data: ProjectMember[]; count: number }>(
+    api.get<{ success: boolean; data: ProjectMember[]; pendingAssignments: PendingProjectAssignment[]; count: number }>(
       `/api/projects/${projectId}/members`
     ),
 

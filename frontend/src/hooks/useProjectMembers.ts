@@ -14,13 +14,21 @@ import {
   projectMembersAPI,
   type ProjectMember,
   type AvailableUser,
+  type PendingProjectAssignment,
   type AddMemberRequest,
   type UpdateMemberRequest,
 } from '../services/api'
 
 // Re-export types para uso externo
-export type { ProjectMember, AvailableUser }
+export type { ProjectMember, AvailableUser, PendingProjectAssignment }
 import toast from 'react-hot-toast'
+
+type MembersResponse = {
+  success: boolean
+  data: ProjectMember[]
+  pendingAssignments: PendingProjectAssignment[]
+  count: number
+}
 
 // Query keys para invalidação de cache
 const MEMBERS_KEY = 'project-members'
@@ -34,7 +42,7 @@ export function useProjectMembers(projectId: string) {
     queryKey: [MEMBERS_KEY, projectId],
     queryFn: async () => {
       const response = await projectMembersAPI.getMembers(projectId)
-      return response.data.data
+      return response.data
     },
     enabled: !!projectId,
     staleTime: 30 * 1000, // 30 segundos
@@ -97,19 +105,26 @@ export function useUpdateMember(projectId: string) {
     onMutate: async ({ userId, data }) => {
       await queryClient.cancelQueries({ queryKey: [MEMBERS_KEY, projectId] })
 
-      const previousMembers = queryClient.getQueryData<ProjectMember[]>([
+      const previousMembers = queryClient.getQueryData<MembersResponse>([
         MEMBERS_KEY,
         projectId,
       ])
 
       if (previousMembers) {
-        queryClient.setQueryData<ProjectMember[]>(
+        queryClient.setQueryData<MembersResponse>(
           [MEMBERS_KEY, projectId],
-          previousMembers.map((member) =>
-            member.userId === userId
-              ? { ...member, module: data.module ?? member.module }
-              : member
-          )
+          {
+            ...previousMembers,
+            data: previousMembers.data.map((member) =>
+              member.userId === userId
+                ? {
+                    ...member,
+                    module: data.module ?? member.module,
+                    user: data.role ? { ...member.user, role: data.role } : member.user,
+                  }
+                : member
+            ),
+          }
         )
       }
 
@@ -147,15 +162,18 @@ export function useRemoveMember(projectId: string) {
     onMutate: async (userId) => {
       await queryClient.cancelQueries({ queryKey: [MEMBERS_KEY, projectId] })
 
-      const previousMembers = queryClient.getQueryData<ProjectMember[]>([
+      const previousMembers = queryClient.getQueryData<MembersResponse>([
         MEMBERS_KEY,
         projectId,
       ])
 
       if (previousMembers) {
-        queryClient.setQueryData<ProjectMember[]>(
+        queryClient.setQueryData<MembersResponse>(
           [MEMBERS_KEY, projectId],
-          previousMembers.filter((member) => member.userId !== userId)
+          {
+            ...previousMembers,
+            data: previousMembers.data.filter((member) => member.userId !== userId),
+          }
         )
       }
 

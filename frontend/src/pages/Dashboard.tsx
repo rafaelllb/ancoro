@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useRequirements } from '../hooks/useRequirements'
 import { useCurrentProject } from '../hooks/useProjects'
 import { useCapabilities } from '../hooks/useCapabilities'
+import { useProjectMembers } from '../hooks/useProjectMembers'
 import { useProjectTerminology } from '../hooks/useProjectTerminology'
 import RequirementsGrid from '../components/RequirementsGrid'
 import CommentPanel from '../components/CommentPanel'
@@ -34,6 +35,9 @@ export default function Dashboard() {
   const { currentProject, projects, setCurrentProject } = useCurrentProject()
   const projectId = currentProject?.id || ''
   const { moduleLabelPlural } = useProjectTerminology(projectId)
+  const { data: membersResponse } = useProjectMembers(projectId)
+  const currentMembership = membersResponse?.data?.find((member) => member.userId === user?.id)
+  const assignedModule = currentMembership?.module || undefined
   // Extrai o padrão de ID do projeto para usar no modal de criação
   const reqIdPattern = currentProject ? patternFromProject(currentProject) : undefined
 
@@ -68,14 +72,17 @@ export default function Dashboard() {
   // Se showAllModules = false, filtra pelo módulo do usuário (se disponível)
   // NOTA: User não tem campo 'module' no schema atual, então por enquanto filtra todos
   // TODO: Adicionar campo 'module' na tabela User ou criar UserProject com module
-  const moduleFilter = showAllModules ? undefined : undefined // Por enquanto sempre mostra todos
+  const scopedModule =
+    !showAllModules && assignedModule && (user?.role === 'CONSULTANT' || user?.role === 'CLIENT')
+      ? assignedModule
+      : undefined
 
   // Fetch requisitos com React Query
   // Filtros de módulo/status são aplicados client-side no grid
   const { data: requirements = [], isLoading } = useRequirements({
     projectId,
     filters: {
-      module: moduleFilter,
+      module: undefined,
     },
   })
 
@@ -338,6 +345,9 @@ export default function Dashboard() {
                 isLoading={isLoading}
                 onRowSelect={setSelectedRequirement}
                 projectId={projectId}
+                scopedModule={scopedModule}
+                assignedModule={assignedModule}
+                showAllModules={showAllModules}
               />
             </div>
           </div>

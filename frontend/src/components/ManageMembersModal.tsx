@@ -1,12 +1,3 @@
-/**
- * ManageMembersModal - Modal para gerenciamento de membros do projeto
- *
- * Permite adicionar, remover e atualizar módulos de membros do projeto.
- * Apenas ADMIN ou MANAGER podem acessar este modal.
- *
- * @author Rafael Brito
- */
-
 import { useState, useEffect } from 'react'
 import {
   useProjectMembers,
@@ -18,6 +9,7 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 import { useProjectModules } from '../hooks/useProjectLists'
 import { useProjectTerminology } from '../hooks/useProjectTerminology'
+import { useCapabilities } from '../hooks/useCapabilities'
 
 interface ManageMembersModalProps {
   isOpen: boolean
@@ -25,7 +17,6 @@ interface ManageMembersModalProps {
   projectId: string
 }
 
-// Cores por role para avatars
 const roleColors: Record<string, string> = {
   ADMIN: 'bg-purple-500',
   MANAGER: 'bg-blue-500',
@@ -33,7 +24,6 @@ const roleColors: Record<string, string> = {
   CLIENT: 'bg-orange-500',
 }
 
-// Labels amigáveis para roles
 const roleLabels: Record<string, string> = {
   ADMIN: 'Admin',
   MANAGER: 'Gerente',
@@ -47,75 +37,94 @@ export default function ManageMembersModal({
   projectId,
 }: ManageMembersModalProps) {
   const { user: currentUser } = useAuth()
+  const { role: currentRole } = useCapabilities()
   const { data: projectModules = [] } = useProjectModules(projectId)
   const { moduleLabel } = useProjectTerminology(projectId)
 
-  // State para adicionar membro
+  const assignableRoles = currentRole === 'ADMIN'
+    ? ['ADMIN', 'MANAGER', 'CONSULTANT', 'CLIENT']
+    : ['CONSULTANT', 'CLIENT']
+
   const [selectedUserId, setSelectedUserId] = useState<string>('')
+  const [email, setEmail] = useState<string>('')
+  const [selectedRole, setSelectedRole] = useState<string>(assignableRoles[0] || 'CONSULTANT')
   const [selectedModule, setSelectedModule] = useState<string>('')
 
-  // Queries
-  const { data: members, isLoading: isLoadingMembers } = useProjectMembers(projectId)
+  const { data: membersResponse, isLoading: isLoadingMembers } = useProjectMembers(projectId)
   const { data: availableUsers, isLoading: isLoadingUsers } = useAvailableUsers(projectId)
+  const members = membersResponse?.data || []
+  const pendingAssignments = membersResponse?.pendingAssignments || []
 
-  // Mutations
   const addMemberMutation = useAddMember(projectId)
   const updateMemberMutation = useUpdateMember(projectId)
   const removeMemberMutation = useRemoveMember(projectId)
 
-  // Reset state quando modal fecha
   useEffect(() => {
     if (!isOpen) {
       setSelectedUserId('')
+      setEmail('')
+      setSelectedRole(assignableRoles[0] || 'CONSULTANT')
       setSelectedModule('')
     }
-  }, [isOpen])
+  }, [assignableRoles, isOpen])
 
-  // Handler para adicionar membro
   const handleAddMember = () => {
-    if (!selectedUserId) return
+    if (!selectedUserId && !email.trim()) return
 
     addMemberMutation.mutate(
       {
-        userId: selectedUserId,
+        userId: selectedUserId || undefined,
+        email: email.trim() || undefined,
+        role: selectedRole,
         module: selectedModule || null,
       },
       {
         onSuccess: () => {
           setSelectedUserId('')
+          setEmail('')
+          setSelectedRole(assignableRoles[0] || 'CONSULTANT')
           setSelectedModule('')
         },
       }
     )
   }
 
-  // Handler para atualizar módulo
-  const handleUpdateModule = (userId: string, module: string | null) => {
-    updateMemberMutation.mutate({ userId, data: { module } })
+  const handleUpdateMember = (userId: string, data: { module?: string | null; role?: string }) => {
+    updateMemberMutation.mutate({ userId, data })
   }
 
-  // Handler para remover membro
   const handleRemoveMember = (userId: string, userName: string) => {
     if (confirm(`Tem certeza que deseja remover ${userName} do projeto?`)) {
       removeMemberMutation.mutate(userId)
     }
   }
 
-  // Não renderiza se fechado
+  const canManageMember = (member: typeof members[number]) => {
+    if (!currentUser) return false
+
+    if (currentRole === 'ADMIN') {
+      return member.userId !== currentUser.id
+    }
+
+    if (currentRole === 'MANAGER') {
+      if (member.userId === currentUser.id) return false
+      return member.user.role === 'CONSULTANT' || member.user.role === 'CLIENT'
+    }
+
+    return false
+  }
+
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Overlay */}
       <div
         className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
         onClick={onClose}
       />
 
-      {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-2xl bg-white rounded-lg shadow-xl">
-          {/* Header */}
+        <div className="relative w-full max-w-3xl bg-white rounded-lg shadow-xl">
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center gap-2">
               <svg
@@ -150,23 +159,31 @@ export default function ManageMembersModal({
             </button>
           </div>
 
-          {/* Content */}
           <div className="p-4 space-y-6">
-            {/* Seção: Adicionar Membro */}
             <div className="bg-gray-50 rounded-lg p-4">
               <h3 className="text-sm font-medium text-gray-700 mb-3">
                 Adicionar Membro
               </h3>
-              <div className="flex flex-col sm:flex-row gap-3">
-                {/* Select Usuário */}
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
                 <select
                   value={selectedUserId}
-                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedUserId(e.target.value)
+                    if (e.target.value) {
+                      setEmail('')
+                      const selected = availableUsers?.find((user) => user.id === e.target.value)
+                      if (selected) {
+                        setSelectedRole(
+                          assignableRoles.includes(selected.role) ? selected.role : assignableRoles[0]
+                        )
+                      }
+                    }
+                  }}
                   disabled={isLoadingUsers || addMemberMutation.isPending}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                 >
                   <option value="">
-                    {isLoadingUsers ? 'Carregando...' : 'Selecione um usuário'}
+                    {isLoadingUsers ? 'Carregando...' : 'Usuário existente'}
                   </option>
                   {availableUsers?.map((user) => (
                     <option key={user.id} value={user.id}>
@@ -175,12 +192,36 @@ export default function ManageMembersModal({
                   ))}
                 </select>
 
-                {/* Select configurável */}
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    if (e.target.value) setSelectedUserId('')
+                  }}
+                  disabled={addMemberMutation.isPending}
+                  placeholder="ou e-mail ainda não cadastrado"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                />
+
+                <select
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  disabled={addMemberMutation.isPending}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                >
+                  {assignableRoles.map((role) => (
+                    <option key={role} value={role}>
+                      {roleLabels[role] || role}
+                    </option>
+                  ))}
+                </select>
+
                 <select
                   value={selectedModule}
                   onChange={(e) => setSelectedModule(e.target.value)}
                   disabled={addMemberMutation.isPending}
-                  className="sm:w-48 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                 >
                   <option value="">Sem {moduleLabel.toLowerCase()}</option>
                   {projectModules.map((mod) => (
@@ -189,59 +230,46 @@ export default function ManageMembersModal({
                     </option>
                   ))}
                 </select>
+              </div>
 
-                {/* Botão Adicionar */}
+              <div className="mt-3 flex justify-end">
                 <button
                   onClick={handleAddMember}
-                  disabled={!selectedUserId || addMemberMutation.isPending}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  disabled={(!selectedUserId && !email.trim()) || addMemberMutation.isPending}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                 >
-                  {addMemberMutation.isPending ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                      </svg>
-                      <span>Adicionando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                      <span className="hidden sm:inline">Adicionar</span>
-                    </>
-                  )}
+                  {addMemberMutation.isPending ? 'Salvando...' : 'Adicionar / Vincular'}
                 </button>
               </div>
-              {availableUsers?.length === 0 && !isLoadingUsers && (
-                <p className="text-sm text-gray-500 mt-2">
-                  Todos os usuários já são membros deste projeto.
-                </p>
-              )}
             </div>
 
-            {/* Seção: Membros Atuais */}
+            {pendingAssignments.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-3">
+                  E-mails Vinculados ({pendingAssignments.length})
+                </h3>
+                <div className="space-y-2">
+                  {pendingAssignments.map((assignment) => (
+                    <div key={assignment.id} className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm">
+                      <div>
+                        <div className="font-medium text-gray-900">{assignment.email}</div>
+                        <div className="text-xs text-gray-600">
+                          {roleLabels[assignment.role] || assignment.role}
+                          {assignment.module ? ` • ${assignment.module}` : ''}
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                        Pendente
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-3">
-                Membros Atuais ({members?.length || 0})
+                Membros Atuais ({members.length})
               </h3>
 
               {isLoadingMembers ? (
@@ -263,7 +291,7 @@ export default function ManageMembersModal({
                     />
                   </svg>
                 </div>
-              ) : members?.length === 0 ? (
+              ) : members.length === 0 ? (
                 <p className="text-sm text-gray-500 text-center py-8">
                   Nenhum membro neste projeto.
                 </p>
@@ -287,7 +315,7 @@ export default function ManageMembersModal({
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {members?.map((member) => {
+                      {members.map((member) => {
                         const isCurrentUser = member.userId === currentUser?.id
                         const initials = member.user.name
                           .split(' ')
@@ -301,7 +329,6 @@ export default function ManageMembersModal({
                             key={member.id}
                             className={isCurrentUser ? 'bg-blue-50' : 'hover:bg-gray-50'}
                           >
-                            {/* Usuário */}
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-3">
                                 <div
@@ -323,14 +350,13 @@ export default function ManageMembersModal({
                               </div>
                             </td>
 
-                            {/* Campo configurável */}
                             <td className="px-4 py-3">
                               <select
                                 value={member.module || ''}
                                 onChange={(e) =>
-                                  handleUpdateModule(member.userId, e.target.value || null)
+                                  handleUpdateMember(member.userId, { module: e.target.value || null })
                                 }
-                                disabled={updateMemberMutation.isPending}
+                                disabled={!canManageMember(member) || updateMemberMutation.isPending}
                                 className="px-2 py-1 text-sm border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                               >
                                 <option value="">-</option>
@@ -342,30 +368,41 @@ export default function ManageMembersModal({
                               </select>
                             </td>
 
-                            {/* Role */}
                             <td className="px-4 py-3">
-                              <span
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  member.user.role === 'ADMIN'
-                                    ? 'bg-purple-100 text-purple-800'
-                                    : member.user.role === 'MANAGER'
-                                    ? 'bg-blue-100 text-blue-800'
-                                    : member.user.role === 'CLIENT'
-                                    ? 'bg-orange-100 text-orange-800'
-                                    : 'bg-green-100 text-green-800'
-                                }`}
-                              >
-                                {roleLabels[member.user.role] || member.user.role}
-                              </span>
+                              {canManageMember(member) ? (
+                                <select
+                                  value={member.user.role}
+                                  onChange={(e) => handleUpdateMember(member.userId, { role: e.target.value })}
+                                  disabled={updateMemberMutation.isPending}
+                                  className="px-2 py-1 text-sm border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                                >
+                                  {assignableRoles.map((role) => (
+                                    <option key={role} value={role}>
+                                      {roleLabels[role] || role}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    member.user.role === 'ADMIN'
+                                      ? 'bg-purple-100 text-purple-800'
+                                      : member.user.role === 'MANAGER'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : member.user.role === 'CLIENT'
+                                      ? 'bg-orange-100 text-orange-800'
+                                      : 'bg-green-100 text-green-800'
+                                  }`}
+                                >
+                                  {roleLabels[member.user.role] || member.user.role}
+                                </span>
+                              )}
                             </td>
 
-                            {/* Ações */}
                             <td className="px-4 py-3 text-right">
-                              {!isCurrentUser && (
+                              {canManageMember(member) && (
                                 <button
-                                  onClick={() =>
-                                    handleRemoveMember(member.userId, member.user.name)
-                                  }
+                                  onClick={() => handleRemoveMember(member.userId, member.user.name)}
                                   disabled={removeMemberMutation.isPending}
                                   className="text-red-500 hover:text-red-700 disabled:text-gray-300 transition-colors"
                                   title="Remover do projeto"
@@ -396,7 +433,6 @@ export default function ManageMembersModal({
             </div>
           </div>
 
-          {/* Footer */}
           <div className="flex justify-end p-4 border-t bg-gray-50">
             <button
               onClick={onClose}

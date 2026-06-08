@@ -133,6 +133,13 @@ export interface LoginResponse {
   token: string
 }
 
+export interface RegisterRequest {
+  name: string
+  email: string
+  password: string
+  role?: UserRoleType
+}
+
 // Requirement Create/Update
 export interface CreateRequirementRequest {
   reqId: string

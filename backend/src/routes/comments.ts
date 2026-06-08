@@ -153,9 +153,7 @@ router.post(
  * Deleta um comentário
  *
  * Regras:
- * - Autor do comentário pode deletar
- * - Admin pode deletar qualquer comentário
- * - Manager pode deletar comentários do seu projeto
+ * - Apenas Admin pode deletar comentários
  */
 router.delete(
   '/comments/:id',
@@ -163,7 +161,6 @@ router.delete(
   async (req: Request, res: Response) => {
     try {
       const commentId = req.params.id
-      const userId = req.user!.userId
       const userRole = req.user!.role
 
       // Busca o comentário com info do requisito/projeto
@@ -183,29 +180,7 @@ router.delete(
         })
       }
 
-      // Verifica permissão de deleção
-      let canDelete = false
-
-      // Admin pode tudo
-      if (userRole === UserRole.ADMIN) {
-        canDelete = true
-      }
-      // Autor pode deletar seu próprio comentário
-      else if (comment.userId === userId) {
-        canDelete = true
-      }
-      // Manager pode deletar se for membro do projeto
-      else if (userRole === UserRole.MANAGER) {
-        const isProjectMember = await prisma.projectUser.findFirst({
-          where: {
-            projectId: comment.requirement.projectId,
-            userId: userId,
-          },
-        })
-        canDelete = !!isProjectMember
-      }
-
-      if (!canDelete) {
+      if (userRole !== UserRole.ADMIN) {
         return res.status(403).json({
           error: 'Forbidden',
           message: 'Você não tem permissão para deletar este comentário',
