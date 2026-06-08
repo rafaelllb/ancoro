@@ -19,6 +19,8 @@ import {
 } from '@tanstack/react-table'
 import { type CrossMatrixEntry } from '../services/api'
 import { useUpdateCrossMatrixEntry } from '../hooks/useCrossMatrix'
+import { useProjectModules } from '../hooks/useProjectLists'
+import { useProjectTerminology } from '../hooks/useProjectTerminology'
 
 interface MatrixTableProps {
   data: CrossMatrixEntry[]
@@ -132,6 +134,16 @@ export default function MatrixTable({ data, projectId, userRole }: MatrixTablePr
   const [globalFilter, setGlobalFilter] = useState('')
 
   const updateMutation = useUpdateCrossMatrixEntry(projectId)
+  const { data: projectModules = [] } = useProjectModules(projectId)
+  const { moduleLabel } = useProjectTerminology(projectId)
+  const moduleNames = useMemo(
+    () =>
+      projectModules.reduce((acc, item) => {
+        acc[item.code] = item.name
+        return acc
+      }, {} as Record<string, string>),
+    [projectModules]
+  )
 
   // CLIENT não pode editar a matriz
   const canEdit = userRole !== 'CLIENT'
@@ -166,13 +178,15 @@ export default function MatrixTable({ data, projectId, userRole }: MatrixTablePr
       },
       {
         accessorKey: 'fromModule',
-        header: 'From Module',
+        header: `From ${moduleLabel}`,
         size: 100,
+        cell: ({ getValue }) => moduleNames[getValue() as string] || (getValue() as string),
       },
       {
         accessorKey: 'toModule',
-        header: 'To Module',
+        header: `To ${moduleLabel}`,
         size: 100,
+        cell: ({ getValue }) => moduleNames[getValue() as string] || (getValue() as string),
       },
       {
         accessorKey: 'dataFlow',
@@ -266,7 +280,7 @@ export default function MatrixTable({ data, projectId, userRole }: MatrixTablePr
         ),
       },
     ],
-    [canEdit, handleUpdate]
+    [canEdit, handleUpdate, moduleLabel, moduleNames]
   )
 
   const table = useReactTable({

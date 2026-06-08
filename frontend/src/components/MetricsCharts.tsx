@@ -266,7 +266,7 @@ function HeatmapGrid({
                       <div
                         className="w-10 h-10 rounded flex items-center justify-center text-white text-xs font-medium mx-auto cursor-pointer transition-transform hover:scale-110"
                         style={{ backgroundColor: HEATMAP_COLORS[cell.status] }}
-                        title={`${fromModule} → ${toModule}: ${cell.count} integração(ões) - ${cell.status}`}
+                        title={`${moduleNames[fromModule] || MODULE_NAMES[fromModule] || fromModule} → ${moduleNames[toModule] || MODULE_NAMES[toModule] || toModule}: ${cell.count} integração(ões) - ${cell.status}`}
                       >
                         {cell.count}
                       </div>

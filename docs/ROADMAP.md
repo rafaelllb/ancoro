@@ -116,7 +116,7 @@
 
 - [x] Criar `frontend/src/components/RequirementsGrid.tsx`
   - [x] Grid editável (TanStack Table)
-  - [x] Colunas: Req ID | Descrição | Módulo | Status | What | Why | Who | When | Where | How (hoje) | How Much | Depende De | Fornece Para | Dúvidas | Observações
+  - [x] Colunas: Req ID | Descrição | Área (label configurável por projeto) | Status | What | Why | Who | When | Where | How (hoje) | How Much | Depende De | Fornece Para | Dúvidas | Observações
   - [x] Inline editing (salva auto ao perder foco)
   - [x] Indicadores visuais: 🔴 ⚠️ ✅ 🚧 ❌ ✔️
   - [x] Ordenação/filtro por coluna
@@ -160,7 +160,7 @@
 
 **Frontend - View da Matriz:** ✅ 100% COMPLETO
 - [x] Criar `frontend/src/pages/CrossMatrix.tsx`
-  - [x] Tabela interativa: From Req | To Req | From Module | To Module | Data Flow | Type | Trigger | Timing | Status | Notes
+  - [x] Tabela interativa: From Req | To Req | From Área | To Área | Data Flow | Type | Trigger | Timing | Status | Notes
   - [x] Status badges: ✅ OK | ⚠️ Pendente | 🔴 Conflito | 🔄 Circular
   - [x] KPI Cards (Total, Pendentes, OK, Conflitos, Circulares)
   - [x] Alert banner para dependências circulares
@@ -392,7 +392,7 @@
 
 **Frontend - Modal de Export:** ✅ 100% COMPLETO
 - [x] Criar `frontend/src/components/ExportModal.tsx`
-  - [x] Dropdown: escolher módulo (ou "Todos os Módulos")
+  - [x] Dropdown: escolher área configurável por projeto (ou todas)
   - [x] Cards de formato: Markdown | Word
   - [x] Botão "Exportar BPD"
   - [x] Preview do Markdown antes de download

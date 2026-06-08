@@ -1,0 +1,204 @@
+# Publish Docker Images Workflow
+# Build e push de imagens Docker para GitHub Container Registry
+# Trigger: Push de tags no formato v*
+#
+# Imagens publicadas:
+#   - ghcr.io/<owner>/ancoro-backend:v1.0.0
+#   - ghcr.io/<owner>/ancoro-backend:latest
+#   - ghcr.io/<owner>/ancoro-frontend:v1.0.0
+#   - ghcr.io/<owner>/ancoro-frontend:latest
+
+name: Publish Docker Images
+
+on:
+  push:
+    tags:
+      - 'v*'
+  # Permite execução manual para rebuild
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  NODE_VERSION: '18'
+
+jobs:
+  # ===== BUILD E PUSH BACKEND =====
+  build-backend:
+    name: Build Backend Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/ancoro-backend
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_ENV=production
+
+  # ===== BUILD E PUSH FRONTEND =====
+  build-frontend:
+    name: Build Frontend Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/ancoro-frontend
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_MODE=production
+            VITE_APP_ENV=production
+            VITE_DEMO_MODE=false
+            VITE_SHOW_ENV_INDICATOR=false
+            VITE_API_URL=/api
+
+  # ===== CRIAR RELEASE =====
+  create-release:
+    name: Create GitHub Release
+    needs: [build-backend, build-frontend]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Pega a tag anterior
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            echo "changelog=Initial release" >> $GITHUB_OUTPUT
+          else
+            # Gera changelog dos commits desde a última tag
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD)
+            # Escapa para multiline output
+            echo "changelog<<EOF" >> $GITHUB_OUTPUT
+            echo "$CHANGELOG" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ github.ref_name }}
+          body: |
+            ## Ancoro ${{ github.ref_name }}
+
+            ### Docker Images
+
+            ```bash
+            # Backend
+            docker pull ${{ env.REGISTRY }}/${{ github.repository_owner }}/ancoro-backend:${{ github.ref_name }}
+
+            # Frontend
+            docker pull ${{ env.REGISTRY }}/${{ github.repository_owner }}/ancoro-frontend:${{ github.ref_name }}
+            ```
+
+            ### Changelog
+
+            ${{ steps.changelog.outputs.changelog }}
+
+            ### Instalação On-Premise
+
+            Consulte a documentação: [ONPREMISE_INSTALLATION.md](docs/ONPREMISE_INSTALLATION.md)
+
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+          generate_release_notes: true
+
+  # ===== NOTIFICAÇÃO =====
+  notify:
+    name: Notify Release
+    needs: [create-release]
+    runs-on: ubuntu-latest
+    if: success()
+
+    steps:
+      - name: Log success
+        run: |
+          echo "✅ Release ${{ github.ref_name }} publicada com sucesso!"
+          echo ""
+          echo "Images disponíveis:"
+          echo "  - ${{ env.REGISTRY }}/${{ github.repository_owner }}/ancoro-backend:${{ github.ref_name }}"
+          echo "  - ${{ env.REGISTRY }}/${{ github.repository_owner }}/ancoro-frontend:${{ github.ref_name }}"
+
+      # TODO [ESTIGMERGIA]: Notificação de release
+      # - Configurar webhook Slack/Discord para anunciar releases
+      # - Enviar email para clientes on-premise sobre nova versão disponível

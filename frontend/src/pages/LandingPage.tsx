@@ -46,7 +46,7 @@ const features = [
   {
     icon: icons.matrix,
     title: 'Matriz de Cruzamento',
-    description: 'Detecção automática de dependências entre módulos. Identifica conflitos e dependências circulares.',
+    description: 'Detecção automática de dependências entre áreas do projeto. Identifica conflitos e dependências circulares.',
   },
   {
     icon: icons.collaboration,
@@ -56,7 +56,7 @@ const features = [
   {
     icon: icons.metrics,
     title: 'Métricas e KPIs',
-    description: 'Dashboard de validação, taxa de conflitos e saúde da integração entre módulos.',
+    description: 'Dashboard de validação, taxa de conflitos e saúde da integração entre áreas.',
   },
   {
     icon: icons.export,
@@ -75,7 +75,7 @@ const steps = [
   {
     number: '02',
     title: 'Analise Dependências',
-    description: 'A matriz identifica automaticamente cruzamentos entre módulos e alerta sobre conflitos potenciais.',
+    description: 'A matriz identifica automaticamente cruzamentos entre áreas e alerta sobre conflitos potenciais.',
   },
   {
     number: '03',

@@ -1,0 +1,137 @@
+# Ancoro On-Premise Deployment
+# Stack completa para instalação em servidor do cliente
+#
+# Uso:
+#   1. Copie .env.onpremise.example para .env
+#   2. Configure as variáveis obrigatórias
+#   3. Coloque o arquivo .license na raiz
+#   4. Execute: docker compose -f docker-compose.onpremise.yml up -d
+#
+# Requisitos:
+#   - Docker 20.10+
+#   - Docker Compose v2
+#   - 2GB RAM mínimo
+#   - 10GB disco
+
+version: '3.8'
+
+services:
+  # ===== DATABASE =====
+  postgres:
+    image: postgres:16-alpine
+    container_name: ancoro-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ancoro}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD é obrigatório}
+      POSTGRES_DB: ${POSTGRES_DB:-ancoro}
+    volumes:
+      - ancoro_data:/var/lib/postgresql/data
+    networks:
+      - ancoro-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ancoro} -d ${POSTGRES_DB:-ancoro}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Não expõe porta externamente por segurança
+    # Para debug: descomente a linha abaixo
+    # ports:
+    #   - "5432:5432"
+
+  # ===== BACKEND API =====
+  backend:
+    image: ghcr.io/rafaelbrito/ancoro-backend:${ANCORO_VERSION:-latest}
+    container_name: ancoro-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Modo de deployment
+      DEPLOYMENT_MODE: onpremise
+      NODE_ENV: production
+
+      # Database (usa service name como host)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ancoro}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ancoro}?schema=public
+
+      # Segurança
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET é obrigatório (mínimo 32 caracteres)}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # Porta interna
+      PORT: 3000
+    volumes:
+      # Arquivo de licença (obrigatório para on-premise)
+      - ./.license:/app/.license:ro
+      # Chave pública para validação (opcional se usar env var)
+      # - ./keys/license-public.pem:/app/keys/license-public.pem:ro
+    networks:
+      - ancoro-internal
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    # Não expõe porta externamente - nginx faz proxy
+    # Para debug: descomente a linha abaixo
+    # ports:
+    #   - "3000:3000"
+
+  # ===== FRONTEND WEB =====
+  frontend:
+    image: ghcr.io/rafaelbrito/ancoro-frontend:${ANCORO_VERSION:-latest}
+    container_name: ancoro-web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - ancoro-internal
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    # Não expõe porta externamente - nginx faz proxy
+    # Para debug: descomente a linha abaixo
+    # ports:
+    #   - "8080:80"
+
+  # ===== REVERSE PROXY / SSL TERMINATION =====
+  nginx:
+    image: nginx:alpine
+    container_name: ancoro-proxy
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "${WEB_PORT:-80}:80"
+      - "${WEB_PORT_SSL:-443}:443"
+    volumes:
+      - ./nginx/nginx.onpremise.conf:/etc/nginx/conf.d/default.conf:ro
+      # Certificados SSL (opcional - para HTTPS)
+      # - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - ancoro-internal
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  ancoro-internal:
+    driver: bridge
+    # Rede isolada - containers só se comunicam entre si
+
+volumes:
+  ancoro_data:
+    # Volume persistente para dados do PostgreSQL
+    # BACKUP: docker run --rm -v ancoro_data:/data -v $(pwd):/backup alpine tar cvf /backup/ancoro-db-backup.tar /data

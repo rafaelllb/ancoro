@@ -6,6 +6,8 @@ import pinoHttp from 'pino-http'
 import { createServer } from 'http'
 import { PrismaClient } from '@prisma/client'
 import config from './config'
+import { deploymentMode, getDeploymentConfig, getDeploymentInfo } from './config/deployment-mode'
+import { initializeLicense, licenseStatusHandler, attachLicenseInfo } from './license'
 import { initializeSocketServer } from './services/notificationService'
 import { seedDemoData } from './utils/seedData'
 import { seedDefaultConfigs } from './utils/seedDefaultConfigs'
@@ -86,6 +88,9 @@ app.use(express.json())
 // Structured logging com Pino (substitui console.log manual)
 app.use(pinoHttp(httpLoggerOptions))
 
+// Adiciona info de licença nos headers (on-premise)
+app.use(attachLicenseInfo)
+
 // ===== IMPORT ROUTES =====
 import authRoutes from './routes/auth'
 import requirementsRoutes from './routes/requirements'
@@ -111,8 +116,12 @@ app.get('/health', (_req: Request, res: Response) => {
     service: 'Ancoro API',
     environment: config.env,
     isDemoMode: config.isDemo,
+    deploymentMode,
   })
 })
+
+// License status endpoint (disponível em qualquer modo)
+app.get('/api/license/status', licenseStatusHandler)
 
 // Test database connection
 app.get('/api/test-db', async (_req: Request, res: Response) => {
@@ -195,9 +204,44 @@ async function autoSeedIfDemo(): Promise<void> {
   }
 }
 
+// ===== INICIALIZA LICENÇA (on-premise) =====
+function initializeLicenseIfNeeded(): void {
+  const deploymentInfo = getDeploymentInfo()
+  logger.info({
+    mode: deploymentInfo.mode,
+    description: deploymentInfo.description,
+  }, 'Deployment mode')
+
+  const deployConfig = getDeploymentConfig()
+
+  if (deployConfig.requireLicenseFile) {
+    const result = initializeLicense()
+
+    if (!result.valid) {
+      // Em produção on-premise, licença inválida é fatal
+      if (config.isProduction) {
+        logger.fatal({
+          error: result.error,
+        }, 'Licença inválida - servidor não pode iniciar')
+        process.exit(1)
+      }
+
+      // Em dev/staging, apenas warning
+      logger.warn({
+        error: result.error,
+      }, 'Licença inválida - continuando em modo restrito')
+    }
+  } else {
+    logger.debug('Modo SaaS - licenciamento gerenciado centralmente')
+  }
+}
+
 // ===== START SERVER =====
 async function main() {
   try {
+    // Verifica licença antes de qualquer coisa (on-premise)
+    initializeLicenseIfNeeded()
+
     // Testa conexão com database
     await prisma.$connect()
     logger.info('Database connected successfully')

@@ -4,8 +4,53 @@ import { prisma } from '../index'
 import { generateToken } from '../middleware/auth'
 import { loginSchema } from '../schemas'
 import { LoginRequest, LoginResponse, UserPublic } from '../types'
+import { logger } from '../utils/logger'
 
 const router = Router()
+const PRISMA_RECONNECT_DELAY_MS = 1500
+
+function isTransientDatabaseConnectionError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false
+  }
+
+  const prismaError = error as { code?: string; message?: string }
+  const message = prismaError.message?.toLowerCase() || ''
+
+  return prismaError.code === 'P1001'
+    || message.includes("can't reach database server")
+    || message.includes('database server')
+}
+
+async function reconnectPrisma(): Promise<void> {
+  try {
+    await prisma.$disconnect()
+  } catch (error) {
+    logger.warn({ err: error }, 'Prisma disconnect failed during login recovery')
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, PRISMA_RECONNECT_DELAY_MS))
+  await prisma.$connect()
+}
+
+async function findUserByEmailWithReconnect(email: string) {
+  try {
+    return await prisma.user.findUnique({
+      where: { email },
+    })
+  } catch (error) {
+    if (!isTransientDatabaseConnectionError(error)) {
+      throw error
+    }
+
+    logger.warn({ email }, 'Transient database error during login, retrying after Prisma reconnect')
+    await reconnectPrisma()
+
+    return prisma.user.findUnique({
+      where: { email },
+    })
+  }
+}
 
 /**
  * POST /api/auth/login
@@ -25,9 +70,7 @@ router.post('/login', async (req: Request, res: Response) => {
     const { email, password } = validationResult.data as LoginRequest
 
     // Buscar usuário por email
-    const user = await prisma.user.findUnique({
-      where: { email },
-    })
+    const user = await findUserByEmailWithReconnect(email)
 
     if (!user) {
       return res.status(401).json({

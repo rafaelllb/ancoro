@@ -571,7 +571,7 @@ export default function ImportSpreadsheetModal({
                     reqId | shortDesc | module | what | why | who | when | where | howToday | howMuch | dependsOn | providesFor | status | observations
                   </div>
                   <p className="text-sm text-blue-600 mt-2">
-                    Campos obrigatórios: reqId, shortDesc, module, what, why, who, when, where, howToday, howMuch
+                    Campo visível "{moduleLabel}" usa o header técnico `module`. Obrigatórios: reqId, shortDesc, module, what, why, who, when, where, howToday, howMuch
                   </p>
                 </div>
               </div>

@@ -119,8 +119,8 @@ regenerateCrossMatrix(projectId).catch((err) =>
 **Colunas:**
 1. From Req (font-mono)
 2. To Req (font-mono)
-3. From Module
-4. To Module
+3. From Área
+4. To Área
 5. Data Flow (editável)
 6. Type (dropdown: BAPI/iDoc/File/API/Batch/Other)
 7. Trigger (editável)

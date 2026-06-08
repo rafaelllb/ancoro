@@ -649,7 +649,7 @@ export const projectMembersAPI = {
       data
     ),
 
-  // Atualiza módulo do membro
+  // Atualiza a área/categoria atribuída ao membro
   updateMember: (projectId: string, userId: string, data: UpdateMemberRequest) =>
     api.patch<{ success: boolean; data: ProjectMember; message: string }>(
       `/api/projects/${projectId}/members/${userId}`,

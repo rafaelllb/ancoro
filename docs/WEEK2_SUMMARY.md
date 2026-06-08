@@ -177,7 +177,7 @@ Ver [API_EXAMPLES.md](API_EXAMPLES.md) para exemplos de curl.
 
 2. **Grid de Requisitos (TanStack Table)**
    - Tabela editável
-   - Colunas: Req ID | Descrição | Módulo | Status | 5W2H fields | etc.
+   - Colunas: Req ID | Descrição | Área configurável | Status | 5W2H fields | etc.
    - Inline editing (salva ao perder foco)
    - Filtros por módulo e status
    - Search global

@@ -156,7 +156,7 @@ export default function ProjectSettingsModal({
 
                 <div>
                   <label htmlFor="moduleLabel" className="block text-sm font-medium text-gray-700 mb-1">
-                    Label da coluna `module`
+                    Label da coluna de categorização
                   </label>
                   <input
                     type="text"
@@ -168,7 +168,7 @@ export default function ProjectSettingsModal({
                     placeholder="Área"
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    Exemplo: Área, Frente, Disciplina, Squad ou Sistema
+                    Exemplo: Área, Frente, Disciplina, Squad ou Sistema. O campo técnico continua sendo `module`.
                   </p>
                 </div>
 
