@@ -716,58 +716,66 @@ router.post(
       }
 
       // Execução transacional (all-or-nothing) com creates e updates
-      await prisma.$transaction(async (tx) => {
-        // Criar novos requisitos
-        for (const data of itemsToCreate) {
-          await tx.requirement.create({
-            data: {
-              projectId,
-              reqId: data.reqId,
-              shortDesc: data.shortDesc,
-              module: data.module,
-              what: data.what,
-              why: data.why,
-              who: data.who,
-              when: data.when,
-              where: data.where,
-              howToday: data.howToday,
-              howMuch: data.howMuch,
-              dependsOn: JSON.stringify(data.dependsOn || []),
-              providesFor: JSON.stringify(data.providesFor || []),
-              status: data.status || 'PENDING',
-              observations: data.observations,
-              responsibleConsultantId: data.responsibleConsultantId || null,
-              responsibleBusiness: data.responsibleBusiness?.trim() || null,
-              consultantNotes: data.consultantNotes,
-            },
-          })
-        }
+      // Timeout aumentado para suportar operações bulk (default é 5s)
+      await prisma.$transaction(
+        async (tx) => {
+          // Criar novos requisitos em batch (1 round-trip ao invés de N)
+          if (itemsToCreate.length > 0) {
+            await tx.requirement.createMany({
+              data: itemsToCreate.map((data) => ({
+                projectId,
+                reqId: data.reqId,
+                shortDesc: data.shortDesc,
+                module: data.module,
+                what: data.what,
+                why: data.why,
+                who: data.who,
+                when: data.when,
+                where: data.where,
+                howToday: data.howToday,
+                howMuch: data.howMuch,
+                dependsOn: JSON.stringify(data.dependsOn || []),
+                providesFor: JSON.stringify(data.providesFor || []),
+                status: data.status || 'PENDING',
+                observations: data.observations,
+                responsibleConsultantId: data.responsibleConsultantId || null,
+                responsibleBusiness: data.responsibleBusiness?.trim() || null,
+                consultantNotes: data.consultantNotes,
+              })),
+              skipDuplicates: true,
+            })
+          }
 
-        // Atualizar requisitos existentes (upsert)
-        for (const { id, data } of itemsToUpdate) {
-          await tx.requirement.update({
-            where: { id },
-            data: {
-              shortDesc: data.shortDesc,
-              module: data.module,
-              what: data.what,
-              why: data.why,
-              who: data.who,
-              when: data.when,
-              where: data.where,
-              howToday: data.howToday,
-              howMuch: data.howMuch,
-              dependsOn: JSON.stringify(data.dependsOn || []),
-              providesFor: JSON.stringify(data.providesFor || []),
-              responsibleConsultantId: data.responsibleConsultantId || null,
-              responsibleBusiness: data.responsibleBusiness?.trim() || null,
-              status: data.status || 'PENDING',
-              observations: data.observations,
-              consultantNotes: data.consultantNotes,
-            },
-          })
+          // Atualizar requisitos existentes (update individual necessário pois cada registro tem valores diferentes)
+          for (const { id, data } of itemsToUpdate) {
+            await tx.requirement.update({
+              where: { id },
+              data: {
+                shortDesc: data.shortDesc,
+                module: data.module,
+                what: data.what,
+                why: data.why,
+                who: data.who,
+                when: data.when,
+                where: data.where,
+                howToday: data.howToday,
+                howMuch: data.howMuch,
+                dependsOn: JSON.stringify(data.dependsOn || []),
+                providesFor: JSON.stringify(data.providesFor || []),
+                responsibleConsultantId: data.responsibleConsultantId || null,
+                responsibleBusiness: data.responsibleBusiness?.trim() || null,
+                status: data.status || 'PENDING',
+                observations: data.observations,
+                consultantNotes: data.consultantNotes,
+              },
+            })
+          }
+        },
+        {
+          timeout: 60000, // 60 segundos para operações bulk
+          maxWait: 10000, // Aguarda até 10s para iniciar a transação
         }
-      })
+      )
 
       // Trigger regeneração da matriz em background
       regenerateCrossMatrix(projectId).catch((err) =>
