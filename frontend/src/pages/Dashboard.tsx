@@ -383,6 +383,11 @@ export default function Dashboard() {
         projectId={projectId}
         existingReqIds={requirements.map((r) => r.reqId)}
         reqIdPattern={reqIdPattern}
+        existingRequirements={requirements.map((r) => ({
+          reqId: r.reqId,
+          shortDesc: r.shortDesc,
+          module: r.module,
+        }))}
       />
 
       {/* Modal de planilha (importação/exportação) */}

@@ -20,6 +20,7 @@ import {
   validateReqId,
   generateExample,
 } from '../utils/reqIdPattern'
+import { RequirementMultiSelect, RequirementOption } from './RequirementMultiSelect'
 
 interface CreateRequirementModalProps {
   isOpen: boolean
@@ -28,6 +29,8 @@ interface CreateRequirementModalProps {
   existingReqIds: string[] // Para gerar próximo reqId
   /** Padrão de ID do projeto. Se não fornecido, usa o padrão default (REQ-XXX) */
   reqIdPattern?: RequirementIdPattern
+  /** Requisitos existentes para autocomplete de dependências */
+  existingRequirements?: RequirementOption[]
 }
 
 // Fallback: Módulos para quando dados do projeto não estão disponíveis
@@ -140,6 +143,7 @@ export default function CreateRequirementModal({
   projectId,
   existingReqIds,
   reqIdPattern = DEFAULT_PATTERN,
+  existingRequirements = [],
 }: CreateRequirementModalProps) {
   const [form, setForm] = useState<FormState>(initialFormState)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -600,32 +604,30 @@ export default function CreateRequirementModal({
                 {/* Depende De */}
                 <div>
                   <label htmlFor="dependsOn" className="block text-sm font-medium text-gray-700 mb-1">
-                    Depende De <span className="text-gray-400">(separado por vírgula)</span>
+                    Depende De
                   </label>
-                  <input
-                    type="text"
-                    id="dependsOn"
-                    name="dependsOn"
-                    value={form.dependsOn}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={`${generateExample(reqIdPattern)}, ...`}
+                  <RequirementMultiSelect
+                    value={form.dependsOn.split(',').map(s => s.trim()).filter(Boolean)}
+                    onChange={(values) => setForm(prev => ({ ...prev, dependsOn: values.join(', ') }))}
+                    options={existingRequirements}
+                    excludeReqId={form.reqId}
+                    variant="modal"
+                    placeholder="Selecione requisitos..."
                   />
                 </div>
 
                 {/* Fornece Para */}
                 <div>
                   <label htmlFor="providesFor" className="block text-sm font-medium text-gray-700 mb-1">
-                    Fornece Para <span className="text-gray-400">(separado por vírgula)</span>
+                    Fornece Para
                   </label>
-                  <input
-                    type="text"
-                    id="providesFor"
-                    name="providesFor"
-                    value={form.providesFor}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={`${generateExample(reqIdPattern)}, ...`}
+                  <RequirementMultiSelect
+                    value={form.providesFor.split(',').map(s => s.trim()).filter(Boolean)}
+                    onChange={(values) => setForm(prev => ({ ...prev, providesFor: values.join(', ') }))}
+                    options={existingRequirements}
+                    excludeReqId={form.reqId}
+                    variant="modal"
+                    placeholder="Selecione requisitos..."
                   />
                 </div>
               </div>

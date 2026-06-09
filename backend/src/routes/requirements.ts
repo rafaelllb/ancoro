@@ -563,6 +563,178 @@ router.delete(
 )
 
 /**
+ * DELETE /api/projects/:projectId/requirements/bulk
+ * Deleção em massa de requisitos
+ * Requer: autenticação + acesso ao projeto
+ *
+ * Body: { ids: string[] }
+ *
+ * Comportamento:
+ * - Valida permissão individualmente para cada requisito
+ * - Verifica dependências na CrossMatrix para cada um
+ * - Deleta os válidos em transação
+ * - Retorna resultado consolidado com falhas detalhadas
+ *
+ * Regras de permissão:
+ * - ADMIN: pode excluir qualquer requisito do projeto
+ * - CONSULTANT: pode excluir apenas seus próprios requisitos
+ * - MANAGER/CLIENT: NÃO podem excluir (retorna todos como failure)
+ */
+router.delete(
+  '/projects/:projectId/requirements/bulk',
+  authenticate,
+  requireProjectAccess,
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params
+      const { ids } = req.body as { ids: string[] }
+      const userId = req.user!.id
+      const userRole = req.user!.role
+
+      // Validação básica do payload
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'É necessário fornecer um array de IDs para deletar.',
+        })
+      }
+
+      // Busca todos os requisitos solicitados para validação
+      const requirements = await prisma.requirement.findMany({
+        where: {
+          id: { in: ids },
+          projectId: projectId, // Garante que pertencem ao projeto
+        },
+        select: {
+          id: true,
+          reqId: true,
+          responsibleConsultantId: true,
+        },
+      })
+
+      // Identifica IDs não encontrados no projeto
+      const foundIds = new Set(requirements.map((r) => r.id))
+      const notFoundIds = ids.filter((id) => !foundIds.has(id))
+
+      // Classifica requisitos: permitidos vs negados
+      const allowed: string[] = []
+      const failures: Array<{ id: string; reqId: string; reason: string }> = []
+
+      // IDs não encontrados vão para failures
+      notFoundIds.forEach((id) => {
+        failures.push({
+          id,
+          reqId: 'N/A',
+          reason: 'Requisito não encontrado neste projeto',
+        })
+      })
+
+      // Verifica permissão para cada requisito encontrado
+      for (const req of requirements) {
+        // ADMIN pode deletar qualquer um
+        if (userRole === 'ADMIN') {
+          allowed.push(req.id)
+          continue
+        }
+
+        // MANAGER e CLIENT não podem deletar
+        if (userRole === 'MANAGER' || userRole === 'CLIENT') {
+          failures.push({
+            id: req.id,
+            reqId: req.reqId,
+            reason: 'Seu perfil não tem permissão para deletar requisitos',
+          })
+          continue
+        }
+
+        // CONSULTANT: apenas seus próprios
+        if (userRole === 'CONSULTANT') {
+          if (req.responsibleConsultantId === userId) {
+            allowed.push(req.id)
+          } else {
+            failures.push({
+              id: req.id,
+              reqId: req.reqId,
+              reason: 'Você só pode deletar requisitos onde é o consultor responsável',
+            })
+          }
+          continue
+        }
+
+        // Qualquer outro role: não pode
+        failures.push({
+          id: req.id,
+          reqId: req.reqId,
+          reason: 'Permissão negada',
+        })
+      }
+
+      // Verifica CrossMatrix para os requisitos permitidos
+      const allowedWithCrossMatrix: string[] = []
+      for (const id of allowed) {
+        const crossMatrixCount = await prisma.crossMatrixEntry.count({
+          where: {
+            OR: [{ fromReqId: id }, { toReqId: id }],
+          },
+        })
+
+        if (crossMatrixCount > 0) {
+          const req = requirements.find((r) => r.id === id)!
+          failures.push({
+            id,
+            reqId: req.reqId,
+            reason: `Possui ${crossMatrixCount} entrada(s) na matriz cruzada. Remova as dependências primeiro.`,
+          })
+        } else {
+          allowedWithCrossMatrix.push(id)
+        }
+      }
+
+      // Se não há nada para deletar, retorna resultado vazio
+      if (allowedWithCrossMatrix.length === 0) {
+        return res.status(200).json({
+          success: failures.length === 0,
+          deleted: 0,
+          failed: failures.length,
+          message:
+            failures.length > 0
+              ? 'Nenhum requisito pôde ser deletado'
+              : 'Nenhum requisito para deletar',
+          failures: failures.length > 0 ? failures : undefined,
+        })
+      }
+
+      // Deleta os requisitos válidos em transação
+      await prisma.$transaction(
+        allowedWithCrossMatrix.map((id) =>
+          prisma.requirement.delete({ where: { id } })
+        )
+      )
+
+      // Resultado final
+      const result = {
+        success: failures.length === 0,
+        deleted: allowedWithCrossMatrix.length,
+        failed: failures.length,
+        message:
+          failures.length === 0
+            ? `${allowedWithCrossMatrix.length} requisito(s) deletado(s) com sucesso`
+            : `${allowedWithCrossMatrix.length} deletado(s), ${failures.length} não puderam ser deletados`,
+        failures: failures.length > 0 ? failures : undefined,
+      }
+
+      res.status(200).json(result)
+    } catch (error) {
+      console.error('Error bulk deleting requirements:', error)
+      res.status(500).json({
+        error: 'Internal Server Error',
+        message: error instanceof Error ? error.message : 'Erro ao deletar requisitos em massa',
+      })
+    }
+  }
+)
+
+/**
  * POST /api/projects/:projectId/requirements/bulk
  * Importação em massa de requisitos a partir de planilha
  * Requer: autenticação + acesso ao projeto + role ADMIN ou MANAGER

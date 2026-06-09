@@ -232,6 +232,20 @@ export interface BulkImportRequest {
   requirements: Omit<CreateRequirementRequest, 'projectId'>[]
 }
 
+export interface BulkDeleteFailure {
+  id: string
+  reqId: string
+  reason: string
+}
+
+export interface BulkDeleteResponse {
+  success: boolean
+  deleted: number
+  failed: number
+  message: string
+  failures?: BulkDeleteFailure[]
+}
+
 // Requirements
 export const requirementsAPI = {
   getByProject: (projectId: string, filters?: { module?: string; status?: string }) =>
@@ -249,6 +263,9 @@ export const requirementsAPI = {
 
   bulkImport: (projectId: string, data: BulkImportRequest) =>
     api.post<BulkImportResponse>(`/api/projects/${projectId}/requirements/bulk`, data),
+
+  bulkDelete: (projectId: string, ids: string[]) =>
+    api.delete<BulkDeleteResponse>(`/api/projects/${projectId}/requirements/bulk`, { data: { ids } }),
 }
 
 // Projects

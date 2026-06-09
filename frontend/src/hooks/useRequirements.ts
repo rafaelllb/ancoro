@@ -5,6 +5,7 @@ import {
   Requirement,
   CreateRequirementRequest,
   UpdateRequirementRequest,
+  BulkDeleteResponse,
 } from '../services/api'
 
 // Query keys para cache management
@@ -197,6 +198,95 @@ export function useDeleteRequirement() {
       }
       // Prioriza message (mensagens específicas) sobre error (nome genérico do erro)
       const message = error.response?.data?.message || error.response?.data?.error || 'Erro ao deletar requisito'
+      toast.error(message)
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: requirementKeys.all })
+    },
+  })
+}
+
+/**
+ * Hook para deleção em massa de requisitos
+ *
+ * - Valida permissão por requisito no backend
+ * - Optimistic update: remove da UI imediatamente
+ * - Rollback automático se falhar completamente
+ * - Suporta falha parcial: deleta os possíveis e reporta os que falharam
+ */
+export function useBulkDeleteRequirements() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ projectId, ids }: { projectId: string; ids: string[] }) =>
+      requirementsAPI.bulkDelete(projectId, ids),
+
+    // Optimistic update: remove todos os IDs da UI imediatamente
+    onMutate: async ({ ids }) => {
+      await queryClient.cancelQueries({ queryKey: requirementKeys.all })
+
+      // Snapshot do estado anterior para rollback
+      const previousRequirements = queryClient.getQueriesData<Requirement[]>({
+        queryKey: requirementKeys.all,
+      })
+
+      // Remove da UI imediatamente
+      queryClient.setQueriesData<Requirement[]>(
+        { queryKey: requirementKeys.all },
+        (old) => {
+          if (!old) return old
+          return old.filter((req) => !ids.includes(req.id))
+        }
+      )
+
+      return { previousRequirements, ids }
+    },
+
+    onSuccess: (response, _variables, context) => {
+      const result: BulkDeleteResponse = response.data
+
+      // Se houve falhas, restaura apenas os que falharam na UI
+      if (result.failures && result.failures.length > 0 && context?.previousRequirements) {
+        const failedIds = new Set(result.failures.map((f) => f.id))
+
+        // Restaura os que falharam de volta à UI
+        context.previousRequirements.forEach(([queryKey, oldData]) => {
+          if (!oldData) return
+          const failedItems = oldData.filter((req) => failedIds.has(req.id))
+          if (failedItems.length > 0) {
+            queryClient.setQueryData<Requirement[]>(queryKey, (current) => {
+              if (!current) return failedItems
+              // Adiciona de volta os que falharam
+              return [...current, ...failedItems]
+            })
+          }
+        })
+      }
+
+      // Invalida cache para sincronizar com servidor
+      queryClient.invalidateQueries({ queryKey: requirementKeys.all })
+
+      // Toast de feedback
+      if (result.deleted > 0) {
+        toast.success(`${result.deleted} requisito(s) deletado(s)`)
+      }
+      if (result.failed > 0) {
+        const failedReqIds = result.failures?.slice(0, 3).map((f) => f.reqId).join(', ')
+        const moreCount = (result.failures?.length || 0) > 3 ? ` e mais ${(result.failures?.length || 0) - 3}` : ''
+        toast.error(`${result.failed} não puderam ser deletados: ${failedReqIds}${moreCount}`, { duration: 5000 })
+      }
+    },
+
+    onError: (error: any, _variables, context) => {
+      // Rollback completo: restaura todos os dados anteriores
+      if (context?.previousRequirements) {
+        context.previousRequirements.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data)
+        })
+      }
+      const message =
+        error.response?.data?.message || error.response?.data?.error || 'Erro ao deletar requisitos'
       toast.error(message)
     },
 

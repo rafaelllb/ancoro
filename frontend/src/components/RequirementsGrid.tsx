@@ -8,9 +8,10 @@ import {
   createColumnHelper,
   SortingState,
   ColumnFiltersState,
+  RowSelectionState,
 } from '@tanstack/react-table'
 import { Requirement } from '../services/api'
-import { useUpdateRequirement, useDeleteRequirement } from '../hooks/useRequirements'
+import { useUpdateRequirement, useDeleteRequirement, useBulkDeleteRequirements } from '../hooks/useRequirements'
 import { useAuth } from '../contexts/AuthContext'
 import {
   canDeleteRequirement,
@@ -23,6 +24,7 @@ import { useProjectModules } from '../hooks/useProjectLists'
 import { useProjectTerminology } from '../hooks/useProjectTerminology'
 import ConfirmDialog from './ConfirmDialog'
 import { SkeletonRequirementsGrid } from './Skeleton'
+import { RequirementMultiSelect, RequirementOption } from './RequirementMultiSelect'
 
 // ===== TIPOS =====
 
@@ -542,8 +544,13 @@ export default function RequirementsGrid({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [requirementToDelete, setRequirementToDelete] = useState<Requirement | null>(null)
 
+  // Estado para seleção múltipla (bulk delete)
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
+
   const updateMutation = useUpdateRequirement()
   const deleteMutation = useDeleteRequirement()
+  const bulkDeleteMutation = useBulkDeleteRequirements()
 
   const consultantOptions = useMemo(
     () =>
@@ -556,6 +563,17 @@ export default function RequirementsGrid({
     () => (projectModules.length ? projectModules.map((item) => item.code) : MODULES),
     [projectModules]
   )
+
+  // Opções de requisitos para autocomplete de dependências
+  const requirementOptions: RequirementOption[] = useMemo(
+    () => data.map((req) => ({
+      reqId: req.reqId,
+      shortDesc: req.shortDesc,
+      module: req.module,
+    })),
+    [data]
+  )
+
   const visibleData = useMemo(
     () => (scopedModule ? data.filter((requirement) => requirement.module === scopedModule) : data),
     [data, scopedModule]
@@ -566,6 +584,40 @@ export default function RequirementsGrid({
     showAllModules &&
     (userRole === 'CONSULTANT' || userRole === 'CLIENT') &&
     requirement.module !== assignedModule
+
+  // Requisitos selecionados para bulk delete (derivado do estado de seleção)
+  const selectedRequirements = useMemo(() => {
+    return Object.keys(rowSelection)
+      .filter((key) => rowSelection[key])
+      .map((id) => visibleData.find((r) => r.id === id))
+      .filter(Boolean) as Requirement[]
+  }, [rowSelection, visibleData])
+
+  // Handler para confirmar bulk delete
+  const handleConfirmBulkDelete = () => {
+    if (selectedRequirements.length === 0) return
+
+    bulkDeleteMutation.mutate(
+      {
+        projectId,
+        ids: selectedRequirements.map((r) => r.id),
+      },
+      {
+        onSuccess: () => {
+          setBulkDeleteDialogOpen(false)
+          setRowSelection({}) // Limpa seleção após delete
+          // Se algum requisito selecionado estava no panel de detalhes, limpa
+          if (selectedRowId && selectedRequirements.some((r) => r.id === selectedRowId)) {
+            setSelectedRowId(null)
+            onRowSelect?.(null)
+          }
+        },
+        onError: () => {
+          setBulkDeleteDialogOpen(false)
+        },
+      }
+    )
+  }
 
   // Handler para abrir dialog de delete
   const handleDeleteClick = (requirement: Requirement, e: React.MouseEvent) => {
@@ -654,7 +706,82 @@ export default function RequirementsGrid({
             canDeleteRequirement(userRole, user?.id, requirement.responsibleConsultantId)
           ))
 
+      // Verifica se deve mostrar coluna de seleção (mesma lógica da coluna de ações)
+      const shouldShowSelectionColumn = shouldShowActionsColumn
+
       const baseColumns = [
+      // Coluna de checkbox para seleção múltipla (bulk delete)
+      ...(shouldShowSelectionColumn
+        ? [
+            columnHelper.display({
+              id: 'select',
+              size: 40,
+              header: ({ table }) => {
+                // Apenas requisitos que o usuário pode deletar
+                const deletableRows = table.getRowModel().rows.filter(
+                  (row) =>
+                    !isReadOnlyExternalRequirement(row.original) &&
+                    canDeleteRequirement(userRole, user?.id, row.original.responsibleConsultantId)
+                )
+                const allDeletableSelected =
+                  deletableRows.length > 0 && deletableRows.every((row) => row.getIsSelected())
+                const someDeletableSelected =
+                  deletableRows.some((row) => row.getIsSelected()) && !allDeletableSelected
+
+                return (
+                  <input
+                    type="checkbox"
+                    checked={allDeletableSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someDeletableSelected
+                    }}
+                    onChange={() => {
+                      if (allDeletableSelected) {
+                        // Desmarcar todos
+                        setRowSelection({})
+                      } else {
+                        // Selecionar apenas os que pode deletar
+                        const newSelection: RowSelectionState = {}
+                        deletableRows.forEach((row) => {
+                          newSelection[row.original.id] = true
+                        })
+                        setRowSelection(newSelection)
+                      }
+                    }}
+                    disabled={deletableRows.length === 0}
+                    title={
+                      deletableRows.length === 0
+                        ? 'Nenhum requisito pode ser deletado'
+                        : 'Selecionar todos que podem ser deletados'
+                    }
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                )
+              },
+              cell: ({ row }) => {
+                const canDelete =
+                  !isReadOnlyExternalRequirement(row.original) &&
+                  canDeleteRequirement(userRole, user?.id, row.original.responsibleConsultantId)
+
+                return (
+                  <input
+                    type="checkbox"
+                    checked={row.getIsSelected()}
+                    onChange={(e) => {
+                      e.stopPropagation()
+                      row.toggleSelected()
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    disabled={!canDelete}
+                    title={canDelete ? undefined : 'Você não pode deletar este requisito'}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                )
+              },
+            }),
+          ]
+        : []),
+
       columnHelper.accessor('reqId', {
         header: 'Req ID',
         size: 120,
@@ -848,32 +975,32 @@ export default function RequirementsGrid({
 
       columnHelper.accessor('dependsOn', {
         header: 'Depende De',
-        size: 150,
+        size: 200,
         cell: (info) => (
-          <EditableCell
-            value={info.getValue()}
-            rowId={info.row.original.id}
-            columnId="dependsOn"
-            columnLabel="Depende De"
-            onUpdate={handleCellUpdate}
-            isArray
+          <RequirementMultiSelect
+            value={info.getValue() || []}
+            onChange={(newValue) => handleCellUpdate(info.row.original.id, 'dependsOn', newValue)}
+            options={requirementOptions}
+            excludeReqId={info.row.original.reqId}
             disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            variant="inline"
+            placeholder="Selecione..."
           />
         ),
       }),
 
       columnHelper.accessor('providesFor', {
         header: 'Fornece Para',
-        size: 150,
+        size: 200,
         cell: (info) => (
-          <EditableCell
-            value={info.getValue()}
-            rowId={info.row.original.id}
-            columnId="providesFor"
-            columnLabel="Fornece Para"
-            onUpdate={handleCellUpdate}
-            isArray
+          <RequirementMultiSelect
+            value={info.getValue() || []}
+            onChange={(newValue) => handleCellUpdate(info.row.original.id, 'providesFor', newValue)}
+            options={requirementOptions}
+            excludeReqId={info.row.original.reqId}
             disabled={isReadOnlyExternalRequirement(info.row.original) || !canEditRequirement(userRole, user?.id, info.row.original.responsibleConsultantId)}
+            variant="inline"
+            placeholder="Selecione..."
           />
         ),
       }),
@@ -986,13 +1113,20 @@ export default function RequirementsGrid({
       sorting,
       columnFilters,
       globalFilter,
+      rowSelection,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
+    onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    // Habilita seleção apenas para requisitos que o usuário pode deletar
+    enableRowSelection: (row) =>
+      !isReadOnlyExternalRequirement(row.original) &&
+      canDeleteRequirement(userRole, user?.id, row.original.responsibleConsultantId),
+    getRowId: (row) => row.id, // Usa o ID do requisito como identificador da row
   })
 
   // Dados filtrados e paginados para exibição progressiva
@@ -1097,6 +1231,37 @@ export default function RequirementsGrid({
         </div>
       </div>
 
+      {/* Toolbar de ações em massa */}
+      {selectedRequirements.length > 0 && (
+        <div className="flex items-center gap-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
+          <span className="text-sm font-medium text-red-800">
+            {selectedRequirements.length} selecionado(s)
+          </span>
+          <button
+            type="button"
+            onClick={() => setBulkDeleteDialogOpen(true)}
+            className="px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+            Deletar selecionados
+          </button>
+          <button
+            type="button"
+            onClick={() => setRowSelection({})}
+            className="text-sm text-gray-600 hover:text-gray-800 underline"
+          >
+            Limpar seleção
+          </button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="overflow-auto border border-gray-200 rounded-lg shadow-sm">
         <table className="min-w-full divide-y divide-gray-200">
@@ -1184,7 +1349,7 @@ export default function RequirementsGrid({
         </div>
       )}
 
-      {/* Dialog de confirmação para delete */}
+      {/* Dialog de confirmação para delete individual */}
       <ConfirmDialog
         isOpen={deleteDialogOpen}
         title="Deletar Requisito"
@@ -1194,6 +1359,25 @@ export default function RequirementsGrid({
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
         isLoading={deleteMutation.isPending}
+        variant="danger"
+      />
+
+      {/* Dialog de confirmação para bulk delete */}
+      <ConfirmDialog
+        isOpen={bulkDeleteDialogOpen}
+        title="Deletar Requisitos"
+        message={`Tem certeza que deseja deletar ${selectedRequirements.length} requisito(s)?
+
+IDs: ${selectedRequirements.slice(0, 5).map((r) => r.reqId).join(', ')}${
+          selectedRequirements.length > 5 ? ` e mais ${selectedRequirements.length - 5}...` : ''
+        }
+
+Esta ação não pode ser desfeita.`}
+        confirmText={`Deletar ${selectedRequirements.length}`}
+        cancelText="Cancelar"
+        onConfirm={handleConfirmBulkDelete}
+        onCancel={() => setBulkDeleteDialogOpen(false)}
+        isLoading={bulkDeleteMutation.isPending}
         variant="danger"
       />
     </div>
