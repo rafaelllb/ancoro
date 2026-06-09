@@ -588,7 +588,7 @@ router.delete(
     try {
       const { projectId } = req.params
       const { ids } = req.body as { ids: string[] }
-      const userId = req.user!.id
+      const userId = req.user!.userId
       const userRole = req.user!.role
 
       // Validação básica do payload
