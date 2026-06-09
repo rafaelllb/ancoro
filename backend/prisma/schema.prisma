@@ -235,14 +235,16 @@ model CrossMatrixEntry {
 
   // Relations
   project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  fromReq         Requirement @relation("FromRequirement", fields: [fromReqId], references: [id])
-  toReq           Requirement @relation("ToRequirement", fields: [toReqId], references: [id])
+  fromReq         Requirement @relation("FromRequirement", fields: [fromReqId], references: [id], onDelete: Cascade)
+  toReq           Requirement @relation("ToRequirement", fields: [toReqId], references: [id], onDelete: Cascade)
   owner           User?    @relation("IntegrationOwner", fields: [ownerUserId], references: [id])
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@unique([projectId, fromReqId, toReqId])
+  @@index([fromReqId])
+  @@index([toReqId])
   @@map("cross_matrix_entries")
 }
 

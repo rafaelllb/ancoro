@@ -547,6 +547,8 @@ export default function RequirementsGrid({
   // Estado para seleção múltipla (bulk delete)
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
+  const [forceDeleteDialogOpen, setForceDeleteDialogOpen] = useState(false)
+  const [forceDeleteIds, setForceDeleteIds] = useState<string[]>([])
 
   const updateMutation = useUpdateRequirement()
   const deleteMutation = useDeleteRequirement()
@@ -603,10 +605,21 @@ export default function RequirementsGrid({
         ids: selectedRequirements.map((r) => r.id),
       },
       {
-        onSuccess: () => {
+        onSuccess: (response) => {
           setBulkDeleteDialogOpen(false)
-          setRowSelection({}) // Limpa seleção após delete
-          // Se algum requisito selecionado estava no panel de detalhes, limpa
+
+          // Detecta falhas por cross-matrix e oferece force-delete
+          const crossMatrixFailures = response.data.failures?.filter(
+            (f) => f.reason.includes('matriz cruzada')
+          )
+          if (crossMatrixFailures && crossMatrixFailures.length > 0) {
+            setForceDeleteIds(crossMatrixFailures.map((f) => f.id))
+            setForceDeleteDialogOpen(true)
+          } else {
+            setRowSelection({})
+          }
+
+          // Limpa panel de detalhes se necessário
           if (selectedRowId && selectedRequirements.some((r) => r.id === selectedRowId)) {
             setSelectedRowId(null)
             onRowSelect?.(null)
@@ -614,6 +627,30 @@ export default function RequirementsGrid({
         },
         onError: () => {
           setBulkDeleteDialogOpen(false)
+        },
+      }
+    )
+  }
+
+  // Handler para force-delete de requisitos com dependências cross-matrix
+  const handleForceDelete = () => {
+    if (forceDeleteIds.length === 0) return
+
+    bulkDeleteMutation.mutate(
+      {
+        projectId,
+        ids: forceDeleteIds,
+        force: true,
+      },
+      {
+        onSuccess: () => {
+          setForceDeleteDialogOpen(false)
+          setForceDeleteIds([])
+          setRowSelection({})
+        },
+        onError: () => {
+          setForceDeleteDialogOpen(false)
+          setForceDeleteIds([])
         },
       }
     )
@@ -1379,6 +1416,27 @@ Esta ação não pode ser desfeita.`}
         onCancel={() => setBulkDeleteDialogOpen(false)}
         isLoading={bulkDeleteMutation.isPending}
         variant="danger"
+      />
+
+      {/* Dialog para force-delete de requisitos com dependências cross-matrix */}
+      <ConfirmDialog
+        isOpen={forceDeleteDialogOpen}
+        title="Requisitos com Dependências"
+        message={`${forceDeleteIds.length} requisito(s) possuem dependências na matriz cruzada e não foram deletados.
+
+Deseja deletar mesmo assim? As entradas da matriz cruzada serão removidas automaticamente.
+
+Esta ação não pode ser desfeita.`}
+        confirmText={`Forçar deleção (${forceDeleteIds.length})`}
+        cancelText="Manter requisitos"
+        onConfirm={handleForceDelete}
+        onCancel={() => {
+          setForceDeleteDialogOpen(false)
+          setForceDeleteIds([])
+          setRowSelection({})
+        }}
+        isLoading={bulkDeleteMutation.isPending}
+        variant="warning"
       />
     </div>
   )

@@ -264,8 +264,8 @@ export const requirementsAPI = {
   bulkImport: (projectId: string, data: BulkImportRequest) =>
     api.post<BulkImportResponse>(`/api/projects/${projectId}/requirements/bulk`, data),
 
-  bulkDelete: (projectId: string, ids: string[]) =>
-    api.delete<BulkDeleteResponse>(`/api/projects/${projectId}/requirements/bulk`, { data: { ids } }),
+  bulkDelete: (projectId: string, ids: string[], force?: boolean) =>
+    api.delete<BulkDeleteResponse>(`/api/projects/${projectId}/requirements/bulk`, { data: { ids, force } }),
 }
 
 // Projects

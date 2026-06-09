@@ -587,7 +587,7 @@ router.delete(
   async (req: Request, res: Response) => {
     try {
       const { projectId } = req.params
-      const { ids } = req.body as { ids: string[] }
+      const { ids, force } = req.body as { ids: string[]; force?: boolean }
       const userId = req.user!.userId
       const userRole = req.user!.role
 
@@ -596,6 +596,14 @@ router.delete(
         return res.status(400).json({
           error: 'Bad Request',
           message: 'É necessário fornecer um array de IDs para deletar.',
+        })
+      }
+
+      // Limite de segurança para evitar operações excessivas
+      if (ids.length > 500) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'Limite de 500 requisitos por operação de deleção em massa.',
         })
       }
 
@@ -669,29 +677,56 @@ router.delete(
         })
       }
 
-      // Verifica CrossMatrix para os requisitos permitidos
-      const allowedWithCrossMatrix: string[] = []
-      for (const id of allowed) {
-        const crossMatrixCount = await prisma.crossMatrixEntry.count({
+      // Verifica CrossMatrix para os requisitos permitidos com query única agregada
+      // Em vez de N queries COUNT sequenciais, faz 1 findMany e agrega em memória
+      const reqLookup = new Map(requirements.map((r) => [r.id, r]))
+      let idsToDelete: string[]
+
+      if (force) {
+        // Modo force: ignora cross-matrix, vai deletar tudo junto na transação
+        idsToDelete = allowed
+      } else {
+        // Modo padrão: bloqueia requisitos com dependências na matriz cruzada
+        const crossMatrixEntries = await prisma.crossMatrixEntry.findMany({
           where: {
-            OR: [{ fromReqId: id }, { toReqId: id }],
+            OR: [
+              { fromReqId: { in: allowed } },
+              { toReqId: { in: allowed } },
+            ],
           },
+          select: { fromReqId: true, toReqId: true },
         })
 
-        if (crossMatrixCount > 0) {
-          const req = requirements.find((r) => r.id === id)!
-          failures.push({
-            id,
-            reqId: req.reqId,
-            reason: `Possui ${crossMatrixCount} entrada(s) na matriz cruzada. Remova as dependências primeiro.`,
-          })
-        } else {
-          allowedWithCrossMatrix.push(id)
+        // Agrega contagens por requisito em memória (O(entries) em vez de O(N) queries)
+        const crossMatrixCountMap = new Map<string, number>()
+        const allowedSet = new Set(allowed)
+        for (const entry of crossMatrixEntries) {
+          if (allowedSet.has(entry.fromReqId)) {
+            crossMatrixCountMap.set(entry.fromReqId, (crossMatrixCountMap.get(entry.fromReqId) || 0) + 1)
+          }
+          if (allowedSet.has(entry.toReqId)) {
+            crossMatrixCountMap.set(entry.toReqId, (crossMatrixCountMap.get(entry.toReqId) || 0) + 1)
+          }
+        }
+
+        idsToDelete = []
+        for (const id of allowed) {
+          const count = crossMatrixCountMap.get(id) || 0
+          if (count > 0) {
+            const req = reqLookup.get(id)!
+            failures.push({
+              id,
+              reqId: req.reqId,
+              reason: `Possui ${count} entrada(s) na matriz cruzada. Remova as dependências primeiro.`,
+            })
+          } else {
+            idsToDelete.push(id)
+          }
         }
       }
 
       // Se não há nada para deletar, retorna resultado vazio
-      if (allowedWithCrossMatrix.length === 0) {
+      if (idsToDelete.length === 0) {
         return res.status(200).json({
           success: failures.length === 0,
           deleted: 0,
@@ -704,22 +739,42 @@ router.delete(
         })
       }
 
-      // Deleta os requisitos válidos em transação
+      // Deleta em transação usando deleteMany (4 queries batch em vez de N individuais)
       await prisma.$transaction(
-        allowedWithCrossMatrix.map((id) =>
-          prisma.requirement.delete({ where: { id } })
-        )
+        async (tx) => {
+          // Modo force: limpa cross-matrix entries antes de deletar requisitos
+          if (force) {
+            await tx.crossMatrixEntry.deleteMany({
+              where: {
+                OR: [
+                  { fromReqId: { in: idsToDelete } },
+                  { toReqId: { in: idsToDelete } },
+                ],
+              },
+            })
+          }
+
+          // Deleta filhos explicitamente em batch (1 query por tabela)
+          // Mais eficiente que cascade row-by-row do Prisma
+          await tx.comment.deleteMany({ where: { requirementId: { in: idsToDelete } } })
+          await tx.evidence.deleteMany({ where: { requirementId: { in: idsToDelete } } })
+          await tx.changeLog.deleteMany({ where: { requirementId: { in: idsToDelete } } })
+
+          // Deleta todos os requisitos em 1 query
+          await tx.requirement.deleteMany({ where: { id: { in: idsToDelete } } })
+        },
+        { timeout: 30000, maxWait: 5000 }
       )
 
       // Resultado final
       const result = {
         success: failures.length === 0,
-        deleted: allowedWithCrossMatrix.length,
+        deleted: idsToDelete.length,
         failed: failures.length,
         message:
           failures.length === 0
-            ? `${allowedWithCrossMatrix.length} requisito(s) deletado(s) com sucesso`
-            : `${allowedWithCrossMatrix.length} deletado(s), ${failures.length} não puderam ser deletados`,
+            ? `${idsToDelete.length} requisito(s) deletado(s) com sucesso`
+            : `${idsToDelete.length} deletado(s), ${failures.length} não puderam ser deletados`,
         failures: failures.length > 0 ? failures : undefined,
       }
 

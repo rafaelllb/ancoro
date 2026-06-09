@@ -219,8 +219,8 @@ export function useBulkDeleteRequirements() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ projectId, ids }: { projectId: string; ids: string[] }) =>
-      requirementsAPI.bulkDelete(projectId, ids),
+    mutationFn: ({ projectId, ids, force }: { projectId: string; ids: string[]; force?: boolean }) =>
+      requirementsAPI.bulkDelete(projectId, ids, force),
 
     // Optimistic update: remove todos os IDs da UI imediatamente
     onMutate: async ({ ids }) => {
@@ -231,12 +231,15 @@ export function useBulkDeleteRequirements() {
         queryKey: requirementKeys.all,
       })
 
+      // Set para lookup O(1) em vez de Array.includes O(n)
+      const idSet = new Set(ids)
+
       // Remove da UI imediatamente
       queryClient.setQueriesData<Requirement[]>(
         { queryKey: requirementKeys.all },
         (old) => {
           if (!old) return old
-          return old.filter((req) => !ids.includes(req.id))
+          return old.filter((req) => !idSet.has(req.id))
         }
       )
 
@@ -257,17 +260,13 @@ export function useBulkDeleteRequirements() {
           if (failedItems.length > 0) {
             queryClient.setQueryData<Requirement[]>(queryKey, (current) => {
               if (!current) return failedItems
-              // Adiciona de volta os que falharam
               return [...current, ...failedItems]
             })
           }
         })
       }
 
-      // Invalida cache para sincronizar com servidor
-      queryClient.invalidateQueries({ queryKey: requirementKeys.all })
-
-      // Toast de feedback
+      // Toast de feedback (invalidateQueries delegado ao onSettled para evitar refetch duplicado)
       if (result.deleted > 0) {
         toast.success(`${result.deleted} requisito(s) deletado(s)`)
       }
@@ -290,6 +289,7 @@ export function useBulkDeleteRequirements() {
       toast.error(message)
     },
 
+    // Invalidação única: cobre tanto success quanto error
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: requirementKeys.all })
     },
