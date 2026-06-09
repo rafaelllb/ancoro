@@ -534,6 +534,10 @@ export default function RequirementsGrid({
   const [globalFilter, setGlobalFilter] = useState('')
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
 
+  // Paginação client-side: controla quantos itens exibir progressivamente
+  const [pageSize, setPageSize] = useState(20)
+  const [displayCount, setDisplayCount] = useState(20)
+
   // Estado para dialog de confirmação de delete
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [requirementToDelete, setRequirementToDelete] = useState<Requirement | null>(null)
@@ -991,6 +995,17 @@ export default function RequirementsGrid({
     getFilteredRowModel: getFilteredRowModel(),
   })
 
+  // Dados filtrados e paginados para exibição progressiva
+  const filteredRows = table.getFilteredRowModel().rows
+  const displayedRows = filteredRows.slice(0, displayCount)
+  const hasMore = displayCount < filteredRows.length
+  const remainingCount = filteredRows.length - displayCount
+
+  // Reset exibição quando filtros ou pageSize mudam
+  useEffect(() => {
+    setDisplayCount(pageSize)
+  }, [globalFilter, columnFilters, pageSize])
+
   // Handler para seleção de row
   const handleRowClick = (requirement: Requirement) => {
     const newSelectedId = selectedRowId === requirement.id ? null : requirement.id
@@ -1077,7 +1092,7 @@ export default function RequirementsGrid({
 
           {/* Contador de requisitos */}
           <span className="text-sm text-gray-500 whitespace-nowrap">
-            {table.getFilteredRowModel().rows.length} requisitos
+            {filteredRows.length} requisitos
           </span>
         </div>
       </div>
@@ -1108,14 +1123,14 @@ export default function RequirementsGrid({
             ))}
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
-            {isLoading ? null : table.getRowModel().rows.length === 0 ? (
+            {isLoading ? null : filteredRows.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="px-3 py-8 text-center text-gray-500">
                   Nenhum requisito encontrado
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row) => (
+              displayedRows.map((row) => (
                 <tr
                   key={row.id}
                   className={`hover:bg-teal-50 transition-colors cursor-pointer ${
@@ -1134,6 +1149,40 @@ export default function RequirementsGrid({
           </tbody>
         </table>
       </div>
+
+      {/* Controles de paginação */}
+      {filteredRows.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-600">
+              Exibindo <strong>{displayedRows.length}</strong> de <strong>{filteredRows.length}</strong> requisitos
+            </span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="px-2 py-1 border border-gray-300 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+              aria-label="Itens por carregamento"
+            >
+              <option value={20}>20 por vez</option>
+              <option value={50}>50 por vez</option>
+              <option value={100}>100 por vez</option>
+            </select>
+          </div>
+
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => setDisplayCount((prev) => prev + pageSize)}
+              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              Carregar mais
+              <span className="bg-teal-500 px-2 py-0.5 rounded text-xs">
+                +{Math.min(pageSize, remainingCount)}
+              </span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Dialog de confirmação para delete */}
       <ConfirmDialog
