@@ -12,6 +12,20 @@
 import api from '../../services/api'
 import { GraphNode } from '../../hooks/useGraphData'
 
+function writePositionsToLocalStorage(
+  projectId: string,
+  positions: Record<string, { x: number; y: number }>,
+): void {
+  try {
+    localStorage.setItem(
+      `ancoro_dependency_graph_positions_${projectId}`,
+      JSON.stringify(positions),
+    )
+  } catch {
+    // localStorage cheio ou indisponivel — silencia
+  }
+}
+
 // ===== DEBOUNCE =====
 
 export interface DebouncedPersist {
@@ -65,7 +79,11 @@ export async function loadPositionsFromAPI(
     const { data } = await api.get<{ positions: Record<string, { x: number; y: number }> }>(
       `/api/projects/${projectId}/graph-layout`,
     )
-    return data.positions || {}
+    const positions = data.positions || {}
+    if (Object.keys(positions).length > 0) {
+      writePositionsToLocalStorage(projectId, positions)
+    }
+    return positions
   } catch (error) {
     console.error('Erro ao carregar layout do grafo da API:', error)
     return {}
@@ -76,19 +94,13 @@ export async function persistNodePositionsAPI(
   projectId: string,
   positions: Record<string, { x: number; y: number }>,
 ): Promise<void> {
+  // Mantem cache local sempre atualizado para sobreviver a refresh/reload
+  writePositionsToLocalStorage(projectId, positions)
+
   try {
     await api.put(`/api/projects/${projectId}/graph-layout`, { positions })
   } catch (error) {
     console.error('Erro ao salvar layout do grafo na API:', error)
-    // Fallback: salva no localStorage para não perder o trabalho
-    try {
-      localStorage.setItem(
-        `ancoro_dependency_graph_positions_${projectId}`,
-        JSON.stringify(positions),
-      )
-    } catch {
-      // localStorage cheio ou indisponível — silencia
-    }
   }
 }
 

@@ -559,9 +559,7 @@ export default function RequirementsGraph({
         const reqIdToDbId = new Map<string, string>()
         nodesRef.current.forEach(n => reqIdToDbId.set(n.id, n.dbId))
         const migrated = migratePositionKeys(localPositions, reqIdToDbId)
-        persistNodePositionsAPI(projectId, migrated).then(() => {
-          try { localStorage.removeItem(localKey) } catch { /* silencia */ }
-        })
+        persistNodePositionsAPI(projectId, migrated)
       }
     })
 
