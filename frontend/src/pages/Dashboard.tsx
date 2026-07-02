@@ -83,7 +83,7 @@ export default function Dashboard() {
   return (
     <div className="ancoro-shell min-h-screen bg-transparent">
       <header className="sticky top-0 z-20 border-b border-white/40 bg-white/70 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:flex-nowrap lg:px-8">
           <div className="flex items-center gap-3">
             <MobileNav
               items={navItems.filter((item) => {
@@ -107,7 +107,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="hidden sm:block">
+          <div className="hidden min-w-0 sm:block">
             <ProjectSwitcher
               projects={projects}
               currentProject={currentProject}
