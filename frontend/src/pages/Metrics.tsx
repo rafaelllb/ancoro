@@ -10,13 +10,14 @@
 import { Link, Navigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
-import { useProjects } from '../hooks/useProjects'
+import { useCurrentProject } from '../hooks/useProjects'
 import { useCapabilities } from '../hooks/useCapabilities'
 import { useProjectModules } from '../hooks/useProjectLists'
 import { useProjectTerminology } from '../hooks/useProjectTerminology'
 import { metricsAPI, ProjectMetrics } from '../services/api'
 import MetricsCharts from '../components/MetricsCharts'
 import { NotificationBell } from '../components/NotificationBell'
+import ProjectSwitcher from '../components/ProjectSwitcher'
 
 // Mapeamento de status para labels e cores
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
@@ -50,9 +51,9 @@ export default function Metrics() {
     return <Navigate to="/dashboard" replace />
   }
 
-  // Buscar projetos disponíveis
-  const { data: projects = [] } = useProjects()
-  const projectId = projects[0]?.id || ''
+  // Usa o mesmo projeto atual selecionado nas demais telas
+  const { currentProject, projects, setCurrentProject } = useCurrentProject()
+  const projectId = currentProject?.id || ''
   const { data: projectModules = [] } = useProjectModules(projectId)
   const { moduleLabel } = useProjectTerminology(projectId)
   const moduleNames = projectModules.reduce((acc, item) => {
@@ -98,8 +99,13 @@ export default function Metrics() {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <ProjectSwitcher
+              projects={projects}
+              currentProject={currentProject}
+              onProjectChange={setCurrentProject}
+            />
             <Link
-              to="/"
+              to="/dashboard"
               className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm transition-colors"
             >
               Requisitos

@@ -13,6 +13,8 @@
     "dev:sqlite": "dotenv -e .env.development.sqlite -- nodemon src/index.ts",
     "predev:demo": "npm run prisma:generate:sqlite",
     "dev:demo": "dotenv -e .env.demo -- nodemon src/index.ts",
+    "predev:local": "npm run prisma:generate:sqlite",
+    "dev:local": "dotenv -e .env.demo -- nodemon src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "prestart:staging": "npm run prisma:generate:postgres",

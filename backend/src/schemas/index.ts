@@ -9,9 +9,11 @@ import {
 } from '../types'
 import {
   RequirementIdPattern,
-  buildRegex,
-  generateExample,
   DEFAULT_PATTERN,
+  REQ_ID_DIGIT_MAX,
+  REQ_ID_DIGIT_MIN,
+  REQ_ID_PREFIX_MAX_LENGTH,
+  REQ_ID_SEPARATOR_MAX_LENGTH,
 } from '../utils/reqIdPattern'
 
 // ===== AUTH SCHEMAS =====
@@ -38,11 +40,8 @@ export const registerSchema = z.object({
  * @returns Schema Zod configurado para validar reqId no formato correto
  */
 export function createRequirementSchemaForProject(pattern: RequirementIdPattern) {
-  const regex = buildRegex(pattern)
-  const example = generateExample(pattern)
-
   return z.object({
-    reqId: z.string().regex(regex, `Req ID deve seguir o padrão ${example}`),
+    reqId: z.string().trim().min(1, 'Req ID é obrigatório').max(100, 'Req ID deve ter no máximo 100 caracteres'),
     projectId: z.string().cuid('Project ID inválido'),
     shortDesc: z.string().max(50, 'Descrição curta deve ter no máximo 50 caracteres'),
     module: z.enum([
@@ -223,11 +222,8 @@ export const updateCrossMatrixSchema = z.object({
  * @returns Schema Zod para validar itens de importação em massa
  */
 export function createBulkImportItemSchemaForProject(pattern: RequirementIdPattern) {
-  const regex = buildRegex(pattern)
-  const example = generateExample(pattern)
-
   return z.object({
-    reqId: z.string().regex(regex, `Req ID deve seguir o padrão ${example}`),
+    reqId: z.string().trim().min(1, 'Req ID é obrigatório').max(100, 'Req ID deve ter no máximo 100 caracteres'),
     shortDesc: z.string().max(50, 'Máximo 50 caracteres').min(1, 'Descrição obrigatória'),
     module: z.enum([
       // Financeiro
@@ -314,17 +310,28 @@ export const createProjectSchema = z.object({
   reqIdPrefix: z
     .string()
     .min(1, 'Prefixo deve ter no mínimo 1 caractere')
-    .max(10, 'Prefixo deve ter no máximo 10 caracteres')
+    .max(
+      REQ_ID_PREFIX_MAX_LENGTH,
+      `Prefixo deve ter no máximo ${REQ_ID_PREFIX_MAX_LENGTH} caracteres`
+    )
     .regex(/^[A-Za-z0-9]+$/, 'Prefixo deve conter apenas letras e números')
     .optional()
     .default('REQ'),
   reqIdSeparator: z
     .string()
-    .max(1, 'Separador deve ter no máximo 1 caractere')
-    .refine((val) => ['', '-', '_'].includes(val), { message: 'Separador deve ser "-", "_" ou vazio' })
+    .max(
+      REQ_ID_SEPARATOR_MAX_LENGTH,
+      `Separador deve ter no máximo ${REQ_ID_SEPARATOR_MAX_LENGTH} caracteres`
+    )
     .optional()
     .default('-'),
-  reqIdDigitCount: z.number().int().min(2).max(6).optional().default(3),
+  reqIdDigitCount: z
+    .number()
+    .int()
+    .min(REQ_ID_DIGIT_MIN)
+    .max(REQ_ID_DIGIT_MAX)
+    .optional()
+    .default(3),
 })
 
 /**
@@ -347,21 +354,24 @@ export const updateProjectSettingsSchema = z.object({
   reqIdPrefix: z
     .string()
     .min(1, 'Prefixo deve ter no mínimo 1 caractere')
-    .max(10, 'Prefixo deve ter no máximo 10 caracteres')
+    .max(
+      REQ_ID_PREFIX_MAX_LENGTH,
+      `Prefixo deve ter no máximo ${REQ_ID_PREFIX_MAX_LENGTH} caracteres`
+    )
     .regex(/^[A-Za-z0-9]+$/, 'Prefixo deve conter apenas letras e números')
     .optional(),
   reqIdSeparator: z
     .string()
-    .max(1, 'Separador deve ter no máximo 1 caractere')
-    .refine((val) => ['', '-', '_'].includes(val), {
-      message: 'Separador deve ser "-", "_" ou vazio',
-    })
+    .max(
+      REQ_ID_SEPARATOR_MAX_LENGTH,
+      `Separador deve ter no máximo ${REQ_ID_SEPARATOR_MAX_LENGTH} caracteres`
+    )
     .optional(),
   reqIdDigitCount: z
     .number()
     .int('Quantidade de dígitos deve ser um número inteiro')
-    .min(2, 'Mínimo 2 dígitos')
-    .max(6, 'Máximo 6 dígitos')
+    .min(REQ_ID_DIGIT_MIN, `Mínimo ${REQ_ID_DIGIT_MIN} dígito`)
+    .max(REQ_ID_DIGIT_MAX, `Máximo ${REQ_ID_DIGIT_MAX} dígitos`)
     .optional(),
   moduleLabel: z
     .string()
@@ -404,6 +414,22 @@ export const updateListItemSchema = z.object({
   sortOrder: z.number().int().min(0).optional(),
   isActive: z.boolean().optional(),
   isDefault: z.boolean().optional(),
+})
+
+// ===== GRAPH LAYOUT SCHEMAS =====
+
+/**
+ * Schema para persistência de layout do grafo de dependências.
+ * Posições são indexadas por dbId (CUID) do requisito — imutável mesmo se reqId mudar.
+ */
+export const graphLayoutSchema = z.object({
+  positions: z.record(
+    z.string(),
+    z.object({
+      x: z.number().finite(),
+      y: z.number().finite(),
+    })
+  ),
 })
 
 // Helper para validar e lançar erro se inválido

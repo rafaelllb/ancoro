@@ -218,6 +218,16 @@ export const NavIcons = {
       />
     </svg>
   ),
+  graph: (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M7 11a3 3 0 100-6 3 3 0 000 6zm10 6a3 3 0 100-6 3 3 0 000 6zM7 17a3 3 0 100-6 3 3 0 000 6zm3-6l4-3m-4 3l4 3"
+      />
+    </svg>
+  ),
 }
 
 export default MobileNav

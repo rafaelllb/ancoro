@@ -126,7 +126,7 @@ export default function CommentPanel({ requirement, onClose }: CommentPanelProps
   // Painel fechado (sem requisito selecionado) - oculto em mobile
   if (!requirement) {
     return (
-      <div className="hidden lg:flex w-96 bg-slate-50 border-l border-gray-200 p-8 flex-col items-center justify-center text-center rounded-r-lg">
+      <div className="hidden xl:flex w-[320px] flex-col items-center justify-center rounded-[28px] border border-ancoro-navy-100 bg-white/70 p-6 text-center backdrop-blur">
         {/* Ilustração de speech bubble */}
         <div className="w-24 h-24 mb-6 relative">
           <div className="absolute inset-0 bg-teal-100 rounded-full"></div>
@@ -145,14 +145,14 @@ export default function CommentPanel({ requirement, onClose }: CommentPanelProps
   }
 
   return (
-    <div className="w-full lg:w-96 bg-white lg:border-l border-gray-200 flex flex-col h-full">
+    <div className="flex h-full w-full flex-col bg-white xl:w-[320px] xl:overflow-hidden xl:rounded-[28px] xl:border xl:border-ancoro-navy-100 xl:bg-white/88 xl:shadow-[0_12px_28px_rgba(21,45,74,0.06)] xl:backdrop-blur">
       {/* Header - mais proeminente em mobile */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
+      <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3 xl:bg-ancoro-navy-50/70">
         {/* Botão voltar (mobile) */}
         <button
           type="button"
           onClick={onClose}
-          className="lg:hidden p-2 -ml-2 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors"
+          className="xl:hidden -ml-2 rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-200 hover:text-gray-900"
           aria-label="Voltar para a lista"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -171,7 +171,7 @@ export default function CommentPanel({ requirement, onClose }: CommentPanelProps
         <button
           type="button"
           onClick={onClose}
-          className="hidden lg:block p-1 text-gray-400 hover:text-gray-600 rounded"
+          className="hidden rounded xl:block p-1 text-gray-400 hover:text-gray-600"
           title="Fechar painel"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

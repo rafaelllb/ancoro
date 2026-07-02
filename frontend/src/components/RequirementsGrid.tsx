@@ -1192,11 +1192,11 @@ export default function RequirementsGrid({
   return (
     <div className="flex flex-col gap-4">
       {/* Search bar com filtros inline */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <div className="flex flex-col gap-3 rounded-[24px] border border-ancoro-navy-100 bg-ancoro-navy-50/55 p-4 sm:flex-row sm:items-center">
         {/* Campo de busca */}
         <div className="relative flex-1">
           <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ancoro-navy-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -1206,7 +1206,7 @@ export default function RequirementsGrid({
           <input
             type="text"
             placeholder="Buscar em todos os campos..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+            className="w-full rounded-xl border border-ancoro-navy-100 bg-white/90 py-2.5 pl-10 pr-4 text-sm text-ancoro-navy-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
             aria-label="Buscar requisitos"
@@ -1215,11 +1215,11 @@ export default function RequirementsGrid({
 
         {/* Filtros inline */}
         <div className="flex items-center gap-2 sm:gap-3">
-          <span className="text-sm text-gray-500 font-medium hidden sm:inline">Filtros:</span>
+          <span className="hidden text-sm font-medium text-ancoro-navy-500 sm:inline">Filtros:</span>
 
           {/* Filtro de área/módulo */}
           <select
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white text-gray-900 [&>option]:bg-white [&>option]:text-gray-900 [&>option:hover]:bg-gray-100"
+            className="rounded-xl border border-ancoro-navy-100 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 [&>option]:bg-white [&>option]:text-gray-900 [&>option:hover]:bg-gray-100"
             value={(columnFilters.find(f => f.id === 'module')?.value as string) || ''}
             onChange={(e) => {
               const value = e.target.value
@@ -1241,7 +1241,7 @@ export default function RequirementsGrid({
 
           {/* Filtro de status */}
           <select
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white text-gray-900 [&>option]:bg-white [&>option]:text-gray-900 [&>option:hover]:bg-gray-100"
+            className="rounded-xl border border-ancoro-navy-100 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 [&>option]:bg-white [&>option]:text-gray-900 [&>option:hover]:bg-gray-100"
             value={(columnFilters.find(f => f.id === 'status')?.value as string) || ''}
             onChange={(e) => {
               const value = e.target.value
@@ -1262,7 +1262,7 @@ export default function RequirementsGrid({
           </select>
 
           {/* Contador de requisitos */}
-          <span className="text-sm text-gray-500 whitespace-nowrap">
+          <span className="whitespace-nowrap text-sm text-ancoro-navy-500">
             {filteredRows.length} requisitos
           </span>
         </div>
@@ -1270,7 +1270,7 @@ export default function RequirementsGrid({
 
       {/* Toolbar de ações em massa */}
       {selectedRequirements.length > 0 && (
-        <div className="flex items-center gap-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
+        <div className="flex items-center gap-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
           <span className="text-sm font-medium text-red-800">
             {selectedRequirements.length} selecionado(s)
           </span>
@@ -1300,15 +1300,15 @@ export default function RequirementsGrid({
       )}
 
       {/* Table */}
-      <div className="overflow-auto border border-gray-200 rounded-lg shadow-sm">
+      <div className="overflow-auto rounded-[24px] border border-ancoro-navy-100 bg-white shadow-[0_12px_28px_rgba(21,45,74,0.06)]">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-slate-700 sticky top-0 z-10">
+          <thead className="sticky top-0 z-10 bg-ancoro-navy-900">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider cursor-pointer hover:bg-slate-600 transition-colors"
+                    className="cursor-pointer px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-ancoro-navy-800"
                     style={{ width: header.getSize() }}
                     onClick={header.column.getToggleSortingHandler()}
                   >
@@ -1324,7 +1324,7 @@ export default function RequirementsGrid({
               </tr>
             ))}
           </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
+          <tbody className="divide-y divide-ancoro-navy-100 bg-white">
             {isLoading ? null : filteredRows.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="px-3 py-8 text-center text-gray-500">
@@ -1336,7 +1336,7 @@ export default function RequirementsGrid({
                 <tr
                   key={row.id}
                   className={`hover:bg-teal-50 transition-colors cursor-pointer ${
-                    selectedRowId === row.original.id ? 'bg-teal-100' : ''
+                    selectedRowId === row.original.id ? 'bg-ancoro-teal-50' : ''
                   }`}
                   onClick={() => handleRowClick(row.original)}
                 >
@@ -1356,13 +1356,13 @@ export default function RequirementsGrid({
       {filteredRows.length > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2">
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-ancoro-navy-600">
               Exibindo <strong>{displayedRows.length}</strong> de <strong>{filteredRows.length}</strong> requisitos
             </span>
             <select
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
-              className="px-2 py-1 border border-gray-300 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="rounded-lg border border-ancoro-navy-100 bg-white px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               aria-label="Itens por carregamento"
             >
               <option value={20}>20 por vez</option>

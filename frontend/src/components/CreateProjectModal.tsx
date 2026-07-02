@@ -1,5 +1,11 @@
 import { useState } from 'react'
 import { useCreateProject } from '../hooks/useProjects'
+import {
+  REQ_ID_DIGIT_MAX,
+  REQ_ID_DIGIT_MIN,
+  REQ_ID_PREFIX_MAX_LENGTH,
+  REQ_ID_SEPARATOR_MAX_LENGTH,
+} from '../utils/reqIdPattern'
 
 interface CreateProjectModalProps {
   isOpen: boolean
@@ -14,13 +20,6 @@ const PROJECT_STATUSES = [
   { value: 'GOLIVE', label: 'Go-Live' },
   { value: 'HYPERCARE', label: 'Hypercare' },
   { value: 'CLOSED', label: 'Encerrado' },
-]
-
-// Separadores disponíveis para ID de requisitos
-const SEPARATORS = [
-  { value: '-', label: 'Hífen (REQ-001)' },
-  { value: '_', label: 'Underscore (REQ_001)' },
-  { value: '', label: 'Nenhum (REQ001)' },
 ]
 
 export default function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProjectModalProps) {
@@ -39,7 +38,10 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
   const [error, setError] = useState<string | null>(null)
 
   // Preview do ID de requisito
-  const reqIdExample = `${reqIdPrefix}${reqIdSeparator}${'0'.repeat(reqIdDigitCount - 1)}1`
+  const safeDigitCount = Number.isFinite(reqIdDigitCount)
+    ? Math.min(Math.max(reqIdDigitCount, REQ_ID_DIGIT_MIN), REQ_ID_DIGIT_MAX)
+    : 3
+  const reqIdExample = `${reqIdPrefix}${reqIdSeparator}${'1'.padStart(safeDigitCount, '0')}`
 
   // Reset do formulário
   const resetForm = () => {
@@ -71,6 +73,14 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
       setError('Data de início é obrigatória')
       return
     }
+    if (!reqIdPrefix.trim()) {
+      setError('Prefixo do ID é obrigatório')
+      return
+    }
+    if (reqIdDigitCount < REQ_ID_DIGIT_MIN || reqIdDigitCount > REQ_ID_DIGIT_MAX) {
+      setError(`Quantidade de dígitos deve ficar entre ${REQ_ID_DIGIT_MIN} e ${REQ_ID_DIGIT_MAX}`)
+      return
+    }
 
     try {
       const project = await createProject.mutateAsync({
@@ -78,7 +88,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
         client: client.trim(),
         startDate: new Date(startDate).toISOString(),
         status,
-        reqIdPrefix,
+        reqIdPrefix: reqIdPrefix.trim().toUpperCase(),
         reqIdSeparator,
         reqIdDigitCount,
       })
@@ -219,7 +229,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                     onChange={(e) => setReqIdPrefix(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="REQ"
-                    maxLength={10}
+                    maxLength={REQ_ID_PREFIX_MAX_LENGTH}
                   />
                 </div>
 
@@ -228,18 +238,15 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                   <label htmlFor="reqIdSeparator" className="block text-xs font-medium text-gray-600 mb-1">
                     Separador
                   </label>
-                  <select
+                  <input
+                    type="text"
                     id="reqIdSeparator"
                     value={reqIdSeparator}
                     onChange={(e) => setReqIdSeparator(e.target.value)}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {SEPARATORS.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="-"
+                    maxLength={REQ_ID_SEPARATOR_MAX_LENGTH}
+                  />
                 </div>
 
                 {/* Dígitos */}
@@ -247,20 +254,21 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
                   <label htmlFor="reqIdDigitCount" className="block text-xs font-medium text-gray-600 mb-1">
                     Dígitos
                   </label>
-                  <select
+                  <input
+                    type="number"
                     id="reqIdDigitCount"
                     value={reqIdDigitCount}
                     onChange={(e) => setReqIdDigitCount(Number(e.target.value))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {[2, 3, 4, 5, 6].map((n) => (
-                      <option key={n} value={n}>
-                        {n} dígitos
-                      </option>
-                    ))}
-                  </select>
+                    min={REQ_ID_DIGIT_MIN}
+                    max={REQ_ID_DIGIT_MAX}
+                  />
                 </div>
               </div>
+
+              <p className="mt-2 text-xs text-gray-500">
+                Você pode usar qualquer separador com até {REQ_ID_SEPARATOR_MAX_LENGTH} caracteres e definir de {REQ_ID_DIGIT_MIN} a {REQ_ID_DIGIT_MAX} dígitos.
+              </p>
 
               {/* Preview */}
               <div className="mt-3 p-2 bg-gray-50 rounded text-center">

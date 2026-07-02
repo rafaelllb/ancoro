@@ -105,6 +105,7 @@ import projectListsRoutes from './routes/projectLists'
 import configRoutes from './routes/config'
 import demoRoutes from './routes/demo'
 import evidencesRoutes from './routes/evidences'
+import graphLayoutRoutes from './routes/graphLayout'
 
 // ===== ROUTES =====
 
@@ -157,6 +158,7 @@ app.use('/api', projectListsRoutes)    // ANTES de projectMembersRoutes para evi
 app.use('/api', projectMembersRoutes)
 app.use('/api', projectsRoutes)
 app.use('/api', evidencesRoutes)
+app.use('/api', graphLayoutRoutes)
 
 // ===== ERROR HANDLER =====
 app.use((err: Error, _req: Request, res: Response, _next: any) => {

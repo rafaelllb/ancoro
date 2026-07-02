@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard'
 import CrossMatrix from './pages/CrossMatrix'
 import Metrics from './pages/Metrics'
 import LandingPage from './pages/LandingPage'
+import DependencyGraph from './pages/DependencyGraph'
 
 /**
  * Extrai mensagem de erro amigável de diferentes formatos de erro
@@ -201,6 +202,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Metrics />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/dependency-graph"
+              element={
+                <ProtectedRoute>
+                  <DependencyGraph />
                 </ProtectedRoute>
               }
             />

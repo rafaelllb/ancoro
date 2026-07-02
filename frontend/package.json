@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite --mode development",
     "dev:demo": "vite --mode demo",
+    "dev:local": "vite --mode local-demo",
     "build": "tsc -p tsconfig.electron.json && tsc && vite build --mode production",
     "build:staging": "tsc -p tsconfig.electron.json && tsc && vite build --mode staging",
     "build:demo": "tsc -p tsconfig.electron.json && tsc && vite build --mode demo",

@@ -36,6 +36,8 @@ model Project {
   sprints      Sprint[]
   listItems    ProjectListItem[]
   objectives   ProjectObjective[]
+  pendingMemberships PendingProjectMembership[]
+  graphLayout  GraphLayout?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -409,6 +411,22 @@ model ConfigChangeLog {
   @@index([userId])
   @@index([createdAt])
   @@map("config_change_logs")
+}
+
+// Layout do grafo de dependências por projeto
+// Armazena posições dos nós (x, y) como JSON string com chave = dbId do requisito
+// Uma row por projeto — SQLite não tem JSONB, leitura é sempre do mapa inteiro
+model GraphLayout {
+  id        String   @id @default(cuid())
+  projectId String   @unique
+  positions String   @default("{}") // JSON: { [dbId]: { x: number, y: number } }
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("graph_layouts")
 }
 
 // ===== ENUMS (Definidos como constantes TypeScript no código) =====

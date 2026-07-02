@@ -3,31 +3,28 @@
  *
  * Permite definir:
  * - Prefixo (REQ, US, PROJ1, etc.)
- * - Separador (-, _, ou vazio)
- * - Quantidade de dígitos (2-6)
+ * - Separador livre (inclusive vazio)
+ * - Quantidade de dígitos (1-12)
  *
  * Mostra preview em tempo real do formato gerado.
  */
 
 import { useState, useEffect } from 'react'
 import { useProjectSettings, useUpdateProjectSettings } from '../hooks/useProjects'
-import { generateExample, RequirementIdPattern } from '../utils/reqIdPattern'
+import {
+  generateExample,
+  RequirementIdPattern,
+  REQ_ID_DIGIT_MAX,
+  REQ_ID_DIGIT_MIN,
+  REQ_ID_PREFIX_MAX_LENGTH,
+  REQ_ID_SEPARATOR_MAX_LENGTH,
+} from '../utils/reqIdPattern'
 
 interface ProjectSettingsModalProps {
   isOpen: boolean
   onClose: () => void
   projectId: string
 }
-
-// Opções de separador
-const SEPARATOR_OPTIONS = [
-  { value: '-', label: 'Hífen (-)' },
-  { value: '_', label: 'Underline (_)' },
-  { value: '', label: 'Nenhum' },
-]
-
-// Opções de quantidade de dígitos
-const DIGIT_OPTIONS = [2, 3, 4, 5, 6]
 
 export default function ProjectSettingsModal({
   isOpen,
@@ -64,8 +61,8 @@ export default function ProjectSettingsModal({
       setError('Prefixo é obrigatório')
       return false
     }
-    if (value.length > 10) {
-      setError('Prefixo deve ter no máximo 10 caracteres')
+    if (value.length > REQ_ID_PREFIX_MAX_LENGTH) {
+      setError(`Prefixo deve ter no máximo ${REQ_ID_PREFIX_MAX_LENGTH} caracteres`)
       return false
     }
     if (!/^[A-Za-z0-9]+$/.test(value)) {
@@ -79,6 +76,14 @@ export default function ProjectSettingsModal({
   // Handler para salvar
   const handleSave = () => {
     if (!validatePrefix(prefix)) return
+    if (separator.length > REQ_ID_SEPARATOR_MAX_LENGTH) {
+      setError(`Separador deve ter no máximo ${REQ_ID_SEPARATOR_MAX_LENGTH} caracteres`)
+      return
+    }
+    if (digitCount < REQ_ID_DIGIT_MIN || digitCount > REQ_ID_DIGIT_MAX) {
+      setError(`Quantidade de dígitos deve ficar entre ${REQ_ID_DIGIT_MIN} e ${REQ_ID_DIGIT_MAX}`)
+      return
+    }
 
     updateMutation.mutate(
       {
@@ -205,12 +210,12 @@ export default function ProjectSettingsModal({
                       setPrefix(val)
                       validatePrefix(val)
                     }}
-                    maxLength={10}
+                    maxLength={REQ_ID_PREFIX_MAX_LENGTH}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono uppercase"
                     placeholder="REQ"
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    1-10 caracteres alfanuméricos (ex: REQ, US, PROJ1)
+                    1-{REQ_ID_PREFIX_MAX_LENGTH} caracteres alfanuméricos (ex: REQ, US, PROJ1)
                   </p>
                 </div>
 
@@ -219,18 +224,18 @@ export default function ProjectSettingsModal({
                   <label htmlFor="separator" className="block text-sm font-medium text-gray-700 mb-1">
                     Separador
                   </label>
-                  <select
+                  <input
+                    type="text"
                     id="separator"
                     value={separator}
                     onChange={(e) => setSeparator(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {SEPARATOR_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="-"
+                    maxLength={REQ_ID_SEPARATOR_MAX_LENGTH}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Opcional. Aceita qualquer separador com até {REQ_ID_SEPARATOR_MAX_LENGTH} caracteres, inclusive vazio.
+                  </p>
                 </div>
 
                 {/* Quantidade de dígitos */}
@@ -238,20 +243,17 @@ export default function ProjectSettingsModal({
                   <label htmlFor="digitCount" className="block text-sm font-medium text-gray-700 mb-1">
                     Quantidade de dígitos
                   </label>
-                  <select
+                  <input
+                    type="number"
                     id="digitCount"
                     value={digitCount}
                     onChange={(e) => setDigitCount(Number(e.target.value))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {DIGIT_OPTIONS.map((n) => (
-                      <option key={n} value={n}>
-                        {n} dígitos (ex: {'1'.padStart(n, '0')})
-                      </option>
-                    ))}
-                  </select>
+                    min={REQ_ID_DIGIT_MIN}
+                    max={REQ_ID_DIGIT_MAX}
+                  />
                   <p className="mt-1 text-xs text-gray-500">
-                    Números menores serão preenchidos com zeros à esquerda
+                    Use de {REQ_ID_DIGIT_MIN} a {REQ_ID_DIGIT_MAX} dígitos. Números menores serão preenchidos com zeros à esquerda.
                   </p>
                 </div>
 

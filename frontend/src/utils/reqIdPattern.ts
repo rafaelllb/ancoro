@@ -17,11 +17,16 @@
 export interface RequirementIdPattern {
   /** Prefixo do ID (ex: REQ, US, PROJ1). 1-10 caracteres alfanuméricos */
   prefix: string
-  /** Separador entre prefixo e número (ex: "-", "_", ou "" vazio) */
+  /** Separador entre prefixo e número (ex: "-", "/", "._", ou "" vazio) */
   separator: string
-  /** Quantidade de dígitos com zero-padding (2-6) */
+  /** Quantidade de dígitos com zero-padding (1-12) */
   digitCount: number
 }
+
+export const REQ_ID_PREFIX_MAX_LENGTH = 10
+export const REQ_ID_SEPARATOR_MAX_LENGTH = 10
+export const REQ_ID_DIGIT_MIN = 1
+export const REQ_ID_DIGIT_MAX = 12
 
 /**
  * Padrão default usado quando projeto não especifica (retrocompatibilidade)

@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAP IS-U Requirements Graph</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #F9F8F6;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ── Toolbar ───────────────────────────────────────────── */
+  #toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #1E1E2E;
+    color: #CDD6F4;
+    font-size: 13px;
+    user-select: none;
+    flex-wrap: wrap;
+  }
+
+  #toolbar .label {
+    font-weight: 600;
+    margin-right: 4px;
+    color: #A6ADC8;
+  }
+
+  #toolbar button {
+    padding: 4px 12px;
+    border: 1px solid #45475A;
+    border-radius: 4px;
+    background: transparent;
+    color: #CDD6F4;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+
+  #toolbar button:hover { background: #313244; }
+  #toolbar button.active { background: #45475A; border-color: #89B4FA; color: #fff; }
+
+  /* Badges coloridos para os filtros de tipo */
+  #toolbar button[data-type="process"].active    { background: #378ADD; border-color: #378ADD; }
+  #toolbar button[data-type="functional"].active  { background: #1D9E75; border-color: #1D9E75; }
+  #toolbar button[data-type="technical"].active   { background: #7F77DD; border-color: #7F77DD; }
+  #toolbar button[data-type="integration"].active { background: #D85A30; border-color: #D85A30; }
+
+  #toolbar .sep {
+    width: 1px;
+    height: 20px;
+    background: #45475A;
+    margin: 0 6px;
+  }
+
+  #toolbar #critBtn.active { background: #E24B4A; border-color: #E24B4A; color: #fff; }
+
+  #toolbar .zoom-info {
+    margin-left: auto;
+    color: #6C7086;
+    font-size: 11px;
+  }
+
+  /* ── Canvas wrapper ────────────────────────────────────── */
+  #wrap {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 44px); /* desconta toolbar */
+  }
+
+  #wrap canvas {
+    display: block;
+    cursor: grab;
+  }
+
+  /* ── Painel de detalhes ────────────────────────────────── */
+  #detail {
+    display: none;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 280px;
+    background: #fff;
+    border: 1px solid #D4D2CA;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.1);
+    font-size: 13px;
+    color: #333;
+    z-index: 10;
+  }
+
+  #detail .close-btn {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #888;
+    line-height: 1;
+  }
+
+  #detail h3 {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #111;
+  }
+
+  #detail .meta {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  #detail .badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  #detail .desc {
+    line-height: 1.5;
+    color: #555;
+  }
+
+  /* ── Legenda ───────────────────────────────────────────── */
+  #legend {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    display: flex;
+    gap: 14px;
+    font-size: 11px;
+    color: #666;
+    background: rgba(255,255,255,.85);
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+  }
+
+  #legend .item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  #legend .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Toolbar ──────────────────────────────────────────── -->
+<div id="toolbar">
+  <span class="label">Filtro:</span>
+  <button data-type="all" class="active" onclick="setFilter('all')">Todos</button>
+  <button data-type="process" onclick="setFilter('process')">Processo</button>
+  <button data-type="functional" onclick="setFilter('functional')">Funcional</button>
+  <button data-type="technical" onclick="setFilter('technical')">Tecnico</button>
+  <button data-type="integration" onclick="setFilter('integration')">Integraçao</button>
+  <div class="sep"></div>
+  <button id="critBtn" onclick="toggleCritical()">Caminho Critico</button>
+  <span class="zoom-info" id="zoomInfo">Zoom: 100%</span>
+</div>
+
+<!-- ── Canvas ──────────────────────────────────────────── -->
+<div id="wrap">
+  <canvas id="graph"></canvas>
+
+  <!-- Painel de detalhes -->
+  <div id="detail">
+    <button class="close-btn" onclick="hideDetailPanel()">&times;</button>
+    <h3 id="detailTitle"></h3>
+    <div class="meta">
+      <span class="badge" id="detailType"></span>
+      <span class="badge" id="detailStatus"></span>
+    </div>
+    <div class="desc" id="detailDesc"></div>
+  </div>
+
+  <!-- Legenda de status -->
+  <div id="legend">
+    <div class="item"><div class="dot" style="background:#1D9E75"></div> Concluido</div>
+    <div class="item"><div class="dot" style="background:#EF9F27"></div> Em progresso</div>
+    <div class="item"><div class="dot" style="background:#B4B2A9"></div> Pendente</div>
+  </div>
+</div>
+
+<script>
+// ── Dados SAP IS-U ──────────────────────────────────────
+const nodes = [
+  { id:'P1', type:'process',     label:'Leitura de\nmedidor',      x:90,  y:120, status:'done',        desc:'Coleta de leitura via rota ou telemedição (MR-05).' },
+  { id:'P2', type:'process',     label:'Faturamento\nperiódico',   x:90,  y:260, status:'done',        desc:'Ciclo IS-U: EASIBI → fatura → impressão (EA80).' },
+  { id:'P3', type:'process',     label:'Arrecadação\ne pagamento', x:90,  y:400, status:'in-progress', desc:'Recebimento, baixa FI-CA e geração de extrato.' },
+  { id:'F1', type:'functional',  label:'Validação\nde leitura',    x:280, y:60,  status:'done',        desc:'REQ-F01: Validar contra limites mínimos/máximos históricos.' },
+  { id:'F2', type:'functional',  label:'Estimativa\nautomática',   x:280, y:180, status:'in-progress', desc:'REQ-F02: Estimar leitura ausente pela média dos últimos 12 ciclos.' },
+  { id:'F3', type:'functional',  label:'Cálculo de\nconsumo',      x:280, y:300, status:'done',        desc:'REQ-F03: Consumo líquido com multiplicador e fator de correção.' },
+  { id:'F4', type:'functional',  label:'Emissão de\nfatura',       x:280, y:400, status:'pending',     desc:'REQ-F04: Documento de fatura com todos os itens tarifários.' },
+  { id:'F5', type:'functional',  label:'Débito\nautomático',       x:280, y:490, status:'in-progress', desc:'REQ-F05: Débito em conta via mandato FI-CA.' },
+  { id:'T1', type:'technical',   label:'BAPI\nMR_CREATE',          x:470, y:60,  status:'done',        desc:'REQ-T01: BAPI para criação de ordem de leitura via interface.' },
+  { id:'T2', type:'technical',   label:'Classe\nCL_ISU_BILL',      x:470, y:200, status:'in-progress', desc:'REQ-T02: Estender classe de faturamento para regras ANEEL.' },
+  { id:'T3', type:'technical',   label:'FM\nISU_INVOICE',          x:470, y:330, status:'pending',     desc:'REQ-T03: Function module de fatura com parâmetros customizados.' },
+  { id:'T4', type:'technical',   label:'Spool\nde impressão',      x:470, y:440, status:'pending',     desc:'REQ-T04: SmartForms para envio a gráfica ou e-mail.' },
+  { id:'I1', type:'integration', label:'Interface\nAMR',           x:650, y:100, status:'in-progress', desc:'REQ-I01: IDoc MREQ_SEND para leituras automáticas.' },
+  { id:'I2', type:'integration', label:'FI-CA →\nContabilidade',   x:650, y:250, status:'pending',     desc:'REQ-I02: Transferência para GL via reconciliação periódica.' },
+  { id:'I3', type:'integration', label:'Portal\ndo cliente',       x:650, y:390, status:'pending',     desc:'REQ-I03: API REST para faturas e histórico no portal web.' },
+];
+
+const edges = [
+  { from:'P1', to:'F1' }, { from:'P1', to:'F2' },
+  { from:'F1', to:'F3' }, { from:'F2', to:'F3' },
+  { from:'P2', to:'F3' }, { from:'P2', to:'F4' },
+  { from:'F3', to:'T2' }, { from:'F4', to:'T3' }, { from:'F4', to:'T4' },
+  { from:'P3', to:'F5' }, { from:'F5', to:'I2' },
+  { from:'T1', to:'F1' }, { from:'T1', to:'I1' },
+  { from:'T2', to:'F4' }, { from:'T3', to:'I3' },
+  { from:'I1', to:'F2' }, { from:'I2', to:'T4' },
+];
+
+const criticalPath  = new Set(['P1','F1','F3','T2','F4','T3','I3']);
+const criticalEdges = new Set(['P1→F1','F1→F3','F3→T2','T2→F4','F4→T3','T3→I3']);
+
+// ── Constantes de layout ────────────────────────────────
+const NW = 100;
+const NH = 52;
+const NR = 8;
+
+// Portas de conexão (connector ports)
+const PORT_R     = 5;    // raio visual da porta em coordenadas mundo
+const PORT_HIT_R = 12;   // raio de hit-test (generoso para facilitar clique)
+
+// ── Paleta de cores ─────────────────────────────────────
+const COLORS = {
+  process:     { fill:'#E6F1FB', stroke:'#378ADD', text:'#0C447C', badge:'#B5D4F4' },
+  functional:  { fill:'#E1F5EE', stroke:'#1D9E75', text:'#085041', badge:'#9FE1CB' },
+  technical:   { fill:'#EEEDFE', stroke:'#7F77DD', text:'#3C3489', badge:'#CECBF6' },
+  integration: { fill:'#FAECE7', stroke:'#D85A30', text:'#712B13', badge:'#F5C4B3' },
+};
+
+const STATUS_LABELS = { 'done':'Concluído', 'in-progress':'Em progresso', 'pending':'Pendente' };
+const STATUS_COLORS = { 'done':'#1D9E75', 'in-progress':'#EF9F27', 'pending':'#B4B2A9' };
+const TYPE_LABELS   = { process:'Processo', functional:'Funcional', technical:'Técnico', integration:'Integração' };
+
+// ── Estado global ───────────────────────────────────────
+let scale   = 1;
+let offsetX = 0;
+let offsetY = 0;
+
+let draggingNode = null;
+let dragOffX = 0;
+let dragOffY = 0;
+
+let isPanning  = false;
+let panStartX  = 0;
+let panStartY  = 0;
+let panOffX    = 0;
+let panOffY    = 0;
+
+let selectedNode = null;
+let filterType   = 'all';
+let showCritical = false;
+
+// Estado de criação de conexão (portas visuais)
+let isConnecting   = false;   // arrastando uma conexão?
+let connectSource  = null;    // nó de origem
+let connectTarget  = null;    // nó alvo (hover sobre porta de entrada)
+let connectMouseX  = 0;       // posição do mouse em canvas coords (rubber-band)
+let connectMouseY  = 0;
+let hoverPort      = null;    // { node, portType } — porta sob o cursor (para highlight)
+
+// Estado de seleção/hover de arestas (para remoção)
+let selectedEdge = null;      // { from, to } — aresta selecionada
+let hoverEdge    = null;      // { from, to } — aresta sob o cursor
+
+// ── Referências DOM ─────────────────────────────────────
+const wrap   = document.getElementById('wrap');
+const canvas = document.getElementById('graph');
+const ctx    = canvas.getContext('2d');
+let W = 0, H = 0;
+
+// ── Coordenadas duplas ──────────────────────────────────
+function toCanvas(wx, wy) {
+  return { x: wx * scale + offsetX, y: wy * scale + offsetY };
+}
+
+function toWorld(cx, cy) {
+  return { x: (cx - offsetX) / scale, y: (cy - offsetY) / scale };
+}
+
+// ── HiDPI ───────────────────────────────────────────────
+function resize() {
+  W = wrap.clientWidth;
+  H = wrap.clientHeight;
+
+  canvas.width  = W * devicePixelRatio;
+  canvas.height = H * devicePixelRatio;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // reset antes de re-escalar
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  draw();
+}
+
+// ── Visibilidade (filtro) ───────────────────────────────
+function nodeVisible(n) {
+  return filterType === 'all' || n.type === filterType;
+}
+
+// ── Desenho ─────────────────────────────────────────────
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  drawEdges();
+  drawNodes();
+  if (isConnecting) drawRubberBand();
+}
+
+// Linha temporária durante criação de conexão
+function drawRubberBand() {
+  if (!connectSource) return;
+
+  // Origem: porta de saída do nó source (borda direita, centro vertical)
+  const fp = toCanvas(connectSource.x + NW, connectSource.y + NH / 2);
+
+  // Destino: snap na porta de entrada do target, ou posição do mouse
+  let tp;
+  if (connectTarget) {
+    tp = toCanvas(connectTarget.x, connectTarget.y + NH / 2);
+  } else {
+    tp = { x: connectMouseX, y: connectMouseY };
+  }
+
+  ctx.save();
+  ctx.strokeStyle = connectTarget ? '#1D9E75' : '#378ADD';
+  ctx.lineWidth   = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.globalAlpha = 0.8;
+
+  // Curva Bézier horizontal (mesma lógica das edges normais)
+  const mx = (fp.x + tp.x) / 2;
+  ctx.beginPath();
+  ctx.moveTo(fp.x, fp.y);
+  ctx.bezierCurveTo(mx, fp.y, mx, tp.y, tp.x, tp.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Seta na ponta
+  const angle = Math.atan2(tp.y - fp.y, tp.x - fp.x);
+  const arr   = 7 * scale;
+  ctx.fillStyle = ctx.strokeStyle;
+  ctx.beginPath();
+  ctx.moveTo(tp.x, tp.y);
+  ctx.lineTo(tp.x - arr * Math.cos(angle - 0.4), tp.y - arr * Math.sin(angle - 0.4));
+  ctx.lineTo(tp.x - arr * Math.cos(angle + 0.4), tp.y - arr * Math.sin(angle + 0.4));
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// Retângulo arredondado
+function drawRoundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y,     x + w, y + r,     r);
+  ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h); ctx.arcTo(x,     y + h, x,     y + h - r, r);
+  ctx.lineTo(x, y + r);     ctx.arcTo(x,     y,     x + r, y,         r);
+  ctx.closePath();
+}
+
+function drawNodes() {
+  nodes.forEach(n => {
+    if (!nodeVisible(n)) return;
+
+    const { x: cx, y: cy } = toCanvas(n.x, n.y);
+    const cw = NW * scale;
+    const ch = NH * scale;
+    const cr = NR * scale;
+    const c  = COLORS[n.type];
+
+    const isCrit = showCritical && criticalPath.has(n.id);
+    const isSel  = selectedNode && selectedNode.id === n.id;
+
+    // Sombra sutil
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.08)';
+    ctx.shadowBlur  = 6 * scale;
+    ctx.shadowOffsetY = 2 * scale;
+
+    // Fundo do nó
+    drawRoundRect(cx, cy, cw, ch, cr);
+    ctx.fillStyle = c.fill;
+    ctx.fill();
+    ctx.restore();
+
+    // Borda
+    drawRoundRect(cx, cy, cw, ch, cr);
+    ctx.strokeStyle = isCrit ? '#E24B4A' : isSel ? '#378ADD' : c.stroke;
+    ctx.lineWidth   = (isCrit || isSel) ? 2 : 0.5;
+    ctx.stroke();
+
+    // Texto
+    const fontSize = Math.max(9, 11 * scale);
+    ctx.font         = `500 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+    ctx.fillStyle    = c.text;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+
+    const lines = n.label.split('\n');
+    const lh    = fontSize * 1.3;
+    const startY = cy + ch / 2 - (lines.length - 1) * lh / 2;
+    lines.forEach((line, i) => {
+      ctx.fillText(line, cx + cw / 2, startY + i * lh);
+    });
+
+    // Ponto de status (canto superior direito)
+    const dotR = 4 * scale;
+    const dotX = cx + cw - dotR * 1.5;
+    const dotY_pos = cy + dotR * 1.5;
+    ctx.beginPath();
+    ctx.arc(dotX, dotY_pos, dotR, 0, Math.PI * 2);
+    ctx.fillStyle = n.status === 'done'        ? '#1D9E75'
+                  : n.status === 'in-progress' ? '#EF9F27'
+                  :                              '#B4B2A9';
+    ctx.fill();
+
+    // ID badge no canto superior esquerdo
+    const badgeFontSize = Math.max(7, 8 * scale);
+    ctx.font      = `700 ${badgeFontSize}px monospace`;
+    ctx.fillStyle = c.stroke;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(n.id, cx + 4 * scale, cy + 3 * scale);
+
+    // ── Portas de conexão (saída à direita, entrada à esquerda) ──
+    const pr = PORT_R * scale;
+
+    // Determinar estado visual de cada porta
+    const isSourceNode = isConnecting && connectSource && connectSource.id === n.id;
+    const isTargetNode = isConnecting && connectTarget && connectTarget.id === n.id;
+    const isHoverOut   = hoverPort && hoverPort.node.id === n.id && hoverPort.portType === 'output';
+    const isHoverIn    = hoverPort && hoverPort.node.id === n.id && hoverPort.portType === 'input';
+
+    // Porta de saída (borda direita)
+    const outX = cx + cw;
+    const outY = cy + ch / 2;
+    ctx.beginPath();
+    ctx.arc(outX, outY, pr, 0, Math.PI * 2);
+    ctx.fillStyle   = isSourceNode ? c.stroke : (isHoverOut ? c.badge : '#fff');
+    ctx.fill();
+    ctx.strokeStyle = c.stroke;
+    ctx.lineWidth   = isHoverOut || isSourceNode ? 2 : 1;
+    ctx.stroke();
+
+    // Porta de entrada (borda esquerda)
+    const inX = cx;
+    const inY = cy + ch / 2;
+    ctx.beginPath();
+    ctx.arc(inX, inY, pr, 0, Math.PI * 2);
+    ctx.fillStyle   = isTargetNode ? '#1D9E75' : (isHoverIn ? c.badge : '#fff');
+    ctx.fill();
+    ctx.strokeStyle = isTargetNode ? '#1D9E75' : c.stroke;
+    ctx.lineWidth   = isHoverIn || isTargetNode ? 2 : 1;
+    ctx.stroke();
+  });
+}
+
+function drawEdges() {
+  edges.forEach(e => {
+    const fn = nodes.find(n => n.id === e.from);
+    const tn = nodes.find(n => n.id === e.to);
+    if (!fn || !tn) return;
+    if (!nodeVisible(fn) || !nodeVisible(tn)) return;
+
+    const key    = e.from + '→' + e.to;
+    const isCrit = showCritical && criticalEdges.has(key);
+    const isHighlighted = selectedNode &&
+      (e.from === selectedNode.id || e.to === selectedNode.id);
+
+    // Estado de seleção/hover de aresta
+    const isSelEdge   = selectedEdge && selectedEdge.from === e.from && selectedEdge.to === e.to;
+    const isHoverEdge = hoverEdge && hoverEdge.from === e.from && hoverEdge.to === e.to;
+    const edgeActive  = isSelEdge || isHoverEdge;
+
+    // Pontos centrais em coordenadas canvas
+    const fp = toCanvas(fn.x + NW / 2, fn.y + NH / 2);
+    const tp = toCanvas(tn.x + NW / 2, tn.y + NH / 2);
+
+    ctx.save();
+    // Prioridade visual: seleção > hover aresta > crítico > highlight nó > default
+    if (isSelEdge) {
+      ctx.strokeStyle = '#E24B4A';
+      ctx.lineWidth   = 3;
+      ctx.globalAlpha = 1;
+    } else if (isHoverEdge) {
+      ctx.strokeStyle = '#378ADD';
+      ctx.lineWidth   = 2.5;
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.strokeStyle = isCrit ? '#E24B4A' : isHighlighted ? '#378ADD' : '#888780';
+      ctx.lineWidth   = isCrit ? 2.5 : isHighlighted ? 2 : 1;
+      ctx.globalAlpha = isHighlighted || isCrit ? 1 : 0.4;
+    }
+
+    if (!isCrit && !isHighlighted && !edgeActive) ctx.setLineDash([4, 3]);
+
+    // Curva de Bézier: sai horizontal, chega horizontal
+    const mx = (fp.x + tp.x) / 2;
+    ctx.beginPath();
+    ctx.moveTo(fp.x, fp.y);
+    ctx.bezierCurveTo(mx, fp.y, mx, tp.y, tp.x, tp.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Seta na ponta de chegada
+    const angle = Math.atan2(tp.y - fp.y, tp.x - fp.x);
+    const arr   = 7 * scale;
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.moveTo(tp.x, tp.y);
+    ctx.lineTo(tp.x - arr * Math.cos(angle - 0.4), tp.y - arr * Math.sin(angle - 0.4));
+    ctx.lineTo(tp.x - arr * Math.cos(angle + 0.4), tp.y - arr * Math.sin(angle + 0.4));
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  });
+}
+
+// ── Hit-test ────────────────────────────────────────────
+function getNodeAt(canvasX, canvasY) {
+  const w = toWorld(canvasX, canvasY);
+  return [...nodes].reverse().find(n =>
+    nodeVisible(n) &&
+    w.x >= n.x && w.x <= n.x + NW &&
+    w.y >= n.y && w.y <= n.y + NH
+  );
+}
+
+// ── Hit-test de portas ──────────────────────────────────
+// Retorna { node, portType: 'output'|'input' } ou null
+function getPortAt(canvasX, canvasY) {
+  const w = toWorld(canvasX, canvasY);
+  // Iterar de trás para frente (nó do topo primeiro)
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    if (!nodeVisible(n)) continue;
+    // Porta de saída (borda direita, centro vertical)
+    const ox = n.x + NW, oy = n.y + NH / 2;
+    if (Math.hypot(w.x - ox, w.y - oy) <= PORT_HIT_R) return { node: n, portType: 'output' };
+    // Porta de entrada (borda esquerda, centro vertical)
+    const ix = n.x, iy = n.y + NH / 2;
+    if (Math.hypot(w.x - ix, w.y - iy) <= PORT_HIT_R) return { node: n, portType: 'input' };
+  }
+  return null;
+}
+
+// ── Hit-test de arestas (amostragem Bézier) ─────────────
+// Retorna { from, to } da aresta mais próxima ou null
+function getEdgeAt(canvasX, canvasY) {
+  const THRESHOLD = 6; // distância máxima em pixels canvas
+  const SAMPLES   = 30;
+
+  for (let i = edges.length - 1; i >= 0; i--) {
+    const e  = edges[i];
+    const fn = nodes.find(n => n.id === e.from);
+    const tn = nodes.find(n => n.id === e.to);
+    if (!fn || !tn) continue;
+    if (!nodeVisible(fn) || !nodeVisible(tn)) continue;
+
+    // Mesmos pontos de controle usados em drawEdges()
+    const fp = toCanvas(fn.x + NW / 2, fn.y + NH / 2);
+    const tp = toCanvas(tn.x + NW / 2, tn.y + NH / 2);
+    const mx = (fp.x + tp.x) / 2;
+
+    // P0=fp, P1=(mx, fp.y), P2=(mx, tp.y), P3=tp — Bézier cúbica
+    for (let s = 0; s <= SAMPLES; s++) {
+      const t  = s / SAMPLES;
+      const t1 = 1 - t;
+      // B(t) = (1-t)³P0 + 3(1-t)²t·P1 + 3(1-t)t²·P2 + t³P3
+      const bx = t1*t1*t1*fp.x + 3*t1*t1*t*mx    + 3*t1*t*t*mx    + t*t*t*tp.x;
+      const by = t1*t1*t1*fp.y + 3*t1*t1*t*fp.y   + 3*t1*t*t*tp.y  + t*t*t*tp.y;
+
+      if (Math.hypot(canvasX - bx, canvasY - by) <= THRESHOLD) {
+        return e;
+      }
+    }
+  }
+  return null;
+}
+
+// ── Painel de detalhes ──────────────────────────────────
+const detailPanel  = document.getElementById('detail');
+const detailTitle  = document.getElementById('detailTitle');
+const detailType   = document.getElementById('detailType');
+const detailStatus = document.getElementById('detailStatus');
+const detailDesc   = document.getElementById('detailDesc');
+
+function showDetailPanel(n) {
+  const c = COLORS[n.type];
+  detailTitle.textContent = `${n.id} — ${n.label.replace('\n', ' ')}`;
+
+  detailType.textContent    = TYPE_LABELS[n.type];
+  detailType.style.background = c.badge;
+  detailType.style.color      = c.text;
+
+  detailStatus.textContent    = STATUS_LABELS[n.status];
+  detailStatus.style.background = STATUS_COLORS[n.status] + '30'; // com alpha
+  detailStatus.style.color      = STATUS_COLORS[n.status];
+
+  detailDesc.textContent = n.desc;
+  detailPanel.style.display = 'block';
+}
+
+function hideDetailPanel() {
+  detailPanel.style.display = 'none';
+  selectedNode = null;
+  draw();
+}
+
+// ── Eventos de mouse ────────────────────────────────────
+let clickStart = { x: 0, y: 0 };
+
+canvas.addEventListener('mousedown', e => {
+  const rect = canvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  clickStart = { x: e.clientX, y: e.clientY };
+
+  // Prioridade 1: checar se clicou numa porta de saída → iniciar conexão
+  const port = getPortAt(cx, cy);
+  if (port && port.portType === 'output') {
+    isConnecting  = true;
+    connectSource = port.node;
+    connectTarget = null;
+    connectMouseX = cx;
+    connectMouseY = cy;
+    canvas.style.cursor = 'crosshair';
+    return;
+  }
+
+  // Prioridade 2: drag de nó (clique no corpo do nó, fora da porta)
+  const n = getNodeAt(cx, cy);
+  if (n) {
+    draggingNode = n;
+    const w  = toWorld(cx, cy);
+    dragOffX = n.x - w.x;
+    dragOffY = n.y - w.y;
+    canvas.style.cursor = 'grabbing';
+  } else {
+    // Prioridade 3: pan do viewport
+    isPanning = true;
+    panStartX = e.clientX; panStartY = e.clientY;
+    panOffX   = offsetX;   panOffY   = offsetY;
+    canvas.style.cursor = 'grabbing';
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+
+  if (isConnecting) {
+    // Atualizar posição do rubber-band
+    connectMouseX = cx;
+    connectMouseY = cy;
+
+    // Checar se está sobre uma porta de entrada de outro nó
+    const port = getPortAt(cx, cy);
+    if (port && port.portType === 'input' && port.node.id !== connectSource.id) {
+      connectTarget = port.node;
+    } else {
+      connectTarget = null;
+    }
+    canvas.style.cursor = connectTarget ? 'copy' : 'crosshair';
+    draw();
+  } else if (draggingNode) {
+    const w = toWorld(cx, cy);
+    draggingNode.x = w.x + dragOffX;
+    draggingNode.y = w.y + dragOffY;
+    draw();
+  } else if (isPanning) {
+    offsetX = panOffX + (e.clientX - panStartX);
+    offsetY = panOffY + (e.clientY - panStartY);
+    draw();
+  } else {
+    // Hover: detectar portas e arestas para highlight visual
+    const port = getPortAt(cx, cy);
+    const prevHover = hoverPort;
+    hoverPort = port;
+
+    // Hover de arestas (só se não está sobre porta ou nó)
+    const prevHoverEdge = hoverEdge;
+    if (!port && !getNodeAt(cx, cy)) {
+      hoverEdge = getEdgeAt(cx, cy);
+    } else {
+      hoverEdge = null;
+    }
+
+    // Cursor contextual
+    if (port && port.portType === 'output') {
+      canvas.style.cursor = 'crosshair';
+    } else if (port && port.portType === 'input') {
+      canvas.style.cursor = 'cell';
+    } else if (getNodeAt(cx, cy)) {
+      canvas.style.cursor = 'pointer';
+    } else if (hoverEdge) {
+      canvas.style.cursor = 'pointer';
+    } else {
+      canvas.style.cursor = 'grab';
+    }
+
+    // Redesenhar se qualquer hover mudou
+    const portChanged = (!prevHover && port) || (prevHover && !port) ||
+      (prevHover && port && (prevHover.node.id !== port.node.id || prevHover.portType !== port.portType));
+    const edgeChanged = (!prevHoverEdge && hoverEdge) || (prevHoverEdge && !hoverEdge) ||
+      (prevHoverEdge && hoverEdge && (prevHoverEdge.from !== hoverEdge.from || prevHoverEdge.to !== hoverEdge.to));
+    if (portChanged || edgeChanged) draw();
+  }
+});
+
+canvas.addEventListener('mouseup', e => {
+  // Finalizar criação de conexão
+  if (isConnecting) {
+    if (connectTarget && connectTarget.id !== connectSource.id) {
+      // Proteção: não criar edge duplicada
+      const exists = edges.some(
+        ed => ed.from === connectSource.id && ed.to === connectTarget.id
+      );
+      if (!exists) {
+        edges.push({ from: connectSource.id, to: connectTarget.id });
+      }
+    }
+    isConnecting  = false;
+    connectSource = null;
+    connectTarget = null;
+    canvas.style.cursor = 'grab';
+    draw();
+    return;
+  }
+
+  const moved = Math.abs(e.clientX - clickStart.x) +
+                Math.abs(e.clientY - clickStart.y) > 4;
+
+  if (!moved) {
+    const rect = canvas.getBoundingClientRect();
+    const mcx = e.clientX - rect.left;
+    const mcy = e.clientY - rect.top;
+
+    const n = getNodeAt(mcx, mcy);
+    if (n) {
+      // Clique em nó: selecionar nó, desselecionar aresta
+      selectedNode = n;
+      selectedEdge = null;
+      showDetailPanel(n);
+    } else {
+      // Checar se clicou numa aresta
+      const edge = getEdgeAt(mcx, mcy);
+      if (edge) {
+        selectedEdge = edge;
+        selectedNode = null;
+        hideDetailPanel();
+      } else {
+        // Clique no vazio: desselecionar tudo
+        selectedNode = null;
+        selectedEdge = null;
+        hideDetailPanel();
+      }
+    }
+  }
+
+  draggingNode = null;
+  isPanning    = false;
+  canvas.style.cursor = 'grab';
+  draw();
+});
+
+// Zoom com scroll centrado no cursor
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+
+  const rect  = canvas.getBoundingClientRect();
+  const cx    = e.clientX - rect.left;
+  const cy    = e.clientY - rect.top;
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+
+  const newScale = Math.min(2.5, Math.max(0.3, scale * delta));
+
+  // Zoom centrado no cursor
+  offsetX = cx - (cx - offsetX) * (newScale / scale);
+  offsetY = cy - (cy - offsetY) * (newScale / scale);
+  scale   = newScale;
+
+  document.getElementById('zoomInfo').textContent = `Zoom: ${Math.round(scale * 100)}%`;
+  draw();
+}, { passive: false });
+
+// ── Remoção de arestas via teclado ──────────────────────
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedEdge) {
+    // Evitar navegação do browser no Backspace
+    e.preventDefault();
+
+    const idx = edges.findIndex(
+      ed => ed.from === selectedEdge.from && ed.to === selectedEdge.to
+    );
+    if (idx !== -1) edges.splice(idx, 1);
+
+    // Remover do caminho crítico se aplicável
+    criticalEdges.delete(selectedEdge.from + '→' + selectedEdge.to);
+
+    selectedEdge = null;
+    draw();
+  }
+});
+
+// ── Controles da toolbar ────────────────────────────────
+function setFilter(type) {
+  filterType = type;
+
+  // Atualizar botões ativos
+  document.querySelectorAll('#toolbar button[data-type]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.type === type);
+  });
+
+  draw();
+}
+
+function toggleCritical() {
+  showCritical = !showCritical;
+  document.getElementById('critBtn').classList.toggle('active', showCritical);
+  draw();
+}
+
+// ── Inicialização ───────────────────────────────────────
+window.addEventListener('resize', resize);
+resize();
+
+// Centralizar o grafo no viewport na primeira renderização
+// Calcula bounding box dos nós e centra
+(function centerGraph() {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  nodes.forEach(n => {
+    if (n.x < minX) minX = n.x;
+    if (n.y < minY) minY = n.y;
+    if (n.x + NW > maxX) maxX = n.x + NW;
+    if (n.y + NH > maxY) maxY = n.y + NH;
+  });
+
+  const graphW = maxX - minX;
+  const graphH = maxY - minY;
+  const centerX = minX + graphW / 2;
+  const centerY = minY + graphH / 2;
+
+  // Calcular escala para caber com margem
+  const scaleX = (W * 0.85) / graphW;
+  const scaleY = (H * 0.85) / graphH;
+  scale = Math.min(scaleX, scaleY, 1.5); // não passar de 1.5x no auto-fit
+
+  offsetX = W / 2 - centerX * scale;
+  offsetY = H / 2 - centerY * scale;
+
+  document.getElementById('zoomInfo').textContent = `Zoom: ${Math.round(scale * 100)}%`;
+  draw();
+})();
+</script>
+</body>
+</html>

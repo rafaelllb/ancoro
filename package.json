@@ -13,6 +13,10 @@
     "demo:backend": "cd backend && npm run dev:demo",
     "demo:frontend": "cd frontend && npm run dev:demo",
 
+    "local": "concurrently \"npm run local:backend\" \"npm run local:frontend\"",
+    "local:backend": "cd backend && npm run dev:local",
+    "local:frontend": "cd frontend && npm run dev:local",
+
     "build": "npm run build:backend && npm run build:frontend",
     "build:backend": "cd backend && npm run build",
     "build:frontend": "cd frontend && npm run build",

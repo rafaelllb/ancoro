@@ -17,11 +17,16 @@
 export interface RequirementIdPattern {
   /** Prefixo do ID (ex: REQ, US, PROJ1). 1-10 caracteres alfanuméricos */
   prefix: string
-  /** Separador entre prefixo e número (ex: "-", "_", ou "" vazio) */
+  /** Separador entre prefixo e número (ex: "-", "/", "._", ou "" vazio) */
   separator: string
-  /** Quantidade de dígitos com zero-padding (2-6) */
+  /** Quantidade de dígitos com zero-padding (1-12) */
   digitCount: number
 }
+
+export const REQ_ID_PREFIX_MAX_LENGTH = 10
+export const REQ_ID_SEPARATOR_MAX_LENGTH = 10
+export const REQ_ID_DIGIT_MIN = 1
+export const REQ_ID_DIGIT_MAX = 12
 
 /**
  * Padrão default usado quando projeto não especifica (retrocompatibilidade)
@@ -153,30 +158,31 @@ export function validatePattern(pattern: RequirementIdPattern): {
   error?: string
 } {
   // Valida prefix: 1-10 caracteres alfanuméricos
-  if (!pattern.prefix || !/^[A-Za-z0-9]{1,10}$/.test(pattern.prefix)) {
+  const prefixRegex = new RegExp(`^[A-Za-z0-9]{1,${REQ_ID_PREFIX_MAX_LENGTH}}$`)
+  if (!pattern.prefix || !prefixRegex.test(pattern.prefix)) {
     return {
       isValid: false,
-      error: 'Prefixo deve ter 1-10 caracteres alfanuméricos',
+      error: `Prefixo deve ter 1-${REQ_ID_PREFIX_MAX_LENGTH} caracteres alfanuméricos`,
     }
   }
 
-  // Valida separator: vazio, "-" ou "_"
-  if (!['-', '_', ''].includes(pattern.separator)) {
+  // Valida separator: opcional, porém limitado para evitar padrões confusos
+  if (pattern.separator.length > REQ_ID_SEPARATOR_MAX_LENGTH) {
     return {
       isValid: false,
-      error: 'Separador deve ser "-", "_" ou vazio',
+      error: `Separador deve ter no máximo ${REQ_ID_SEPARATOR_MAX_LENGTH} caracteres`,
     }
   }
 
-  // Valida digitCount: 2-6
+  // Valida digitCount: 1-12
   if (
     !Number.isInteger(pattern.digitCount) ||
-    pattern.digitCount < 2 ||
-    pattern.digitCount > 6
+    pattern.digitCount < REQ_ID_DIGIT_MIN ||
+    pattern.digitCount > REQ_ID_DIGIT_MAX
   ) {
     return {
       isValid: false,
-      error: 'Quantidade de dígitos deve ser entre 2 e 6',
+      error: `Quantidade de dígitos deve ser entre ${REQ_ID_DIGIT_MIN} e ${REQ_ID_DIGIT_MAX}`,
     }
   }
 

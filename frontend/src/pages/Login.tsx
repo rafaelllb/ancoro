@@ -2,6 +2,13 @@ import { useState, FormEvent } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
+const demoProfiles = [
+  { role: 'Admin', email: 'admin@ancoro.app', tone: 'text-ancoro-teal-300' },
+  { role: 'Manager', email: 'rafael.brito@ancoro.com', tone: 'text-ancoro-teal-400' },
+  { role: 'Consultant', email: 'joao.silva@ancoro.com', tone: 'text-ancoro-teal-500' },
+  { role: 'Client', email: 'ana.costa@cliente.com', tone: 'text-ancoro-navy-200' },
+]
+
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -27,111 +34,123 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Painel esquerdo — branding */}
-      <div className="relative lg:w-1/2 bg-ancoro-navy-50 flex items-center justify-center px-6 py-16 sm:px-10 lg:px-12 lg:py-12 overflow-hidden">
-        <div className="w-full max-w-3xl flex flex-col items-center justify-center text-center">
-          {/* Lockup horizontal — logo + título/subtítulo */}
-          <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-center lg:justify-center lg:gap-5">
-            <img
-              src="/logo-new.png"
-              alt="Ancoro Logo"
-              className="h-40 sm:h-44 lg:h-52 flex-shrink-0"
-            />
-            <div className="text-center">
-              <h1 className="text-6xl sm:text-7xl lg:text-8xl font-extrabold text-ancoro-navy-800 leading-none tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                Ancoro
-              </h1>
-              <p className="text-ancoro-navy-600 text-sm sm:text-base leading-snug mt-2" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                Governança de Requisitos
-              </p>
+    <div className="ancoro-shell min-h-screen overflow-hidden bg-transparent">
+      <div className="absolute inset-0 ancoro-grid-bg opacity-30" aria-hidden="true" />
+      <div className="relative mx-auto flex min-h-screen max-w-7xl items-center px-6 py-8 sm:px-8 lg:px-12">
+        <div className="grid w-full overflow-hidden rounded-[32px] border border-white/40 bg-white/45 shadow-[0_30px_80px_rgba(13,27,46,0.16)] backdrop-blur-xl lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="relative overflow-hidden bg-ancoro-navy-950 px-7 py-10 sm:px-10 lg:px-12 lg:py-14">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(45,149,150,0.28),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(74,155,191,0.18),transparent_28%)]" aria-hidden="true" />
+            <div className="relative flex h-full flex-col">
+              <div className="flex items-center gap-4">
+                <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
+                  <img src="/logo-new.png" alt="Ancoro Logo" className="h-14 w-auto" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.28em] text-ancoro-teal-300">Ancora ReqOps Method</p>
+                  <h1 className="mt-1 text-3xl font-bold text-white">Ancoro</h1>
+                </div>
+              </div>
+
+              <div className="mt-16 max-w-xl">
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-ancoro-teal-300">Governança de requisitos</p>
+                <h2 className="mt-4 text-4xl font-bold leading-tight text-white sm:text-5xl">
+                  Um acesso mais elegante para uma operação mais confiável.
+                </h2>
+                <p className="mt-5 text-base leading-8 text-ancoro-navy-200">
+                  Centralize requisitos, decisões e dependências em uma experiência mais executiva, limpa e preparada para projetos complexos.
+                </p>
+              </div>
+
+              <div className="mt-10 grid gap-4 sm:grid-cols-2">
+                {[
+                  ['Rastreabilidade', 'Histórico, comentários e evolução preservados'],
+                  ['Visão cross-áreas', 'Conflitos e impactos com leitura mais clara'],
+                ].map(([title, text]) => (
+                  <div key={title} className="rounded-[24px] border border-white/10 bg-white/5 p-5 backdrop-blur">
+                    <p className="text-sm font-semibold text-white">{title}</p>
+                    <p className="mt-2 text-sm leading-6 text-ancoro-navy-200">{text}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-auto pt-12 text-sm text-ancoro-navy-300">
+                <p>Foundation-first · Estabilidade, Precisão e Confiabilidade</p>
+              </div>
             </div>
           </div>
 
-          <div className="mt-16 lg:mt-20 text-center text-sm text-ancoro-teal-500 lg:absolute lg:left-1/2 lg:bottom-6 lg:mt-0 lg:-translate-x-1/2">
-            <p>Foundation-first . Estabilidade, Precisão e Confiabilidade</p>
-            <p className="mt-1">Ancora ReqOps Method</p>
-          </div>
-        </div>
-      </div>
+          <div className="flex items-center bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(244,250,251,0.92))] px-7 py-10 sm:px-10 lg:px-12 lg:py-14">
+            <div className="w-full">
+              <div className="max-w-md">
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-ancoro-teal-600">Acesso seguro</p>
+                <h2 className="mt-3 text-3xl font-bold text-ancoro-navy-950">Entrar na plataforma</h2>
+                <p className="mt-3 text-sm leading-7 text-ancoro-navy-600">
+                  Use suas credenciais para acessar o ambiente de gestão e colaboração dos requisitos.
+                </p>
+              </div>
 
-      {/* Painel direito — formulário */}
-      <div className="lg:w-1/2 bg-ancoro-navy-800 flex items-center justify-center px-8 py-16 lg:py-0">
-        <div className="w-full max-w-md">
-          <h2 className="text-2xl font-semibold text-white mb-8">Entrar na sua conta</h2>
+              {error && (
+                <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
 
-          {error && (
-            <div className="mb-5 bg-red-500/20 border border-red-400/40 text-red-200 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
+              <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                <div>
+                  <label htmlFor="email" className="mb-2 block text-sm font-medium text-ancoro-navy-700">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    className="w-full rounded-2xl border border-ancoro-navy-100 bg-white/85 px-4 py-3 text-ancoro-navy-900 shadow-sm outline-none transition placeholder:text-ancoro-navy-300 focus:border-ancoro-teal-400 focus:ring-4 focus:ring-ancoro-teal-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="seu.email@exemplo.com"
+                  />
+                </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-5">
-              <label htmlFor="email" className="block text-sm font-medium text-ancoro-navy-200 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-                className="w-full px-4 py-2.5 bg-ancoro-navy-700/50 border border-ancoro-navy-600 rounded-lg text-white placeholder-ancoro-navy-400 focus:ring-2 focus:ring-ancoro-teal-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="seu.email@exemplo.com"
-              />
-            </div>
+                <div>
+                  <label htmlFor="password" className="mb-2 block text-sm font-medium text-ancoro-navy-700">
+                    Senha
+                  </label>
+                  <input
+                    type="password"
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    className="w-full rounded-2xl border border-ancoro-navy-100 bg-white/85 px-4 py-3 text-ancoro-navy-900 shadow-sm outline-none transition placeholder:text-ancoro-navy-300 focus:border-ancoro-teal-400 focus:ring-4 focus:ring-ancoro-teal-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Digite sua senha"
+                  />
+                </div>
 
-            <div className="mb-7">
-              <label htmlFor="password" className="block text-sm font-medium text-ancoro-navy-200 mb-2">
-                Senha
-              </label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-                className="w-full px-4 py-2.5 bg-ancoro-navy-700/50 border border-ancoro-navy-600 rounded-lg text-white placeholder-ancoro-navy-400 focus:ring-2 focus:ring-ancoro-teal-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="••••••••"
-              />
-            </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full rounded-2xl bg-ancoro-navy-900 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-ancoro-navy-900/20 transition hover:-translate-y-0.5 hover:bg-ancoro-navy-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isLoading ? 'Entrando...' : 'Entrar'}
+                </button>
+              </form>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-ancoro-teal-500 hover:bg-ancoro-teal-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Entrando...' : 'Entrar'}
-            </button>
-          </form>
-
-          {/* Demo credentials */}
-          <div className="mt-8 pt-6 border-t border-ancoro-navy-700">
-            <p className="text-sm text-ancoro-navy-300 mb-3">Credenciais de demonstração:</p>
-            <div className="bg-ancoro-navy-900/50 rounded-lg p-3 text-sm space-y-1">
-              <p className="font-mono text-xs">
-                <span className="inline-block w-24 text-ancoro-teal-300 font-semibold">Admin:</span>
-                <span className="text-ancoro-navy-200">admin@ancoro.app</span>
-              </p>
-              <p className="font-mono text-xs">
-                <span className="inline-block w-24 text-ancoro-teal-400 font-semibold">Manager:</span>
-                <span className="text-ancoro-navy-200">rafael.brito@ancoro.com</span>
-              </p>
-              <p className="font-mono text-xs">
-                <span className="inline-block w-24 text-ancoro-teal-500 font-semibold">Consultant:</span>
-                <span className="text-ancoro-navy-200">joao.silva@ancoro.com</span>
-              </p>
-              <p className="font-mono text-xs">
-                <span className="inline-block w-24 text-gray-300 font-semibold">Client:</span>
-                <span className="text-ancoro-navy-200">ana.costa@cliente.com</span>
-              </p>
-              <p className="font-mono text-xs mt-2 pt-2 border-t border-ancoro-navy-700">
-                <span className="text-ancoro-navy-300 font-semibold">Senha (todos):</span>
-                <span className="text-ancoro-navy-200"> demo123</span>
-              </p>
+              <div className="mt-8 rounded-[24px] border border-ancoro-navy-100 bg-white/80 p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-ancoro-navy-900">Credenciais de demonstração</p>
+                  <span className="rounded-full bg-ancoro-teal-50 px-3 py-1 text-xs font-medium text-ancoro-teal-700">Senha: `demo123`</span>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {demoProfiles.map((profile) => (
+                    <div key={profile.email} className="flex items-center justify-between gap-3 rounded-2xl bg-ancoro-navy-50/80 px-4 py-3">
+                      <span className={`text-sm font-semibold ${profile.tone}`}>{profile.role}</span>
+                      <span className="text-right font-mono text-xs text-ancoro-navy-700">{profile.email}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>

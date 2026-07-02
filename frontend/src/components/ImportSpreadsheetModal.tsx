@@ -18,8 +18,6 @@ import { BulkImportError, Requirement } from '../services/api'
 import {
   RequirementIdPattern,
   DEFAULT_PATTERN,
-  validateReqId,
-  generateExample,
 } from '../utils/reqIdPattern'
 import { useProjectModules } from '../hooks/useProjectLists'
 import { useProjectTerminology } from '../hooks/useProjectTerminology'
@@ -107,7 +105,7 @@ function autoDetectMapping(headers: string[]): Record<string, number> {
 function validateRow(
   data: Record<string, any>,
   rowNumber: number,
-  pattern: RequirementIdPattern,
+  _pattern: RequirementIdPattern,
   validModules: string[],
   moduleLabel: string
 ): ParsedRow {
@@ -121,10 +119,9 @@ function validateRow(
     }
   }
 
-  // Validar formato do reqId usando padrão do projeto
-  if (data.reqId && !validateReqId(data.reqId, pattern)) {
-    const example = generateExample(pattern)
-    errors.push(`reqId deve seguir formato ${example}`)
+  // Admin define o reqId livremente; aqui só exigimos presença e limite razoável
+  if (data.reqId && String(data.reqId).trim().length > 100) {
+    errors.push('reqId deve ter no máximo 100 caracteres')
   }
 
   // Validar module

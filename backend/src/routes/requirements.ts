@@ -431,10 +431,11 @@ router.patch(
 
       // Converter arrays para JSON strings se fornecidos
       const updateData: any = { ...data }
-      if (data.dependsOn) {
+      // !== undefined para aceitar array vazio [] (falsy em JS)
+      if (data.dependsOn !== undefined) {
         updateData.dependsOn = JSON.stringify(data.dependsOn)
       }
-      if (data.providesFor) {
+      if (data.providesFor !== undefined) {
         updateData.providesFor = JSON.stringify(data.providesFor)
       }
       if (data.responsibleBusiness !== undefined) {
@@ -969,7 +970,6 @@ router.post(
                 responsibleBusiness: data.responsibleBusiness?.trim() || null,
                 consultantNotes: data.consultantNotes,
               })),
-              skipDuplicates: true,
             })
           }
 

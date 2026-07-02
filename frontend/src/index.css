@@ -3,29 +3,90 @@
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light;
-  /* Cores Ancoro - alinhadas com a logo */
-  color: #1B3A5F; /* ancoro-navy-800 */
-  background-color: #E8F4F8; /* ancoro-navy-50 */
+  color: #1b3a5f;
+  background:
+    radial-gradient(circle at top left, rgba(45, 149, 150, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(27, 58, 95, 0.12), transparent 24%),
+    linear-gradient(180deg, #f7fbfc 0%, #edf5f7 100%);
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-strong: rgba(255, 255, 255, 0.92);
+  --surface-border: rgba(27, 58, 95, 0.12);
+  --shadow-soft: 0 20px 45px rgba(13, 27, 46, 0.08);
+  --shadow-card: 0 12px 30px rgba(21, 45, 74, 0.08);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
   padding: 0;
+  min-width: 320px;
+  color: #1b3a5f;
+  background: transparent;
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(45, 149, 150, 0.18);
+  color: #152d4a;
+}
+
+@layer components {
+  .ancoro-shell {
+    @apply relative overflow-hidden;
+  }
+
+  .ancoro-shell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at top left, rgba(45, 149, 150, 0.12), transparent 30%),
+      radial-gradient(circle at bottom right, rgba(27, 58, 95, 0.1), transparent 28%);
+    pointer-events: none;
+  }
+
+  .ancoro-panel {
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(18px);
+  }
+
+  .ancoro-panel-strong {
+    background: var(--surface-strong);
+    border: 1px solid rgba(27, 58, 95, 0.1);
+    box-shadow: var(--shadow-card);
+    backdrop-filter: blur(14px);
+  }
+
+  .ancoro-grid-bg {
+    background-image:
+      linear-gradient(rgba(27, 58, 95, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(27, 58, 95, 0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
 }
 
 /* Garantir que dropdowns/selects tenham fundo branco e texto preto */

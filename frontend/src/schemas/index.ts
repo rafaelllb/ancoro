@@ -153,7 +153,7 @@ export const loginSchema = z.object({
 // ===== BULK IMPORT SCHEMA =====
 
 export const bulkImportItemSchema = z.object({
-  reqId: z.string().regex(/^REQ-\d{3,}$/, 'Formato inválido'),
+  reqId: z.string().min(1, 'Req ID é obrigatório').max(100, 'Req ID deve ter no máximo 100 caracteres'),
   shortDesc: z.string().min(1).max(50),
   module: z.string().min(1),
   what: z.string().min(10),

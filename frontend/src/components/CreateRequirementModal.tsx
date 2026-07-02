@@ -17,7 +17,6 @@ import {
   RequirementIdPattern,
   DEFAULT_PATTERN,
   generateNextId,
-  validateReqId,
   generateExample,
 } from '../utils/reqIdPattern'
 import { RequirementMultiSelect, RequirementOption } from './RequirementMultiSelect'
@@ -97,15 +96,16 @@ type FormState = typeof initialFormState
 /**
  * Validação simples dos campos obrigatórios
  * @param form - Estado do formulário
- * @param pattern - Padrão de ID do projeto para validação do reqId
+ * @param pattern - Padrão de ID do projeto para sugestão do próximo reqId
  */
-function validateForm(form: FormState, pattern: RequirementIdPattern): Record<string, string> {
+function validateForm(form: FormState, _pattern: RequirementIdPattern): Record<string, string> {
   const errors: Record<string, string> = {}
 
-  // Valida reqId usando o padrão do projeto
-  if (!validateReqId(form.reqId, pattern)) {
-    const example = generateExample(pattern)
-    errors.reqId = `Formato inválido. Use ${example}`
+  // Admin pode informar qualquer reqId; validamos apenas presença e tamanho
+  if (!form.reqId.trim()) {
+    errors.reqId = 'Req ID obrigatório'
+  } else if (form.reqId.trim().length > 100) {
+    errors.reqId = 'Req ID deve ter no máximo 100 caracteres'
   }
   if (!form.shortDesc.trim()) {
     errors.shortDesc = 'Descrição obrigatória'
