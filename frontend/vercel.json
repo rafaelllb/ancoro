@@ -6,6 +6,10 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://p01--ancoro--5gr2qgxrrbxd.code.run/api/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

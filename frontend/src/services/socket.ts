@@ -57,8 +57,9 @@ export function connectSocket(token: string): Socket {
     return socket
   }
 
-  // URL do backend (mesmo do Axios)
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+  // WebSocket precisa da URL direta do backend (não pode ser proxied pelo Vercel)
+  // VITE_SOCKET_URL aponta direto para o Northflank; fallback para VITE_API_URL ou localhost
+  const baseUrl = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
   socket = io(baseUrl, {
     auth: { token },

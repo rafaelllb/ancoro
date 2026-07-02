@@ -1,7 +1,9 @@
 import axios, { AxiosInstance, AxiosError } from 'axios'
 
 // Base URL do backend
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+// Em produção/demo, VITE_API_URL vazio = same origin (Vercel proxy rewrite)
+// Em dev local, fallback para localhost:3000
+const BASE_URL = import.meta.env.VITE_API_URL || ''
 
 // Cria instância do Axios
 const api: AxiosInstance = axios.create({
