@@ -83,8 +83,9 @@ export default function Dashboard() {
   return (
     <div className="ancoro-shell min-h-screen bg-transparent">
       <header className="sticky top-0 z-20 border-b border-white/40 bg-white/70 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:flex-nowrap lg:px-8">
-          <div className="flex items-center gap-3">
+        <div className="flex w-full items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          {/* LEFT: Logo + Texto + ProjectSwitcher */}
+          <div className="flex min-w-0 items-center gap-3">
             <MobileNav
               items={navItems.filter((item) => {
                 if (item.path === '/metrics' && !canViewMetrics) return false
@@ -105,45 +106,46 @@ export default function Dashboard() {
               <h1 className="text-xl font-bold text-ancoro-navy-950 lg:text-2xl">Ancoro</h1>
               <p className="text-xs uppercase tracking-[0.22em] text-ancoro-teal-600 lg:text-sm">Dashboard de Requisitos</p>
             </div>
+
+            <div className="hidden min-w-0 sm:block">
+              <ProjectSwitcher
+                projects={projects}
+                currentProject={currentProject}
+                onProjectChange={setCurrentProject}
+                onCreateProject={canCreateProject ? () => setIsCreateProjectModalOpen(true) : undefined}
+              />
+            </div>
           </div>
 
-          <div className="hidden min-w-0 sm:block">
-            <ProjectSwitcher
-              projects={projects}
-              currentProject={currentProject}
-              onProjectChange={setCurrentProject}
-              onCreateProject={canCreateProject ? () => setIsCreateProjectModalOpen(true) : undefined}
-            />
-          </div>
-
-          <div className="hidden items-center gap-3 lg:flex">
-            {canViewMatrix && (
-              <Link
-                to="/dependency-graph"
-                className="rounded-xl bg-ancoro-navy-800 px-4 py-2.5 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-ancoro-navy-700"
-              >
-                Grafo
-              </Link>
-            )}
-            {canViewMatrix && (
-              <Link
-                to="/cross-matrix"
-                className="rounded-xl bg-ancoro-teal-500 px-4 py-2.5 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-ancoro-teal-600"
-              >
-                Matriz
-              </Link>
-            )}
-            {canViewMetrics && (
-              <Link
-                to="/metrics"
-                className="rounded-xl border border-ancoro-teal-200 bg-white/80 px-4 py-2.5 text-sm font-medium text-ancoro-teal-700 transition hover:-translate-y-0.5 hover:bg-ancoro-teal-50"
-              >
-                Métricas
-              </Link>
-            )}
-          </div>
-
+          {/* RIGHT: Nav + Notificações + Usuário + Sair */}
           <div className="flex items-center gap-3 sm:gap-4">
+            <div className="hidden items-center gap-3 lg:flex">
+              {canViewMatrix && (
+                <Link
+                  to="/dependency-graph"
+                  className="rounded-xl bg-ancoro-navy-800 px-4 py-2.5 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-ancoro-navy-700"
+                >
+                  Grafo
+                </Link>
+              )}
+              {canViewMatrix && (
+                <Link
+                  to="/cross-matrix"
+                  className="rounded-xl bg-ancoro-teal-500 px-4 py-2.5 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-ancoro-teal-600"
+                >
+                  Matriz
+                </Link>
+              )}
+              {canViewMetrics && (
+                <Link
+                  to="/metrics"
+                  className="rounded-xl border border-ancoro-teal-200 bg-white/80 px-4 py-2.5 text-sm font-medium text-ancoro-teal-700 transition hover:-translate-y-0.5 hover:bg-ancoro-teal-50"
+                >
+                  Métricas
+                </Link>
+              )}
+            </div>
+
             <NotificationBell />
 
             <div className="hidden items-center gap-3 lg:flex">

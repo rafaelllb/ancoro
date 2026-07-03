@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 const features = [
   {
     title: 'Requisitos 5W2H',
-    description: 'Estruture decisões críticas com contexto, responsáveis e impactos em um fluxo claro para auditoria e execução.',
+    description: 'Cada requisito precisa de um dono, um motivo e uma data. O 5W2H coloca isso em estrutura antes que o escopo vire conversa de corredor.',
     icon: (
       <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.7} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -13,7 +13,7 @@ const features = [
   },
   {
     title: 'Matriz de Cruzamento',
-    description: 'Encontre dependências, conflitos e impactos entre áreas antes que eles virem retrabalho no projeto.',
+    description: 'Um módulo depende do outro? A integração afeta faturamento? A matriz mostra isso enquanto ainda dá tempo de agir.',
     icon: (
       <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.7} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
@@ -22,7 +22,7 @@ const features = [
   },
   {
     title: 'Colaboração Real-time',
-    description: 'Acompanhe comentários, notificações e evolução das validações com um ambiente feito para alinhamento contínuo.',
+    description: 'Comentários, status e histórico de decisão no mesmo lugar. Sem precisar procurar no e-mail de três semanas atrás.',
     icon: (
       <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.7} d="M8 10h8m-8 4h5m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -32,26 +32,26 @@ const features = [
 ]
 
 const highlights = [
-  'Governança com menos ruído operacional',
-  'Visibilidade entre áreas e stakeholders',
-  'Exportação pronta para apresentação e documentação',
+  'Menos reunião para decidir o que já foi decidido',
+  'Cada área sabe o que impacta o trabalho dela',
+  'Exporta do jeito que o cliente precisa ver',
 ]
 
 const steps = [
   {
     number: '01',
     title: 'Estruture o escopo',
-    description: 'Registre requisitos com contexto completo, responsáveis e status de evolução.',
+    description: 'Cada requisito com quem decidiu, por que foi decidido assim, e o que muda se o escopo virar.',
   },
   {
     number: '02',
     title: 'Conecte os impactos',
-    description: 'Cruze áreas, identifique dependências e trate conflitos com mais antecedência.',
+    description: 'Antes de alguém ser pego de surpresa numa reunião de validação, você já sabe onde está o conflito.',
   },
   {
     number: '03',
     title: 'Valide com clareza',
-    description: 'Conduza o alinhamento entre times e exporte material executivo com consistência visual.',
+    description: 'Gere o material de validação direto da plataforma. O que o cliente vê é o que está na fonte.',
   },
 ]
 
@@ -84,13 +84,13 @@ function HeroSection() {
             <div className="max-w-3xl">
               <p className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-medium text-ancoro-navy-700 ring-1 ring-ancoro-navy-100">
                 <span className="h-2 w-2 rounded-full bg-ancoro-teal-500" />
-                Plataforma para transformar requisitos em alinhamento operacional
+                Gestão de requisitos para projetos onde cada decisão precisa deixar rastro
               </p>
               <h2 className="mt-6 text-4xl font-bold leading-tight text-ancoro-navy-950 sm:text-5xl lg:text-6xl">
-                Mais clareza, mais rigor e uma presença visual à altura do projeto.
+                Requisitos organizados de verdade. Não só documentados.
               </h2>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-ancoro-navy-700">
-                A Ancoro organiza requisitos, dependências e validações em uma experiência mais madura, executiva e confiável para projetos complexos.
+                Feita para times onde escopo mal definido vira retrabalho caro. Requisitos estruturados, dependências mapeadas, validações rastreáveis.
               </p>
 
               <div className="mt-8 flex flex-col gap-4 sm:flex-row">
@@ -122,12 +122,12 @@ function HeroSection() {
             <div className="ancoro-panel-strong relative rounded-[28px] p-6 sm:p-8">
               <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-ancoro-teal-300 to-transparent" aria-hidden="true" />
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-ancoro-teal-600">Painel executivo</p>
-              <h3 className="mt-3 text-2xl font-bold text-ancoro-navy-900">Metodologia, rastreabilidade e colaboração no mesmo fluxo.</h3>
+              <h3 className="mt-3 text-2xl font-bold text-ancoro-navy-900">O que um PM precisa e o que um stakeholder consegue ler.</h3>
               <div className="mt-8 space-y-4">
                 {[
-                  ['Requisitos organizados', 'Formato estruturado e pronto para revisão'],
-                  ['Decisões auditáveis', 'Histórico, comentários e contexto preservados'],
-                  ['Visão cross-áreas', 'Menos surpresa entre dependências críticas'],
+                  ['Requisitos organizados', 'Cada campo existe por uma razão. Nada solto.'],
+                  ['Decisões auditáveis', "Quando alguém perguntar 'quem aprovou isso?', a resposta já está lá."],
+                  ['Visão cross-áreas', 'O que impacta Faturamento quando Contratos muda. Visível antes de virar problema.'],
                 ].map(([title, text]) => (
                   <div key={title} className="rounded-2xl bg-ancoro-navy-50/80 p-4 ring-1 ring-ancoro-navy-100">
                     <p className="text-sm font-semibold text-ancoro-navy-900">{title}</p>
@@ -149,9 +149,9 @@ function FeaturesSection() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-12 max-w-3xl">
           <p className="text-sm font-semibold uppercase tracking-[0.26em] text-ancoro-teal-600">Recursos principais</p>
-          <h2 className="mt-3 text-3xl font-bold text-ancoro-navy-950 sm:text-4xl">Uma experiência mais profissional para governança de requisitos.</h2>
+          <h2 className="mt-3 text-3xl font-bold text-ancoro-navy-950 sm:text-4xl">Três pontos onde projetos normalmente travam</h2>
           <p className="mt-4 text-lg leading-8 text-ancoro-navy-700">
-            A plataforma combina profundidade funcional com uma leitura visual mais limpa, segura e institucional.
+            Cada módulo foi pensado a partir de problemas reais em levantamentos de escopo.
           </p>
         </div>
 
@@ -178,10 +178,10 @@ function HowItWorksSection() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-ancoro-teal-300">Fluxo de trabalho</p>
-            <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">Do levantamento até a documentação final, com mais controle visual.</h2>
+            <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">Três etapas. Nenhum achismo no meio.</h2>
           </div>
           <p className="max-w-xl text-sm leading-7 text-ancoro-navy-200">
-            A jornada foi desenhada para diminuir fricção e facilitar leitura executiva sem perder densidade técnica.
+            O que entra estruturado, sai estruturado. Sem perder o rigor no caminho.
           </p>
         </div>
 
@@ -207,7 +207,7 @@ function FooterSection() {
       <div className="mx-auto flex max-w-7xl flex-col gap-6 rounded-[28px] border border-ancoro-navy-100 bg-white/70 px-6 py-6 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-ancoro-teal-600">Ancoro</p>
-          <p className="mt-2 text-sm text-ancoro-navy-600">Estabilidade, precisão e confiabilidade para governança de requisitos.</p>
+          <p className="mt-2 text-sm text-ancoro-navy-600">Para projetos onde uma decisão mal documentada custa caro.</p>
         </div>
         <Link
           to={isAuthenticated ? '/dashboard' : '/login'}
