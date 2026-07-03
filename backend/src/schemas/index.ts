@@ -81,6 +81,13 @@ export function createRequirementSchemaForProject(pattern: RequirementIdPattern)
     // Ancora Method v2: HOW MUCH prometido vs realizado
     howMuchPromised: z.string().min(3).optional(),
     howMuchActual: z.string().min(3).optional(),
+    // 5W2H TO-BE fields (toggle AS-IS / TO-BE)
+    whatToBe: z.string().min(10).optional(),
+    whyToBe: z.string().min(10).optional(),
+    whoToBe: z.string().min(3).optional(),
+    whenToBe: z.string().min(3).optional(),
+    whereToBe: z.string().min(3).optional(),
+    howMuchToBe: z.string().min(3).optional(),
     dependsOn: z.array(z.string()).optional().default([]),
     providesFor: z.array(z.string()).optional().default([]),
     responsibleConsultantId: z.string().cuid().optional(),
@@ -148,6 +155,13 @@ export const updateRequirementSchema = z.object({
   // Ancora Method v2: HOW MUCH prometido vs realizado
   howMuchPromised: z.string().min(3).optional(),
   howMuchActual: z.string().min(3).optional(),
+  // 5W2H TO-BE fields (toggle AS-IS / TO-BE) — nullable para permitir limpar o campo
+  whatToBe: z.string().min(10).nullable().optional(),
+  whyToBe: z.string().min(10).nullable().optional(),
+  whoToBe: z.string().min(3).nullable().optional(),
+  whenToBe: z.string().min(3).nullable().optional(),
+  whereToBe: z.string().min(3).nullable().optional(),
+  howMuchToBe: z.string().min(3).nullable().optional(),
   dependsOn: z.array(z.string()).optional(),
   providesFor: z.array(z.string()).optional(),
   responsibleConsultantId: z.string().cuid().nullable().optional(),

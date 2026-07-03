@@ -10,6 +10,7 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { useCreateRequirement } from '../hooks/useRequirements'
+import { CreateRequirementRequest } from '../services/api'
 import { useProjectModules, useProjectStatuses } from '../hooks/useProjectLists'
 import { useProjectMembers } from '../hooks/useProjectMembers'
 import { useProjectTerminology } from '../hooks/useProjectTerminology'
@@ -82,6 +83,14 @@ const initialFormState = {
   where: '',
   howToday: '',
   howMuch: '',
+  // 5W2H TO-BE fields (toggle AS-IS / TO-BE)
+  whatToBe: '',
+  whyToBe: '',
+  whoToBe: '',
+  whenToBe: '',
+  whereToBe: '',
+  howToBe: '',
+  howMuchToBe: '',
   dependsOn: '',
   providesFor: '',
   responsibleConsultantId: '',
@@ -146,6 +155,7 @@ export default function CreateRequirementModal({
   existingRequirements = [],
 }: CreateRequirementModalProps) {
   const [form, setForm] = useState<FormState>(initialFormState)
+  const [showToBe, setShowToBe] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
 
@@ -234,7 +244,7 @@ export default function CreateRequirementModal({
     }
 
     // Prepara dados para envio
-    const data = {
+    const data: CreateRequirementRequest = {
       reqId: form.reqId,
       projectId,
       shortDesc: form.shortDesc.trim(),
@@ -246,6 +256,14 @@ export default function CreateRequirementModal({
       where: form.where.trim(),
       howToday: form.howToday.trim(),
       howMuch: form.howMuch.trim(),
+      // Inclui campos TO-BE apenas se preenchidos
+      ...(form.whatToBe.trim() && { whatToBe: form.whatToBe.trim() }),
+      ...(form.whyToBe.trim() && { whyToBe: form.whyToBe.trim() }),
+      ...(form.whoToBe.trim() && { whoToBe: form.whoToBe.trim() }),
+      ...(form.whenToBe.trim() && { whenToBe: form.whenToBe.trim() }),
+      ...(form.whereToBe.trim() && { whereToBe: form.whereToBe.trim() }),
+      ...(form.howToBe.trim() && { howToBe: form.howToBe.trim() }),
+      ...(form.howMuchToBe.trim() && { howMuchToBe: form.howMuchToBe.trim() }),
       dependsOn: form.dependsOn
         .split(',')
         .map((s) => s.trim())
@@ -594,6 +612,142 @@ export default function CreateRequirementModal({
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Seção TO-BE (colapsável) */}
+            <div className="border-t border-gray-200 pt-4 mb-6">
+              <button
+                type="button"
+                onClick={() => setShowToBe(!showToBe)}
+                className="flex items-center gap-2 text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors mb-4"
+              >
+                <svg
+                  className={`w-4 h-4 transition-transform duration-200 ${showToBe ? 'rotate-90' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                {showToBe ? 'Ocultar' : 'Adicionar'} Visão TO-BE
+                <span className="text-xs text-gray-400 font-normal">(opcional)</span>
+              </button>
+
+              {showToBe && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6 border-l-2 border-orange-200">
+                  {/* What TO-BE */}
+                  <div className="md:col-span-2">
+                    <label htmlFor="whatToBe" className="block text-sm font-medium text-orange-700 mb-1">
+                      What TO-BE (O Que — Futuro)
+                    </label>
+                    <textarea
+                      id="whatToBe"
+                      name="whatToBe"
+                      value={form.whatToBe}
+                      onChange={handleChange}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-orange-200 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      placeholder="Como será no futuro?"
+                    />
+                  </div>
+
+                  {/* Why TO-BE */}
+                  <div className="md:col-span-2">
+                    <label htmlFor="whyToBe" className="block text-sm font-medium text-orange-700 mb-1">
+                      Why TO-BE (Por Quê — Futuro)
+                    </label>
+                    <textarea
+                      id="whyToBe"
+                      name="whyToBe"
+                      value={form.whyToBe}
+                      onChange={handleChange}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-orange-200 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      placeholder="Por que será necessário no futuro?"
+                    />
+                  </div>
+
+                  {/* Who TO-BE */}
+                  <div>
+                    <label htmlFor="whoToBe" className="block text-sm font-medium text-orange-700 mb-1">
+                      Who TO-BE (Quem — Futuro)
+                    </label>
+                    <input
+                      type="text"
+                      id="whoToBe"
+                      name="whoToBe"
+                      value={form.whoToBe}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-orange-200 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      placeholder="Quem será responsável?"
+                    />
+                  </div>
+
+                  {/* When TO-BE */}
+                  <div>
+                    <label htmlFor="whenToBe" className="block text-sm font-medium text-orange-700 mb-1">
+                      When TO-BE (Quando — Futuro)
+                    </label>
+                    <input
+                      type="text"
+                      id="whenToBe"
+                      name="whenToBe"
+                      value={form.whenToBe}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-orange-200 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      placeholder="Quando será feito?"
+                    />
+                  </div>
+
+                  {/* Where TO-BE */}
+                  <div>
+                    <label htmlFor="whereToBe" className="block text-sm font-medium text-orange-700 mb-1">
+                      Where TO-BE (Onde — Futuro)
+                    </label>
+                    <input
+                      type="text"
+                      id="whereToBe"
+                      name="whereToBe"
+                      value={form.whereToBe}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-orange-200 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      placeholder="Onde será implementado?"
+                    />
+                  </div>
+
+                  {/* How Much TO-BE */}
+                  <div>
+                    <label htmlFor="howMuchToBe" className="block text-sm font-medium text-orange-700 mb-1">
+                      How Much TO-BE (Quanto — Futuro)
+                    </label>
+                    <input
+                      type="text"
+                      id="howMuchToBe"
+                      name="howMuchToBe"
+                      value={form.howMuchToBe}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-orange-200 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      placeholder="Qual o impacto futuro?"
+                    />
+                  </div>
+
+                  {/* How TO-BE */}
+                  <div className="md:col-span-2">
+                    <label htmlFor="howToBe" className="block text-sm font-medium text-orange-700 mb-1">
+                      How TO-BE (Como — Futuro)
+                    </label>
+                    <textarea
+                      id="howToBe"
+                      name="howToBe"
+                      value={form.howToBe}
+                      onChange={handleChange}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-orange-200 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      placeholder="Como o processo funcionará no futuro?"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Seção Dependências */}

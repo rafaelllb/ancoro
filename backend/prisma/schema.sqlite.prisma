@@ -123,6 +123,17 @@ model Requirement {
   howMuchPromised String?  // Volumetria/critério de aceitação prometido
   howMuchActual   String?  // Volumetria/critério de aceitação realizado
 
+  // 5W2H TO-BE fields (Ancora Method v2 — toggle AS-IS / TO-BE)
+  // Campos opcionais que representam a visão futura de cada dimensão 5W2H.
+  // Os campos originais (what, why, who, when, where, howToday, howMuch) são o AS-IS.
+  // howToBe já existe acima para o campo HOW.
+  whatToBe         String?  // Visão futura: o que será feito
+  whyToBe          String?  // Visão futura: por que será necessário
+  whoToBe          String?  // Visão futura: quem executará
+  whenToBe         String?  // Visão futura: quando será feito
+  whereToBe        String?  // Visão futura: onde será implementado
+  howMuchToBe      String?  // Visão futura: volumetria/critério de aceitação
+
   // Integrations (arrays de Req IDs)
   dependsOn       String   @default("") // JSON array string: ["REQ-002", "REQ-003"]
   providesFor     String   @default("") // JSON array string: ["REQ-005"]

@@ -30,6 +30,18 @@ const TRACKED_FIELDS: (keyof Requirement)[] = [
   'where',
   'howToday',
   'howMuch',
+  // Ancora Method v2: HOW AS-IS / TO-BE
+  'howAsIs',
+  'howToBe',
+  'howMuchPromised',
+  'howMuchActual',
+  // 5W2H TO-BE fields (toggle AS-IS / TO-BE)
+  'whatToBe',
+  'whyToBe',
+  'whoToBe',
+  'whenToBe',
+  'whereToBe',
+  'howMuchToBe',
   'dependsOn',
   'providesFor',
   'responsibleConsultantId',

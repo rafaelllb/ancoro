@@ -174,6 +174,18 @@ export function formatFieldName(field: string, moduleLabel = 'Área'): string {
     where: 'Onde',
     howToday: 'Como (hoje)',
     howMuch: 'Quanto',
+    // Ancora Method v2: HOW AS-IS / TO-BE
+    howAsIs: 'Como (AS-IS)',
+    howToBe: 'Como (TO-BE)',
+    howMuchPromised: 'Quanto (Prometido)',
+    howMuchActual: 'Quanto (Realizado)',
+    // 5W2H TO-BE fields
+    whatToBe: 'O que (TO-BE)',
+    whyToBe: 'Por que (TO-BE)',
+    whoToBe: 'Quem (TO-BE)',
+    whenToBe: 'Quando (TO-BE)',
+    whereToBe: 'Onde (TO-BE)',
+    howMuchToBe: 'Quanto (TO-BE)',
     dependsOn: 'Depende de',
     providesFor: 'Fornece para',
     responsibleConsultantId: 'Responsável Consultor',

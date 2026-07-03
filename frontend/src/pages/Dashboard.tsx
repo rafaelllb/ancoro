@@ -7,7 +7,7 @@ import { useCapabilities } from '../hooks/useCapabilities'
 import { useProjectMembers } from '../hooks/useProjectMembers'
 import { useProjectTerminology } from '../hooks/useProjectTerminology'
 import RequirementsGrid from '../components/RequirementsGrid'
-import CommentPanel from '../components/CommentPanel'
+import RequirementDetailPanel from '../components/RequirementDetailPanel'
 import CreateRequirementModal from '../components/CreateRequirementModal'
 import ImportSpreadsheetModal from '../components/ImportSpreadsheetModal'
 import ExportModal from '../components/ExportModal'
@@ -200,7 +200,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
           <div className="ancoro-panel-strong min-w-0 rounded-[28px] p-3 lg:p-4">
             <div className="mb-4 flex flex-col gap-3 lg:mb-6 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -376,7 +376,7 @@ export default function Dashboard() {
           <div
             className={`
               fixed inset-y-0 right-0 z-30 w-full transform bg-white shadow-xl transition-transform duration-300 ease-in-out sm:w-96
-              xl:relative xl:inset-auto xl:z-auto xl:w-[320px] xl:transform-none xl:bg-transparent xl:shadow-none
+              xl:relative xl:inset-auto xl:z-auto xl:w-[400px] xl:transform-none xl:bg-transparent xl:shadow-none
               ${selectedRequirement ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'}
             `}
           >
@@ -388,9 +388,10 @@ export default function Dashboard() {
               />
             )}
 
-            <CommentPanel
+            <RequirementDetailPanel
               requirement={selectedRequirement}
               onClose={() => setSelectedRequirement(null)}
+              projectId={projectId}
             />
           </div>
         </div>

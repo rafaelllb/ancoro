@@ -153,6 +153,13 @@ export interface CreateRequirementRequest {
   where: string
   howToday: string
   howMuch: string
+  // 5W2H TO-BE fields (toggle AS-IS / TO-BE)
+  whatToBe?: string
+  whyToBe?: string
+  whoToBe?: string
+  whenToBe?: string
+  whereToBe?: string
+  howMuchToBe?: string
   dependsOn?: string[] // Array de Req IDs
   providesFor?: string[] // Array de Req IDs
   responsibleConsultantId?: string
@@ -172,6 +179,13 @@ export interface UpdateRequirementRequest {
   where?: string
   howToday?: string
   howMuch?: string
+  // 5W2H TO-BE fields (toggle AS-IS / TO-BE)
+  whatToBe?: string | null
+  whyToBe?: string | null
+  whoToBe?: string | null
+  whenToBe?: string | null
+  whereToBe?: string | null
+  howMuchToBe?: string | null
   dependsOn?: string[]
   providesFor?: string[]
   responsibleConsultantId?: string | null

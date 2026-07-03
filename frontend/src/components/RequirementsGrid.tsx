@@ -25,6 +25,7 @@ import { useProjectTerminology } from '../hooks/useProjectTerminology'
 import ConfirmDialog from './ConfirmDialog'
 import { SkeletonRequirementsGrid } from './Skeleton'
 import { RequirementMultiSelect, RequirementOption } from './RequirementMultiSelect'
+import { hasToBe as hasToBeIndicator } from '../utils/requirementHelpers'
 
 // ===== TIPOS =====
 
@@ -821,9 +822,16 @@ export default function RequirementsGrid({
 
       columnHelper.accessor('reqId', {
         header: 'Req ID',
-        size: 120,
+        size: 140,
         cell: (info) => (
-          <span className="font-mono font-semibold text-blue-600">{info.getValue()}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono font-semibold text-blue-600">{info.getValue()}</span>
+            {hasToBeIndicator(info.row.original) && (
+              <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-orange-100 text-orange-700 border border-orange-200 uppercase tracking-wide leading-none">
+                TO-BE
+              </span>
+            )}
+          </div>
         ),
       }),
 

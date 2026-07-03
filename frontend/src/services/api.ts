@@ -77,6 +77,18 @@ export interface Requirement {
   where: string
   howToday: string
   howMuch: string
+  // Ancora Method v2: HOW AS-IS / TO-BE
+  howAsIs?: string | null
+  howToBe?: string | null
+  howMuchPromised?: string | null
+  howMuchActual?: string | null
+  // 5W2H TO-BE fields (toggle AS-IS / TO-BE)
+  whatToBe?: string | null
+  whyToBe?: string | null
+  whoToBe?: string | null
+  whenToBe?: string | null
+  whereToBe?: string | null
+  howMuchToBe?: string | null
   dependsOn: string[]
   providesFor: string[]
   responsibleConsultantId?: string | null
@@ -108,6 +120,14 @@ export interface CreateRequirementRequest {
   where: string
   howToday: string
   howMuch: string
+  // 5W2H TO-BE fields (toggle AS-IS / TO-BE)
+  whatToBe?: string
+  whyToBe?: string
+  whoToBe?: string
+  whenToBe?: string
+  whereToBe?: string
+  howToBe?: string
+  howMuchToBe?: string
   dependsOn?: string[]
   providesFor?: string[]
   responsibleConsultantId?: string
@@ -127,6 +147,14 @@ export interface UpdateRequirementRequest {
   where?: string
   howToday?: string
   howMuch?: string
+  // 5W2H TO-BE fields (toggle AS-IS / TO-BE)
+  whatToBe?: string | null
+  whyToBe?: string | null
+  whoToBe?: string | null
+  whenToBe?: string | null
+  whereToBe?: string | null
+  howToBe?: string | null
+  howMuchToBe?: string | null
   dependsOn?: string[]
   providesFor?: string[]
   responsibleConsultantId?: string | null
