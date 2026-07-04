@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { authAPI, User, LoginRequest } from '../services/api'
+import { authAPI, usersAPI, User, LoginRequest } from '../services/api'
 
 interface AuthContextType {
   user: User | null
   token: string | null
   login: (credentials: LoginRequest) => Promise<void>
   logout: () => void
+  updateColumnPreferences: (columnPreferences: string) => void
   isAuthenticated: boolean
   isLoading: boolean
 }
@@ -66,11 +67,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(null)
   }
 
+  // Atualiza preferências de coluna localmente (state + localStorage) e persiste no backend.
+  // Persistência é fire-and-forget: a UI reflete a mudança imediatamente; erro de rede é logado
+  // sem reverter, já que o estado local mantém a experiência consistente na sessão.
+  const updateColumnPreferences = (columnPreferences: string) => {
+    setUser((prev) => {
+      if (!prev) return prev
+      const next = { ...prev, columnPreferences }
+      localStorage.setItem('user', JSON.stringify(next))
+      return next
+    })
+
+    usersAPI.updatePreferences(columnPreferences).catch((error) => {
+      console.error('Failed to persist column preferences:', error)
+    })
+  }
+
   const value: AuthContextType = {
     user,
     token,
     login,
     logout,
+    updateColumnPreferences,
     isAuthenticated: !!token && !!user,
     isLoading,
   }

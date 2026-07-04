@@ -118,8 +118,14 @@ export interface UserPublic {
   name: string
   email: string
   role: UserRoleType
+  columnPreferences: string | null // JSON stringificado de preferências de UI
   createdAt: Date
   updatedAt: Date
+}
+
+// Atualização de preferências de UI do usuário autenticado
+export interface UpdateUserPreferencesRequest {
+  columnPreferences: string // JSON stringificado
 }
 
 // Login

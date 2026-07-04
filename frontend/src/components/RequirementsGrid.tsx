@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   useReactTable,
   getCoreRowModel,
@@ -9,6 +10,8 @@ import {
   SortingState,
   ColumnFiltersState,
   RowSelectionState,
+  VisibilityState,
+  Table,
 } from '@tanstack/react-table'
 import { Requirement } from '../services/api'
 import { useUpdateRequirement, useDeleteRequirement, useBulkDeleteRequirements } from '../hooks/useRequirements'
@@ -33,6 +36,8 @@ interface RequirementsGridProps {
   data: Requirement[]
   isLoading: boolean
   onRowSelect?: (requirement: Requirement | null) => void
+  /** Callback para abrir o modal de detalhes (ícone de olho no hover da linha) */
+  onOpenDetail?: (requirement: Requirement) => void
   projectId: string
   scopedModule?: string
   assignedModule?: string
@@ -514,18 +519,157 @@ const EditableCell = ({ value, rowId, columnId, columnLabel, onUpdate, multiline
   )
 }
 
+// ===== VISIBILIDADE DE COLUNAS =====
+
+// IDs das colunas 5W2H — ocultas por padrão na grade, ativáveis via seletor de colunas
+const FIVE_W_TWO_H_COLUMN_IDS = ['what', 'why', 'who', 'when', 'where', 'howToday', 'howMuch'] as const
+
+// Colunas estruturais (controles) não aparecem no seletor de visibilidade
+const STRUCTURAL_COLUMN_IDS = new Set(['eye', 'select', 'actions'])
+
+// Chave namespaced dentro do JSON columnPreferences do usuário
+const REQUIREMENTS_COLUMNS_PREF_KEY = 'requirementsColumns'
+
+// Visibilidade default: 5W2H ocultos
+const DEFAULT_COLUMN_VISIBILITY: VisibilityState = FIVE_W_TWO_H_COLUMN_IDS.reduce(
+  (acc, id) => {
+    acc[id] = false
+    return acc
+  },
+  {} as VisibilityState
+)
+
+// Constrói o estado inicial de visibilidade a partir das preferências salvas do usuário.
+// Faz merge sobre o default para que colunas novas (ainda sem preferência) sigam o padrão.
+function parseInitialColumnVisibility(columnPreferences?: string | null): VisibilityState {
+  if (!columnPreferences) return { ...DEFAULT_COLUMN_VISIBILITY }
+  try {
+    const parsed = JSON.parse(columnPreferences)
+    const saved = parsed?.[REQUIREMENTS_COLUMNS_PREF_KEY]
+    if (saved && typeof saved === 'object') {
+      return { ...DEFAULT_COLUMN_VISIBILITY, ...saved }
+    }
+  } catch (error) {
+    console.error('Failed to parse columnPreferences:', error)
+  }
+  return { ...DEFAULT_COLUMN_VISIBILITY }
+}
+
+/**
+ * Seletor de colunas visíveis — engrenagem no início (esquerda) do header da tabela.
+ * Componente autocontido: mantém seu próprio estado de aberto/fechado. Recebe a instância
+ * `table` do TanStack e alterna a visibilidade diretamente via column.toggleVisibility().
+ */
+function ColumnVisibilityMenu({ table }: { table: Table<Requirement> }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null)
+  const buttonRef = useRef<HTMLButtonElement | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+
+  const hideableColumns = table
+    .getAllLeafColumns()
+    .filter((column) => column.getCanHide() && !STRUCTURAL_COLUMN_IDS.has(column.id))
+
+  const getLabel = (column: (typeof hideableColumns)[number]): string => {
+    const header = column.columnDef.header
+    return typeof header === 'string' ? header : column.id
+  }
+
+  const openMenu = () => {
+    const rect = buttonRef.current?.getBoundingClientRect()
+    if (rect) {
+      setMenuPos({ top: rect.bottom + 6, left: rect.left })
+    }
+    setIsOpen(true)
+  }
+
+  // Fecha apenas em resize (a posição fixa deixaria de acompanhar o botão).
+  // NÃO fechamos em scroll: o overlay já bloqueia a rolagem do fundo, e reflows da
+  // tabela ao alternar colunas disparariam scroll no contêiner overflow-auto, fechando
+  // o menu indevidamente. A rolagem interna da lista (max-h + overflow-y-auto) funciona.
+  useEffect(() => {
+    if (!isOpen) return
+    const handleResize = () => setIsOpen(false)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [isOpen])
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          if (isOpen) {
+            setIsOpen(false)
+          } else {
+            openMenu()
+          }
+        }}
+        title="Configurar colunas visíveis"
+        aria-label="Configurar colunas visíveis"
+        className="rounded p-1 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+      >
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      </button>
+
+      {isOpen && menuPos &&
+        createPortal(
+          <>
+            {/* Overlay transparente para fechar ao clicar fora */}
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} aria-hidden="true" />
+            <div
+              ref={menuRef}
+              className="fixed z-50 max-h-80 w-60 overflow-y-auto rounded-2xl border border-ancoro-navy-100 bg-white p-2 text-left shadow-xl"
+              style={{ top: menuPos.top, left: menuPos.left }}
+            >
+              <p className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-ancoro-navy-400">
+                Colunas visíveis
+              </p>
+              {hideableColumns.map((column) => (
+                <label
+                  key={column.id}
+                  className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ancoro-navy-700 hover:bg-ancoro-teal-50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={column.getIsVisible()}
+                    onChange={column.getToggleVisibilityHandler()}
+                    className="h-4 w-4 rounded border-gray-300 text-ancoro-teal-600 focus:ring-ancoro-teal-500"
+                  />
+                  <span className="truncate">{getLabel(column)}</span>
+                </label>
+              ))}
+            </div>
+          </>,
+          document.body
+        )}
+    </>
+  )
+}
+
 // ===== MAIN COMPONENT =====
 
 export default function RequirementsGrid({
   data,
   isLoading,
   onRowSelect,
+  onOpenDetail,
   projectId,
   scopedModule,
   assignedModule,
   showAllModules = false,
 }: RequirementsGridProps) {
-  const { user } = useAuth()
+  const { user, updateColumnPreferences } = useAuth()
   // userRole obtido diretamente do contexto para evitar problemas de sincronização com props
   const userRole = user?.role
   const { data: membersResponse } = useProjectMembers(projectId)
@@ -536,6 +680,44 @@ export default function RequirementsGrid({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [globalFilter, setGlobalFilter] = useState('')
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null)
+
+  // Visibilidade de colunas — 5W2H ocultos por padrão; inicializa das preferências do usuário
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
+    parseInitialColumnVisibility(user?.columnPreferences)
+  )
+
+  // Persiste a visibilidade de colunas no perfil do usuário (debounce 500ms).
+  // Ignora o primeiro render para não gravar no mount. Preserva outras chaves de
+  // columnPreferences que possam existir para outros recursos no futuro.
+  const hasHydratedVisibilityRef = useRef(false)
+  const persistVisibilityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (!hasHydratedVisibilityRef.current) {
+      hasHydratedVisibilityRef.current = true
+      return
+    }
+    if (persistVisibilityTimeoutRef.current) {
+      clearTimeout(persistVisibilityTimeoutRef.current)
+    }
+    persistVisibilityTimeoutRef.current = setTimeout(() => {
+      let base: Record<string, unknown> = {}
+      try {
+        base = user?.columnPreferences ? JSON.parse(user.columnPreferences) : {}
+      } catch {
+        base = {}
+      }
+      const payload = JSON.stringify({ ...base, [REQUIREMENTS_COLUMNS_PREF_KEY]: columnVisibility })
+      updateColumnPreferences(payload)
+    }, 500)
+    return () => {
+      if (persistVisibilityTimeoutRef.current) {
+        clearTimeout(persistVisibilityTimeoutRef.current)
+      }
+    }
+    // Intencional: depende apenas de columnVisibility. `user`/`updateColumnPreferences`
+    // mudam de identidade a cada render e disparariam persistência em loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columnVisibility])
 
   // Paginação client-side: controla quantos itens exibir progressivamente
   const [pageSize, setPageSize] = useState(20)
@@ -748,6 +930,35 @@ export default function RequirementsGrid({
       const shouldShowSelectionColumn = shouldShowActionsColumn
 
       const baseColumns = [
+      // Coluna sticky com ícone de olho — aparece no hover da linha, abre modal de detalhes
+      // Posicionada antes do checkbox para ficar visível mesmo com scroll horizontal
+      columnHelper.display({
+        id: 'eye',
+        size: 36,
+        enableHiding: false,
+        header: ({ table }) => <ColumnVisibilityMenu table={table} />,
+        cell: ({ row }) =>
+          onOpenDetail ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation() // evita abrir o painel lateral ao mesmo tempo
+                onOpenDetail(row.original)
+              }}
+              title="Ver detalhes completos"
+              className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 rounded p-1 text-gray-400 hover:text-teal-600 hover:bg-teal-50"
+              aria-label="Abrir detalhes do requisito"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+                <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} />
+              </svg>
+            </button>
+          ) : null,
+      }),
       // Coluna de checkbox para seleção múltipla (bulk delete)
       ...(shouldShowSelectionColumn
         ? [
@@ -1159,11 +1370,13 @@ export default function RequirementsGrid({
       columnFilters,
       globalFilter,
       rowSelection,
+      columnVisibility,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -1316,7 +1529,12 @@ export default function RequirementsGrid({
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="cursor-pointer px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-ancoro-navy-800"
+                    className={`cursor-pointer py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-white transition-colors hover:bg-ancoro-navy-800 ${
+                      // Coluna eye: sticky com z-index maior para sobrepor o thead sticky
+                      header.id === 'eye'
+                        ? 'sticky left-0 z-20 bg-ancoro-navy-900 px-1 w-9'
+                        : 'px-4'
+                    }`}
                     style={{ width: header.getSize() }}
                     onClick={header.column.getToggleSortingHandler()}
                   >
@@ -1343,13 +1561,22 @@ export default function RequirementsGrid({
               displayedRows.map((row) => (
                 <tr
                   key={row.id}
-                  className={`hover:bg-teal-50 transition-colors cursor-pointer ${
+                  // `group` permite que o ícone de olho na coluna `eye` use group-hover:opacity-100
+                  className={`group hover:bg-teal-50 transition-colors cursor-pointer ${
                     selectedRowId === row.original.id ? 'bg-ancoro-teal-50' : ''
                   }`}
                   onClick={() => handleRowClick(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 text-sm text-gray-900">
+                    <td
+                      key={cell.id}
+                      className={`py-3 text-sm text-gray-900 ${
+                        // Coluna eye: sticky à esquerda para permanecer visível com scroll horizontal
+                        cell.column.id === 'eye'
+                          ? 'sticky left-0 z-10 bg-inherit px-1 w-9'
+                          : 'px-4'
+                      }`}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}

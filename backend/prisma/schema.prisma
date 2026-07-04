@@ -51,6 +51,7 @@ model User {
   email       String   @unique
   password    String   // Hashed with bcrypt
   role        String   // CONSULTANT | CLIENT | MANAGER | ADMIN
+  columnPreferences String? // JSON de preferências de UI por usuário (ex.: visibilidade de colunas da grade)
 
   projects    ProjectUser[]
   assignedRequirements Requirement[] @relation("ResponsibleConsultant")

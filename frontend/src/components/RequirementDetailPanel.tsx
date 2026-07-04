@@ -165,21 +165,26 @@ function ViewModeToggle({
 
 // ===== CAMPO EDITÁVEL INLINE =====
 
-function EditableField({
-  label,
-  value,
-  fieldKey,
-  requirementId,
-  isLong,
-  placeholder,
-}: {
+export interface EditableFieldProps {
   label: string
   value: string
   fieldKey: string
   requirementId: string
   isLong: boolean
   placeholder?: string
-}) {
+  /** Quando true, exibe apenas leitura sem interação */
+  disabled?: boolean
+}
+
+export function EditableField({
+  label,
+  value,
+  fieldKey,
+  requirementId,
+  isLong,
+  placeholder,
+  disabled = false,
+}: EditableFieldProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(value)
   const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null)
@@ -224,6 +229,22 @@ function EditableField({
       e.preventDefault()
       handleSave()
     }
+  }
+
+  // Campo desabilitado: apenas leitura, sem interação
+  if (disabled) {
+    return (
+      <div className="mb-3">
+        <label className="block text-xs font-medium text-gray-400 mb-1">{label}</label>
+        <div className="px-2 py-1.5 text-sm rounded bg-gray-50 min-h-[28px]">
+          {value ? (
+            <span className="whitespace-pre-wrap break-words text-gray-600">{value}</span>
+          ) : (
+            <span className="italic text-gray-300">{placeholder || '—'}</span>
+          )}
+        </div>
+      </div>
+    )
   }
 
   if (isEditing) {
@@ -521,23 +542,21 @@ export default function RequirementDetailPanel({
     deleteMutation.mutate({ commentId: comment.id, requirementId: requirement.id })
   }
 
-  // Painel fechado (sem requisito selecionado)
+  // Painel fechado (sem requisito selecionado) — card compacto (largura ~260px) mantendo o texto de orientação
   if (!requirement) {
     return (
-      <div className="hidden xl:flex w-[400px] flex-col items-center justify-center rounded-[28px] border border-ancoro-navy-100 bg-white/70 p-6 text-center backdrop-blur">
-        <div className="w-24 h-24 mb-6 relative">
-          <div className="absolute inset-0 bg-teal-100 rounded-full" />
-          <div className="absolute inset-2 bg-white rounded-full flex items-center justify-center shadow-sm">
-            <svg className="w-10 h-10 text-teal-500" fill="currentColor" viewBox="0 0 24 24">
+      <div className="hidden xl:flex h-full items-center justify-center rounded-[28px] border border-ancoro-navy-100 bg-white/70 px-4 py-6 backdrop-blur overflow-hidden">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-ancoro-teal-200 bg-ancoro-teal-50 text-ancoro-teal-500">
+            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
-              <polyline points="14 2 14 8 20 8" fill="none" stroke="currentColor" strokeWidth="1" />
             </svg>
           </div>
+          <p className="text-sm font-semibold text-ancoro-navy-800">Detalhes do Requisito</p>
+          <p className="text-xs leading-relaxed text-ancoro-navy-400">
+            Selecione um requisito na tabela para visualizar e editar campos 5W2H, comentários e histórico.
+          </p>
         </div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-3">Detalhes do Requisito</h3>
-        <p className="text-sm text-gray-500 leading-relaxed">
-          Selecione um requisito na tabela para visualizar e editar campos 5W2H, comentários e histórico.
-        </p>
       </div>
     )
   }

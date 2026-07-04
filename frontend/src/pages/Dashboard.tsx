@@ -8,6 +8,7 @@ import { useProjectMembers } from '../hooks/useProjectMembers'
 import { useProjectTerminology } from '../hooks/useProjectTerminology'
 import RequirementsGrid from '../components/RequirementsGrid'
 import RequirementDetailPanel from '../components/RequirementDetailPanel'
+import RequirementDetailModal from '../components/RequirementDetailModal'
 import CreateRequirementModal from '../components/CreateRequirementModal'
 import ImportSpreadsheetModal from '../components/ImportSpreadsheetModal'
 import ExportModal from '../components/ExportModal'
@@ -40,6 +41,8 @@ export default function Dashboard() {
 
   const [showAllModules, setShowAllModules] = useState(false)
   const [selectedRequirement, setSelectedRequirement] = useState<Requirement | null>(null)
+  // Estado para o modal de detalhes completo (aberto pelo ícone de olho no hover da linha)
+  const [detailModalRequirement, setDetailModalRequirement] = useState<Requirement | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isSpreadsheetModalOpen, setIsSpreadsheetModalOpen] = useState(false)
   const [spreadsheetMode, setSpreadsheetMode] = useState<'import' | 'export'>('import')
@@ -202,7 +205,13 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
+        <div
+          className={`grid gap-4 ${
+            selectedRequirement
+              ? 'xl:grid-cols-[minmax(0,1fr)_400px]'
+              : 'xl:grid-cols-[minmax(0,1fr)_260px]'
+          }`}
+        >
           <div className="ancoro-panel-strong min-w-0 rounded-[28px] p-3 lg:p-4">
             <div className="mb-4 flex flex-col gap-3 lg:mb-6 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -367,6 +376,7 @@ export default function Dashboard() {
                 data={requirements}
                 isLoading={isLoading}
                 onRowSelect={setSelectedRequirement}
+                onOpenDetail={setDetailModalRequirement}
                 projectId={projectId}
                 scopedModule={scopedModule}
                 assignedModule={assignedModule}
@@ -378,8 +388,10 @@ export default function Dashboard() {
           <div
             className={`
               fixed inset-y-0 right-0 z-30 w-full transform bg-white shadow-xl transition-transform duration-300 ease-in-out sm:w-96
-              xl:relative xl:inset-auto xl:z-auto xl:w-[400px] xl:transform-none xl:bg-transparent xl:shadow-none
-              ${selectedRequirement ? 'translate-x-0' : 'translate-x-full xl:translate-x-0'}
+              xl:relative xl:inset-auto xl:z-auto xl:transform-none xl:bg-transparent xl:shadow-none xl:transition-all xl:duration-300
+              ${selectedRequirement
+                ? 'translate-x-0 xl:w-[400px]'
+                : 'translate-x-full xl:translate-x-0 xl:w-[260px]'}
             `}
           >
             {selectedRequirement && (
@@ -398,6 +410,18 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      {/* Modal de detalhes completo — aberto pelo ícone de olho no hover da linha */}
+      <RequirementDetailModal
+        requirement={detailModalRequirement}
+        onClose={() => setDetailModalRequirement(null)}
+        projectId={projectId}
+        allRequirements={requirements.map((r) => ({
+          reqId: r.reqId,
+          shortDesc: r.shortDesc,
+          module: r.module,
+        }))}
+      />
 
       <CreateRequirementModal
         isOpen={isCreateModalOpen}

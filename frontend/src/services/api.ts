@@ -50,6 +50,7 @@ export interface User {
   name: string
   email: string
   role: string
+  columnPreferences?: string | null // JSON stringificado de preferências de UI
   createdAt: string
   updatedAt: string
 }
@@ -239,6 +240,12 @@ export interface CommentCountResponse {
 // Auth
 export const authAPI = {
   login: (data: LoginRequest) => api.post<LoginResponse>('/api/auth/login', data),
+}
+
+export const usersAPI = {
+  // Persiste preferências de UI (ex.: visibilidade de colunas) no perfil do usuário
+  updatePreferences: (columnPreferences: string) =>
+    api.patch<User>('/api/users/me/preferences', { columnPreferences }),
 }
 
 // Bulk import types

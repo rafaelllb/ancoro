@@ -105,6 +105,7 @@ router.post('/login', async (req: Request, res: Response) => {
       name: user.name,
       email: user.email,
       role: user.role as any,
+      columnPreferences: user.columnPreferences ?? null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     }
@@ -203,6 +204,7 @@ router.post('/register', async (req: Request, res: Response) => {
       name: user.name,
       email: user.email,
       role: user.role as any,
+      columnPreferences: user.columnPreferences ?? null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     }

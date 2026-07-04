@@ -106,6 +106,7 @@ import configRoutes from './routes/config'
 import demoRoutes from './routes/demo'
 import evidencesRoutes from './routes/evidences'
 import graphLayoutRoutes from './routes/graphLayout'
+import usersRoutes from './routes/users'
 
 // ===== ROUTES =====
 
@@ -159,6 +160,7 @@ app.use('/api', projectMembersRoutes)
 app.use('/api', projectsRoutes)
 app.use('/api', evidencesRoutes)
 app.use('/api', graphLayoutRoutes)
+app.use('/api', usersRoutes)
 
 // ===== ERROR HANDLER =====
 app.use((err: Error, _req: Request, res: Response, _next: any) => {
