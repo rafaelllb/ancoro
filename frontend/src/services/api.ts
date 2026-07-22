@@ -324,6 +324,10 @@ export const projectsAPI = {
   // Criar projeto (ADMIN ou MANAGER)
   create: (data: CreateProjectRequest) => api.post('/api/projects', data),
 
+  // Excluir projeto (ADMIN). Requer confirm=true no backend (proteção anti-exclusão acidental).
+  remove: (projectId: string) =>
+    api.delete(`/api/projects/${projectId}?confirm=true`),
+
   // Configurações de padrão de ID de requisitos
   getSettings: (projectId: string) =>
     api.get(`/api/projects/${projectId}/settings`),

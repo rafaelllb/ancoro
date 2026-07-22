@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query'
 import { Toaster, toast } from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
+import i18n from './i18n'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { EnvironmentBanner } from './components/EnvironmentBanner'
@@ -28,14 +30,14 @@ function getErrorMessage(error: unknown): string {
     }
     // Erro de rede (sem resposta do servidor)
     if (axiosError.code === 'ERR_NETWORK') {
-      return 'Erro de conexão. Verifique sua internet.'
+      return i18n.t('common:errors.network')
     }
   }
   // Erro padrão JS
   if (error instanceof Error) {
     return error.message
   }
-  return 'Ocorreu um erro inesperado'
+  return i18n.t('common:errors.unexpected')
 }
 
 /**
@@ -76,7 +78,7 @@ const queryClient = new QueryClient({
       // Toast de erro apenas para queries que já tinham dados (refetch falhou)
       // Evita spam de toasts em primeira carga
       if (query.state.data !== undefined) {
-        toast.error(`Erro ao atualizar: ${getErrorMessage(error)}`)
+        toast.error(i18n.t('common:errors.refreshFailed', { message: getErrorMessage(error) }))
       }
     },
   }),
@@ -115,13 +117,14 @@ const queryClient = new QueryClient({
 // Componente de rota protegida
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
+  const { t } = useTranslation('common')
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando...</p>
+          <p className="text-gray-600">{t('states.loading')}</p>
         </div>
       </div>
     )
@@ -137,13 +140,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // Rota pública (redireciona se já autenticado)
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
+  const { t } = useTranslation('common')
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando...</p>
+          <p className="text-gray-600">{t('states.loading')}</p>
         </div>
       </div>
     )
@@ -157,6 +161,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  const { t } = useTranslation('common')
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -225,7 +230,7 @@ function App() {
                 <div className="min-h-screen flex items-center justify-center">
                   <div className="text-center">
                     <h1 className="text-6xl font-bold text-gray-300 mb-4">404</h1>
-                    <p className="text-gray-600">Página não encontrada</p>
+                    <p className="text-gray-600">{t('states.notFound')}</p>
                   </div>
                 </div>
               }

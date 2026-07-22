@@ -1,0 +1,30 @@
+{
+  "appName": "Ancoro",
+  "appSubtitle": "Dashboard de Requisitos",
+  "actions": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "delete": "Excluir",
+    "create": "Criar",
+    "edit": "Editar",
+    "confirm": "Confirmar",
+    "back": "Voltar"
+  },
+  "states": {
+    "loading": "Carregando...",
+    "saving": "Salvando...",
+    "empty": "Nenhum resultado",
+    "notFound": "Página não encontrada"
+  },
+  "errors": {
+    "network": "Erro de conexão. Verifique sua internet.",
+    "unexpected": "Ocorreu um erro inesperado",
+    "refreshFailed": "Erro ao atualizar: {{message}}"
+  },
+  "language": {
+    "label": "Idioma",
+    "pt": "Português",
+    "en": "English"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "workspace": "Ancoro Workspace",
+  "selectProject": "Select a project to get started",
+  "intro": "Visualize requirements, track validation health and keep alignment across areas in a clearer, more executive space.",
+  "stats": {
+    "requirements": "Requirements",
+    "validated": "Validated",
+    "coverage": "Coverage",
+    "activeConflicts": "{{count}} active conflict(s)"
+  },
+  "list": {
+    "title": "Requirements",
+    "subtitle": "Structured operational base for tracking and review.",
+    "showAll": "View all {{label}}"
+  },
+  "noProject": {
+    "title": "No project assigned",
+    "description": "You are not associated with any project. Contact a manager or administrator to be added."
+  },
+  "actions": {
+    "newRequirement": "New Requirement",
+    "newShort": "New",
+    "newRequirementTitleDisabled": "Select a project first",
+    "newRequirementTitle": "Create new requirement",
+    "configureIdPattern": "Configure ID pattern",
+    "configureLists": "Configure lists ({{label}}, Status, etc.)",
+    "spreadsheet": "Spreadsheet",
+    "export": "Export",
+    "import": "Import",
+    "exportBpd": "Export BPD",
+    "exportBpdShort": "BPD",
+    "manageMembers": "Manage Members",
+    "manageMembersShort": "Members"
+  }
+}

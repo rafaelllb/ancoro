@@ -1,0 +1,19 @@
+{
+  "title": "Matriz de Cruzamento",
+  "subtitle": "Mapeamento automático de dependências e integrações",
+  "filterLabel": "Filtrar por {{label}}",
+  "filterAll": "Todos",
+  "regenerate": "🔄 Regerar Matriz",
+  "regenerating": "Regerando...",
+  "statsTotal": "Total",
+  "loading": "Carregando matriz...",
+  "circularAlert": {
+    "title": "Dependências circulares detectadas!",
+    "description": "Foram detectadas {{count}} integrações com dependências circulares. Revise o campo \"Notes\" para identificar os ciclos."
+  },
+  "error": {
+    "title": "Erro ao carregar matriz",
+    "managerHint": "Como gerente, você pode adicionar usuários ao projeto:",
+    "manageMembers": "Gerenciar Membros do Projeto"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "title": "Dependency Graph",
+  "subtitle": "Interactive visualization of connections between requirements",
+  "toolbar": {
+    "filter": "Filter:",
+    "all": "All",
+    "onlyConnected": "Only Connected",
+    "allNodes": "All Nodes",
+    "criticalPath": "Critical Path",
+    "zoom": "Zoom: {{percent}}%"
+  },
+  "loading": "Loading requirements...",
+  "emptyConnected": {
+    "title": "No requirement with dependencies",
+    "description": "Enable \"All Nodes\" in the toolbar to view all requirements and create connections between them.",
+    "cta": "Show All Nodes"
+  },
+  "emptyProject": {
+    "title": "No requirement found",
+    "description": "Create requirements in the Dashboard to visualize the dependency graph.",
+    "cta": "Go to Dashboard"
+  },
+  "detail": {
+    "viewInDashboard": "View requirement in Dashboard →"
+  },
+  "usageHint": "Ctrl+click for multi-selection • drag on the background for box selection • Alt+drag to pan • arrows move the selection"
+}

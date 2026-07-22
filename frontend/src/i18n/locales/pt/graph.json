@@ -1,0 +1,27 @@
+{
+  "title": "Grafo de Dependências",
+  "subtitle": "Visualização interativa das conexões entre requisitos",
+  "toolbar": {
+    "filter": "Filtro:",
+    "all": "Todos",
+    "onlyConnected": "Apenas Conectados",
+    "allNodes": "Todos os Nós",
+    "criticalPath": "Caminho Crítico",
+    "zoom": "Zoom: {{percent}}%"
+  },
+  "loading": "Carregando requisitos...",
+  "emptyConnected": {
+    "title": "Nenhum requisito com dependências",
+    "description": "Ative \"Todos os Nós\" no toolbar para visualizar todos os requisitos e criar conexões entre eles.",
+    "cta": "Mostrar Todos os Nós"
+  },
+  "emptyProject": {
+    "title": "Nenhum requisito encontrado",
+    "description": "Crie requisitos no Dashboard para visualizar o grafo de dependências.",
+    "cta": "Ir para o Dashboard"
+  },
+  "detail": {
+    "viewInDashboard": "Ver requisito no Dashboard →"
+  },
+  "usageHint": "Ctrl+clique para multiseleção • arraste no fundo para seleção em caixa • Alt+arraste para pan • setas movem a seleção"
+}

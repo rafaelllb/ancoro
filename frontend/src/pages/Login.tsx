@@ -1,6 +1,8 @@
 import { useState, FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 
 const demoProfiles = [
   { role: 'Admin', email: 'admin@ancoro.app', tone: 'text-ancoro-teal-300' },
@@ -10,6 +12,7 @@ const demoProfiles = [
 ]
 
 export default function Login() {
+  const { t } = useTranslation('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -27,7 +30,7 @@ export default function Login() {
       await login({ email, password })
       navigate('/dashboard')
     } catch (err: any) {
-      setError(err.message || 'Email ou senha inválidos')
+      setError(err.message || t('form.invalidCredentials'))
     } finally {
       setIsLoading(false)
     }
@@ -46,25 +49,25 @@ export default function Login() {
                   <img src="/logo-new.png" alt="Ancoro Logo" className="h-14 w-auto" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.28em] text-ancoro-teal-300">Ancora ReqOps Method</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.28em] text-ancoro-teal-300">{t('brandMethod')}</p>
                   <h1 className="mt-1 text-3xl font-bold text-white">Ancoro</h1>
                 </div>
               </div>
 
               <div className="mt-16 max-w-xl">
-                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-ancoro-teal-300">Governança de requisitos</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-ancoro-teal-300">{t('hero.eyebrow')}</p>
                 <h2 className="mt-4 text-4xl font-bold leading-tight text-white sm:text-5xl">
-                  Um acesso mais elegante para uma operação mais confiável.
+                  {t('hero.headline')}
                 </h2>
                 <p className="mt-5 text-base leading-8 text-ancoro-navy-200">
-                  Centralize requisitos, decisões e dependências em uma experiência mais executiva, limpa e preparada para projetos complexos.
+                  {t('hero.subtitle')}
                 </p>
               </div>
 
               <div className="mt-10 grid gap-4 sm:grid-cols-2">
                 {[
-                  ['Rastreabilidade', 'Histórico, comentários e evolução preservados'],
-                  ['Visão cross-áreas', 'Conflitos e impactos com leitura mais clara'],
+                  [t('hero.cards.traceabilityTitle'), t('hero.cards.traceabilityText')],
+                  [t('hero.cards.crossTitle'), t('hero.cards.crossText')],
                 ].map(([title, text]) => (
                   <div key={title} className="rounded-[24px] border border-white/10 bg-white/5 p-5 backdrop-blur">
                     <p className="text-sm font-semibold text-white">{title}</p>
@@ -74,18 +77,21 @@ export default function Login() {
               </div>
 
               <div className="mt-auto pt-12 text-sm text-ancoro-navy-300">
-                <p>Foundation-first · Estabilidade, Precisão e Confiabilidade</p>
+                <p>{t('hero.footer')}</p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(244,250,251,0.92))] px-7 py-10 sm:px-10 lg:px-12 lg:py-14">
             <div className="w-full">
+              <div className="mb-6 flex justify-end">
+                <LanguageSwitcher />
+              </div>
               <div className="max-w-md">
-                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-ancoro-teal-600">Acesso seguro</p>
-                <h2 className="mt-3 text-3xl font-bold text-ancoro-navy-950">Entrar na plataforma</h2>
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-ancoro-teal-600">{t('form.eyebrow')}</p>
+                <h2 className="mt-3 text-3xl font-bold text-ancoro-navy-950">{t('form.title')}</h2>
                 <p className="mt-3 text-sm leading-7 text-ancoro-navy-600">
-                  Use suas credenciais para acessar o ambiente de gestão e colaboração dos requisitos.
+                  {t('form.subtitle')}
                 </p>
               </div>
 
@@ -98,7 +104,7 @@ export default function Login() {
               <form onSubmit={handleSubmit} className="mt-8 space-y-5">
                 <div>
                   <label htmlFor="email" className="mb-2 block text-sm font-medium text-ancoro-navy-700">
-                    Email
+                    {t('form.emailLabel')}
                   </label>
                   <input
                     type="email"
@@ -108,13 +114,13 @@ export default function Login() {
                     required
                     disabled={isLoading}
                     className="w-full rounded-2xl border border-ancoro-navy-100 bg-white/85 px-4 py-3 text-ancoro-navy-900 shadow-sm outline-none transition placeholder:text-ancoro-navy-300 focus:border-ancoro-teal-400 focus:ring-4 focus:ring-ancoro-teal-100 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="seu.email@exemplo.com"
+                    placeholder={t('form.emailPlaceholder')}
                   />
                 </div>
 
                 <div>
                   <label htmlFor="password" className="mb-2 block text-sm font-medium text-ancoro-navy-700">
-                    Senha
+                    {t('form.passwordLabel')}
                   </label>
                   <input
                     type="password"
@@ -124,7 +130,7 @@ export default function Login() {
                     required
                     disabled={isLoading}
                     className="w-full rounded-2xl border border-ancoro-navy-100 bg-white/85 px-4 py-3 text-ancoro-navy-900 shadow-sm outline-none transition placeholder:text-ancoro-navy-300 focus:border-ancoro-teal-400 focus:ring-4 focus:ring-ancoro-teal-100 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="Digite sua senha"
+                    placeholder={t('form.passwordPlaceholder')}
                   />
                 </div>
 
@@ -133,14 +139,14 @@ export default function Login() {
                   disabled={isLoading}
                   className="w-full rounded-2xl bg-ancoro-navy-900 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-ancoro-navy-900/20 transition hover:-translate-y-0.5 hover:bg-ancoro-navy-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isLoading ? 'Entrando...' : 'Entrar'}
+                  {isLoading ? t('form.submitting') : t('form.submit')}
                 </button>
               </form>
 
               <div className="mt-8 rounded-[24px] border border-ancoro-navy-100 bg-white/80 p-5">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-ancoro-navy-900">Credenciais de demonstração</p>
-                  <span className="rounded-full bg-ancoro-teal-50 px-3 py-1 text-xs font-medium text-ancoro-teal-700">Senha: `demo123`</span>
+                  <p className="text-sm font-semibold text-ancoro-navy-900">{t('demo.title')}</p>
+                  <span className="rounded-full bg-ancoro-teal-50 px-3 py-1 text-xs font-medium text-ancoro-teal-700">{t('demo.passwordBadge')}</span>
                 </div>
                 <div className="mt-4 space-y-3">
                   {demoProfiles.map((profile) => (

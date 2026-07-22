@@ -1,0 +1,31 @@
+{
+  "subtitle": "Metrics Dashboard",
+  "loading": "Loading metrics...",
+  "empty": "No project selected or error loading metrics.",
+  "kpi": {
+    "validationRate": "Validation Rate",
+    "validationRateHint": "{{validated}} + {{approved}} of {{total}}",
+    "openConflicts": "Open Conflicts",
+    "openConflictsHint": "Requirements with CONFLICT status",
+    "pendingIntegrations": "Pending Integrations",
+    "pendingIntegrationsHint": "of {{total}} total in the matrix",
+    "circularDependencies": "Circular Dep.",
+    "circularDependenciesHint": "Dependency loops detected",
+    "totalRequirements": "Total Requirements",
+    "totalIntegrations": "Total Integrations",
+    "recentChanges": "Changes (24h)",
+    "recentComments": "Comments (24h)"
+  },
+  "byStatus": "Requirements by Status",
+  "byModule": "Requirements by {{label}}",
+  "consultants": {
+    "title": "Consultants with Pending Items",
+    "consultant": "Consultant",
+    "total": "Total",
+    "pending": "Pending",
+    "conflicts": "Conflicts",
+    "status": "Status",
+    "hasPendencies": "Pending",
+    "upToDate": "Up to date"
+  }
+}

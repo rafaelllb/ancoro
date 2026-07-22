@@ -1,0 +1,84 @@
+{
+  "brandMethod": "Ancora ReqOps Method",
+  "badges": {
+    "governance": "Governança de Requisitos",
+    "foundation": "Foundation-first"
+  },
+  "hero": {
+    "pill": "Gestão de requisitos para projetos onde cada decisão precisa deixar rastro",
+    "headline": "Requisitos organizados de verdade. Não só documentados.",
+    "subtitle": "Feita para times onde escopo mal definido vira retrabalho caro. Requisitos estruturados, dependências mapeadas, validações rastreáveis.",
+    "ctaAuthenticated": "Abrir Dashboard",
+    "ctaGuest": "Acessar Plataforma",
+    "ctaDemo": "Ver demonstração",
+    "highlights": [
+      "Menos reunião para decidir o que já foi decidido",
+      "Cada área sabe o que impacta o trabalho dela",
+      "Exporta do jeito que o cliente precisa ver"
+    ],
+    "panel": {
+      "eyebrow": "Painel executivo",
+      "title": "O que um PM precisa e o que um stakeholder consegue ler.",
+      "items": [
+        {
+          "title": "Requisitos organizados",
+          "text": "Cada campo existe por uma razão. Nada solto."
+        },
+        {
+          "title": "Decisões auditáveis",
+          "text": "Quando alguém perguntar 'quem aprovou isso?', a resposta já está lá."
+        },
+        {
+          "title": "Visão cross-áreas",
+          "text": "O que impacta Faturamento quando Contratos muda. Visível antes de virar problema."
+        }
+      ]
+    }
+  },
+  "features": {
+    "eyebrow": "Recursos principais",
+    "title": "Três pontos onde projetos normalmente travam",
+    "subtitle": "Cada módulo foi pensado a partir de problemas reais em levantamentos de escopo.",
+    "items": [
+      {
+        "title": "Requisitos 5W2H",
+        "description": "Cada requisito precisa de um dono, um motivo e uma data. O 5W2H coloca isso em estrutura antes que o escopo vire conversa de corredor."
+      },
+      {
+        "title": "Matriz de Cruzamento",
+        "description": "Um módulo depende do outro? A integração afeta faturamento? A matriz mostra isso enquanto ainda dá tempo de agir."
+      },
+      {
+        "title": "Colaboração Real-time",
+        "description": "Comentários, status e histórico de decisão no mesmo lugar. Sem precisar procurar no e-mail de três semanas atrás."
+      }
+    ]
+  },
+  "howItWorks": {
+    "eyebrow": "Fluxo de trabalho",
+    "title": "Três etapas. Nenhum achismo no meio.",
+    "subtitle": "O que entra estruturado, sai estruturado. Sem perder o rigor no caminho.",
+    "steps": [
+      {
+        "number": "01",
+        "title": "Estruture o escopo",
+        "description": "Cada requisito com quem decidiu, por que foi decidido assim, e o que muda se o escopo virar."
+      },
+      {
+        "number": "02",
+        "title": "Conecte os impactos",
+        "description": "Antes de alguém ser pego de surpresa numa reunião de validação, você já sabe onde está o conflito."
+      },
+      {
+        "number": "03",
+        "title": "Valide com clareza",
+        "description": "Gere o material de validação direto da plataforma. O que o cliente vê é o que está na fonte."
+      }
+    ]
+  },
+  "footer": {
+    "tagline": "Para projetos onde uma decisão mal documentada custa caro.",
+    "ctaAuthenticated": "Ir para o ambiente",
+    "ctaGuest": "Começar agora"
+  }
+}

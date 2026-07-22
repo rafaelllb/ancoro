@@ -1,0 +1,39 @@
+{
+  "switcher": {
+    "selectProject": "Selecionar projeto",
+    "none": "Nenhum projeto",
+    "empty": "Nenhum projeto disponível",
+    "createNew": "Criar Novo Projeto",
+    "requirements": "{{count}} requisitos",
+    "members": "{{count}} membros"
+  },
+  "settings": {
+    "title": "Configurações do Projeto",
+    "idPreview": "Formato de ID gerado:",
+    "moduleLabelField": "Label da coluna de categorização",
+    "moduleLabelHint": "Exemplo: Área, Frente, Disciplina, Squad ou Sistema. O campo técnico continua sendo `module`.",
+    "existingRequirementsWarning": "Este projeto já possui {{count}} requisito(s)",
+    "existingRequirementsHint": "Alterar o padrão não renomeia requisitos existentes. Novos requisitos seguirão o novo padrão.",
+    "prefix": "Prefixo",
+    "prefixHint": "1-{{max}} caracteres alfanuméricos (ex: REQ, US, PROJ1)",
+    "separator": "Separador",
+    "separatorHint": "Opcional. Aceita qualquer separador com até {{max}} caracteres, inclusive vazio.",
+    "digitCount": "Quantidade de dígitos",
+    "digitCountHint": "Use de {{min}} a {{max}} dígitos. Números menores serão preenchidos com zeros à esquerda.",
+    "saveError": "Erro ao salvar configurações",
+    "prefixRequired": "Prefixo é obrigatório",
+    "prefixMaxLength": "Prefixo deve ter no máximo {{max}} caracteres",
+    "prefixAlphanumeric": "Prefixo deve conter apenas letras e números",
+    "separatorMaxLength": "Separador deve ter no máximo {{max}} caracteres",
+    "digitCountRange": "Quantidade de dígitos deve ficar entre {{min}} e {{max}}"
+  },
+  "danger": {
+    "title": "Zona de perigo",
+    "description": "Excluir o projeto remove permanentemente todos os requisitos, membros, matriz de cruzamento e sprints. Esta ação é irreversível.",
+    "deleteButton": "Excluir projeto",
+    "confirmLabel": "Para confirmar, digite o nome do projeto:",
+    "confirmButton": "Excluir definitivamente",
+    "deleteSuccess": "Projeto \"{{name}}\" excluído com sucesso",
+    "deleteError": "Erro ao excluir projeto"
+  }
+}

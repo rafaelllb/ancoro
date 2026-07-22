@@ -1,0 +1,31 @@
+{
+  "brandMethod": "Ancora ReqOps Method",
+  "hero": {
+    "eyebrow": "Governança de requisitos",
+    "headline": "Um acesso mais elegante para uma operação mais confiável.",
+    "subtitle": "Centralize requisitos, decisões e dependências em uma experiência mais executiva, limpa e preparada para projetos complexos.",
+    "cards": {
+      "traceabilityTitle": "Rastreabilidade",
+      "traceabilityText": "Histórico, comentários e evolução preservados",
+      "crossTitle": "Visão cross-áreas",
+      "crossText": "Conflitos e impactos com leitura mais clara"
+    },
+    "footer": "Foundation-first · Estabilidade, Precisão e Confiabilidade"
+  },
+  "form": {
+    "eyebrow": "Acesso seguro",
+    "title": "Entrar na plataforma",
+    "subtitle": "Use suas credenciais para acessar o ambiente de gestão e colaboração dos requisitos.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "seu.email@exemplo.com",
+    "passwordLabel": "Senha",
+    "passwordPlaceholder": "Digite sua senha",
+    "submit": "Entrar",
+    "submitting": "Entrando...",
+    "invalidCredentials": "Email ou senha inválidos"
+  },
+  "demo": {
+    "title": "Credenciais de demonstração",
+    "passwordBadge": "Senha: `demo123`"
+  }
+}

@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 interface NavItem {
   label: string
@@ -28,6 +29,7 @@ interface MobileNavProps {
 export function MobileNav({ items, userName, userRole, onLogout }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false)
   const location = useLocation()
+  const { t } = useTranslation(['nav', 'common'])
 
   // Fecha menu ao mudar de rota
   useEffect(() => {
@@ -53,7 +55,7 @@ export function MobileNav({ items, userName, userRole, onLogout }: MobileNavProp
         type="button"
         onClick={() => setIsOpen(true)}
         className="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-        aria-label="Abrir menu"
+        aria-label={t('nav:openMenu')}
         aria-expanded={isOpen}
       >
         <svg
@@ -92,19 +94,19 @@ export function MobileNav({ items, userName, userRole, onLogout }: MobileNavProp
             `}
             role="dialog"
             aria-modal="true"
-            aria-label="Menu de navegação"
+            aria-label={t('nav:menuLabel')}
           >
             {/* Header do drawer */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Ancoro</h2>
-                <p className="text-xs text-gray-500">Dashboard de Requisitos</p>
+                <h2 className="text-lg font-bold text-gray-900">{t('common:appName')}</h2>
+                <p className="text-xs text-gray-500">{t('common:appSubtitle')}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
                 className="p-2 text-gray-400 hover:text-gray-600 rounded-md transition-colors"
-                aria-label="Fechar menu"
+                aria-label={t('nav:closeMenu')}
               >
                 <svg
                   className="w-5 h-5"
@@ -181,7 +183,7 @@ export function MobileNav({ items, userName, userRole, onLogout }: MobileNavProp
                       d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                     />
                   </svg>
-                  Sair
+                  {t('nav:logout')}
                 </button>
               </div>
             )}

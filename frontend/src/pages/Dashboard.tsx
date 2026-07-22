@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { useRequirements } from '../hooks/useRequirements'
 import { useCurrentProject } from '../hooks/useProjects'
@@ -19,18 +20,21 @@ import CreateProjectModal from '../components/CreateProjectModal'
 import ListConfigModal from '../components/ListConfigModal'
 import { NotificationBell } from '../components/NotificationBell'
 import { MobileNav, NavIcons } from '../components/MobileNav'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 import { Requirement } from '../services/api'
 import { patternFromProject } from '../utils/reqIdPattern'
 
-const navItems = [
-  { label: 'Dashboard', path: '/dashboard', icon: NavIcons.dashboard },
-  { label: 'Grafo de Dependências', path: '/dependency-graph', icon: NavIcons.graph },
-  { label: 'Matriz de Cruzamento', path: '/cross-matrix', icon: NavIcons.matrix },
-  { label: 'Métricas', path: '/metrics', icon: NavIcons.metrics },
-]
-
 export default function Dashboard() {
   const { user, logout } = useAuth()
+  const { t } = useTranslation(['dashboard', 'nav', 'common'])
+
+  // Itens de navegação com labels traduzidos (recriados a cada render para refletir troca de idioma)
+  const navItems = [
+    { label: t('nav:dashboard'), path: '/dashboard', icon: NavIcons.dashboard },
+    { label: t('nav:dependencyGraph'), path: '/dependency-graph', icon: NavIcons.graph },
+    { label: t('nav:crossMatrix'), path: '/cross-matrix', icon: NavIcons.matrix },
+    { label: t('nav:metrics'), path: '/metrics', icon: NavIcons.metrics },
+  ]
   const { currentProject, projects, setCurrentProject } = useCurrentProject()
   const projectId = currentProject?.id || ''
   const { moduleLabelPlural } = useProjectTerminology(projectId)
@@ -106,8 +110,8 @@ export default function Dashboard() {
             </div>
 
             <div className="hidden sm:block">
-              <h1 className="text-xl font-bold text-ancoro-navy-950 lg:text-2xl">Ancoro</h1>
-              <p className="text-xs uppercase tracking-[0.22em] text-ancoro-teal-600 lg:text-sm">Dashboard de Requisitos</p>
+              <h1 className="text-xl font-bold text-ancoro-navy-950 lg:text-2xl">{t('common:appName')}</h1>
+              <p className="text-xs uppercase tracking-[0.22em] text-ancoro-teal-600 lg:text-sm">{t('common:appSubtitle')}</p>
             </div>
 
             <div className="hidden min-w-0 sm:block">
@@ -128,7 +132,7 @@ export default function Dashboard() {
                   to="/dependency-graph"
                   className="rounded-xl bg-ancoro-navy-800 px-4 py-2.5 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-ancoro-navy-700"
                 >
-                  Grafo
+                  {t('nav:graphShort')}
                 </Link>
               )}
               {canViewMatrix && (
@@ -136,7 +140,7 @@ export default function Dashboard() {
                   to="/cross-matrix"
                   className="rounded-xl bg-ancoro-teal-500 px-4 py-2.5 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-ancoro-teal-600"
                 >
-                  Matriz
+                  {t('nav:matrixShort')}
                 </Link>
               )}
               {canViewMetrics && (
@@ -144,10 +148,12 @@ export default function Dashboard() {
                   to="/metrics"
                   className="rounded-xl border border-ancoro-teal-200 bg-white/80 px-4 py-2.5 text-sm font-medium text-ancoro-teal-700 transition hover:-translate-y-0.5 hover:bg-ancoro-teal-50"
                 >
-                  Métricas
+                  {t('nav:metrics')}
                 </Link>
               )}
             </div>
+
+            <LanguageSwitcher />
 
             <NotificationBell />
 
@@ -166,7 +172,7 @@ export default function Dashboard() {
               onClick={logout}
               className="hidden rounded-xl border border-ancoro-navy-100 bg-white/80 px-4 py-2.5 text-sm font-medium text-ancoro-navy-700 transition hover:bg-ancoro-navy-50 lg:block"
             >
-              Sair
+              {t('nav:logout')}
             </button>
           </div>
         </div>
@@ -177,29 +183,29 @@ export default function Dashboard() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-ancoro-teal-600">
-                {currentProject ? currentProject.client : 'Workspace Ancoro'}
+                {currentProject ? currentProject.client : t('dashboard:workspace')}
               </p>
               <h2 className="mt-2 text-3xl font-bold text-ancoro-navy-950">
-                {currentProject?.name || 'Selecione um projeto para começar'}
+                {currentProject?.name || t('dashboard:selectProject')}
               </h2>
               <p className="mt-3 text-sm leading-7 text-ancoro-navy-600">
-                Visualize requisitos, acompanhe a saúde das validações e mantenha o alinhamento entre áreas em um espaço mais claro e executivo.
+                {t('dashboard:intro')}
               </p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[420px]">
               <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-ancoro-navy-100">
-                <p className="text-xs uppercase tracking-[0.18em] text-ancoro-navy-500">Requisitos</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-ancoro-navy-500">{t('dashboard:stats.requirements')}</p>
                 <p className="mt-2 text-3xl font-bold text-ancoro-navy-950">{dashboardStats.total}</p>
               </div>
               <div className="rounded-2xl bg-ancoro-teal-50/90 p-4 ring-1 ring-ancoro-teal-100">
-                <p className="text-xs uppercase tracking-[0.18em] text-ancoro-teal-700">Validados</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-ancoro-teal-700">{t('dashboard:stats.validated')}</p>
                 <p className="mt-2 text-3xl font-bold text-ancoro-teal-700">{dashboardStats.validated}</p>
               </div>
               <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-ancoro-navy-100">
-                <p className="text-xs uppercase tracking-[0.18em] text-ancoro-navy-500">Cobertura</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-ancoro-navy-500">{t('dashboard:stats.coverage')}</p>
                 <p className="mt-2 text-3xl font-bold text-ancoro-navy-950">{dashboardStats.coverage}%</p>
-                <p className="mt-1 text-xs text-rose-600">{dashboardStats.conflicts} conflito(s) ativo(s)</p>
+                <p className="mt-1 text-xs text-rose-600">{t('dashboard:stats.activeConflicts', { count: dashboardStats.conflicts })}</p>
               </div>
             </div>
           </div>
@@ -215,8 +221,8 @@ export default function Dashboard() {
           <div className="ancoro-panel-strong min-w-0 rounded-[28px] p-3 lg:p-4">
             <div className="mb-4 flex flex-col gap-3 lg:mb-6 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-ancoro-navy-950 lg:text-xl">Requisitos</h3>
-                <p className="text-sm text-ancoro-navy-500">Base operacional estruturada para acompanhamento e revisão.</p>
+                <h3 className="text-lg font-semibold text-ancoro-navy-950 lg:text-xl">{t('dashboard:list.title')}</h3>
+                <p className="text-sm text-ancoro-navy-500">{t('dashboard:list.subtitle')}</p>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -227,7 +233,7 @@ export default function Dashboard() {
                   className="h-4 w-4 rounded border-gray-300 text-ancoro-teal-500 focus:ring-ancoro-teal-500"
                 />
                 <label htmlFor="showAllModules" className="text-sm text-ancoro-navy-600">
-                  Ver todas as {moduleLabelPlural}
+                  {t('dashboard:list.showAll', { label: moduleLabelPlural })}
                 </label>
               </div>
             </div>
@@ -238,10 +244,10 @@ export default function Dashboard() {
                   <svg className="h-5 w-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
-                  <span className="font-medium">Nenhum projeto atribuído</span>
+                  <span className="font-medium">{t('dashboard:noProject.title')}</span>
                 </div>
                 <p className="ml-7 mt-1 text-sm text-amber-700">
-                  Você não está associado a nenhum projeto. Entre em contato com um gerente ou administrador para ser adicionado.
+                  {t('dashboard:noProject.description')}
                 </p>
               </div>
             )}
@@ -251,14 +257,14 @@ export default function Dashboard() {
                 type="button"
                 onClick={() => setIsCreateModalOpen(true)}
                 disabled={!projectId}
-                title={!projectId ? 'Selecione um projeto primeiro' : 'Criar novo requisito'}
+                title={!projectId ? t('dashboard:actions.newRequirementTitleDisabled') : t('dashboard:actions.newRequirementTitle')}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-ancoro-teal-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-ancoro-teal-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-ancoro-teal-600 sm:flex-initial lg:px-4"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="hidden sm:inline">Novo Requisito</span>
-                <span className="sm:hidden">Novo</span>
+                <span className="hidden sm:inline">{t('dashboard:actions.newRequirement')}</span>
+                <span className="sm:hidden">{t('dashboard:actions.newShort')}</span>
               </button>
 
               {canConfigureIdPattern && (
@@ -267,7 +273,7 @@ export default function Dashboard() {
                   onClick={() => setIsSettingsModalOpen(true)}
                   disabled={!projectId}
                   className="rounded-xl border border-ancoro-navy-100 bg-white/90 p-2 text-ancoro-navy-600 transition hover:bg-ancoro-navy-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Configurar padrão de ID"
+                  title={t('dashboard:actions.configureIdPattern')}
                 >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -282,7 +288,7 @@ export default function Dashboard() {
                   onClick={() => setIsListConfigModalOpen(true)}
                   disabled={!projectId}
                   className="rounded-xl border border-ancoro-navy-100 bg-white/90 p-2 text-ancoro-navy-600 transition hover:bg-ancoro-navy-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  title={`Configurar listas (${moduleLabelPlural}, Status, etc.)`}
+                  title={t('dashboard:actions.configureLists', { label: moduleLabelPlural })}
                 >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -300,7 +306,7 @@ export default function Dashboard() {
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span>Planilha</span>
+                  <span>{t('dashboard:actions.spreadsheet')}</span>
                   <svg className={`h-4 w-4 transition-transform ${isSpreadsheetMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -320,7 +326,7 @@ export default function Dashboard() {
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
-                      Exportar
+                      {t('dashboard:actions.export')}
                     </button>
                     {canImportRequirements && (
                       <button
@@ -335,7 +341,7 @@ export default function Dashboard() {
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
-                        Importar
+                        {t('dashboard:actions.import')}
                       </button>
                     )}
                   </div>
@@ -351,8 +357,8 @@ export default function Dashboard() {
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span className="hidden sm:inline">Exportar BPD</span>
-                  <span className="sm:hidden">BPD</span>
+                  <span className="hidden sm:inline">{t('dashboard:actions.exportBpd')}</span>
+                  <span className="sm:hidden">{t('dashboard:actions.exportBpdShort')}</span>
                 </button>
               )}
 
@@ -365,8 +371,8 @@ export default function Dashboard() {
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                   </svg>
-                  <span className="hidden sm:inline">Gerenciar Membros</span>
-                  <span className="sm:hidden">Membros</span>
+                  <span className="hidden sm:inline">{t('dashboard:actions.manageMembers')}</span>
+                  <span className="sm:hidden">{t('dashboard:actions.manageMembersShort')}</span>
                 </button>
               )}
             </div>

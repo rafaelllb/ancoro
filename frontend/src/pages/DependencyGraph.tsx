@@ -10,6 +10,7 @@
 
 import { useState, useCallback } from 'react'
 import { Link, Navigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrentProject } from '../hooks/useProjects'
 import { useCapabilities } from '../hooks/useCapabilities'
@@ -19,13 +20,8 @@ import { useProjectModules } from '../hooks/useProjectLists'
 import { useGraphData, GraphNode } from '../hooks/useGraphData'
 import RequirementsGraph from '../components/graph'
 
-// ===== STATUS LABELS/COLORS (para o painel de detalhes) =====
-
-const STATUS_LABELS: Record<string, string> = {
-  'done': 'Concluído',
-  'in-progress': 'Em progresso',
-  'pending': 'Pendente',
-}
+// ===== STATUS COLORS (para o painel de detalhes) =====
+// Labels são traduzidos via enums:graphStatus; aqui só a apresentação (cores).
 
 const STATUS_COLORS: Record<string, string> = {
   'done': '#1D9E75',
@@ -34,6 +30,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function DependencyGraph() {
+  const { t } = useTranslation(['graph', 'nav', 'enums'])
   const { user, logout } = useAuth()
   const { currentProject } = useCurrentProject()
   const projectId = currentProject?.id || ''
@@ -82,10 +79,10 @@ export default function DependencyGraph() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900">
-              Grafo de Dependências
+              {t('graph:title')}
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
-              Visualização interativa das conexões entre requisitos
+              {t('graph:subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -93,21 +90,21 @@ export default function DependencyGraph() {
               to="/dashboard"
               className="px-4 py-2 text-sm text-ancoro-navy-600 hover:text-ancoro-navy-700 border border-ancoro-navy-300 rounded-lg hover:bg-ancoro-navy-50"
             >
-              &larr; Requisitos
+              {t('nav:requirementsLink')}
             </Link>
             {canViewMetrics && (
               <Link
                 to="/metrics"
                 className="px-4 py-2 text-sm text-ancoro-teal-500 hover:text-ancoro-teal-600 border border-ancoro-teal-300 rounded-lg hover:bg-ancoro-teal-50"
               >
-                Métricas
+                {t('nav:metrics')}
               </Link>
             )}
             <Link
               to="/cross-matrix"
               className="px-4 py-2 text-sm text-ancoro-teal-500 hover:text-ancoro-teal-600 border border-ancoro-teal-300 rounded-lg hover:bg-ancoro-teal-50"
             >
-              Matriz
+              {t('nav:matrixShort')}
             </Link>
             <span className="text-sm text-gray-600 hidden lg:inline">
               {user?.name} ({user?.role})
@@ -116,7 +113,7 @@ export default function DependencyGraph() {
               onClick={logout}
               className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50"
             >
-              Logout
+              {t('nav:logout')}
             </button>
           </div>
         </div>
@@ -124,7 +121,7 @@ export default function DependencyGraph() {
 
       {/* Toolbar — filtros por módulo + caminho crítico + zoom */}
       <div className="flex items-center gap-2 px-4 py-2 bg-[#1E1E2E] text-[#CDD6F4] text-[13px] select-none flex-wrap flex-shrink-0">
-        <span className="font-semibold mr-1 text-[#A6ADC8]">Filtro:</span>
+        <span className="font-semibold mr-1 text-[#A6ADC8]">{t('graph:toolbar.filter')}</span>
 
         {/* Botão "Todos" */}
         <button
@@ -135,7 +132,7 @@ export default function DependencyGraph() {
               : 'bg-transparent border-[#45475A] text-[#CDD6F4] hover:bg-[#313244]'
           }`}
         >
-          Todos
+          {t('graph:toolbar.all')}
         </button>
 
         {/* Botões por módulo (dinâmicos) */}
@@ -174,7 +171,7 @@ export default function DependencyGraph() {
               : 'bg-transparent border-[#45475A] text-[#CDD6F4] hover:bg-[#313244]'
           }`}
         >
-          {showOnlyConnected ? 'Apenas Conectados' : 'Todos os Nós'}
+          {showOnlyConnected ? t('graph:toolbar.onlyConnected') : t('graph:toolbar.allNodes')}
         </button>
 
         {/* Toggle caminho crítico */}
@@ -186,12 +183,12 @@ export default function DependencyGraph() {
               : 'bg-transparent border-[#45475A] text-[#CDD6F4] hover:bg-[#313244]'
           }`}
         >
-          Caminho Crítico
+          {t('graph:toolbar.criticalPath')}
         </button>
 
         {/* Zoom info (alinhado à direita) */}
         <span className="ml-auto text-[11px] text-[#6C7086]">
-          Zoom: {zoomPercent}%
+          {t('graph:toolbar.zoom', { percent: zoomPercent })}
         </span>
       </div>
 
@@ -201,7 +198,7 @@ export default function DependencyGraph() {
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
-              <p className="mt-2 text-gray-600">Carregando requisitos...</p>
+              <p className="mt-2 text-gray-600">{t('graph:loading')}</p>
             </div>
           </div>
         ) : nodes.length === 0 && requirements.length > 0 ? (
@@ -213,16 +210,16 @@ export default function DependencyGraph() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum requisito com dependências</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('graph:emptyConnected.title')}</h3>
               <p className="text-sm text-gray-500 mb-4">
-                Ative "Todos os Nós" no toolbar para visualizar todos os requisitos e criar conexões entre eles.
+                {t('graph:emptyConnected.description')}
               </p>
               <button
                 type="button"
                 onClick={() => setShowOnlyConnected(false)}
                 className="px-4 py-2 bg-ancoro-teal-500 hover:bg-ancoro-teal-600 text-white rounded-lg text-sm font-medium transition-colors"
               >
-                Mostrar Todos os Nós
+                {t('graph:emptyConnected.cta')}
               </button>
             </div>
           </div>
@@ -235,15 +232,15 @@ export default function DependencyGraph() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum requisito encontrado</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('graph:emptyProject.title')}</h3>
               <p className="text-sm text-gray-500">
-                Crie requisitos no Dashboard para visualizar o grafo de dependências.
+                {t('graph:emptyProject.description')}
               </p>
               <Link
                 to="/dashboard"
                 className="inline-block mt-4 px-4 py-2 bg-ancoro-teal-500 hover:bg-ancoro-teal-600 text-white rounded-lg text-sm font-medium transition-colors"
               >
-                Ir para o Dashboard
+                {t('graph:emptyProject.cta')}
               </Link>
             </div>
           </div>
@@ -300,7 +297,7 @@ export default function DependencyGraph() {
                   color: STATUS_COLORS[selectedNode.status] || '#B4B2A9',
                 }}
               >
-                {STATUS_LABELS[selectedNode.status] || selectedNode.status}
+                {t(`enums:graphStatus.${selectedNode.status}`, { defaultValue: selectedNode.status })}
               </span>
             </div>
 
@@ -314,7 +311,7 @@ export default function DependencyGraph() {
               to="/dashboard"
               className="inline-block mt-3 text-xs text-ancoro-teal-500 hover:text-ancoro-teal-600 font-medium"
             >
-              Ver requisito no Dashboard &rarr;
+              {t('graph:detail.viewInDashboard')}
             </Link>
           </div>
         )}
@@ -323,21 +320,21 @@ export default function DependencyGraph() {
         <div className="absolute bottom-3 left-3 flex gap-3.5 text-[11px] text-gray-600 bg-white/85 px-3 py-1.5 rounded-md border border-gray-200">
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full" style={{ background: '#1D9E75' }} />
-            Concluído
+            {t('enums:graphStatus.done')}
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full" style={{ background: '#EF9F27' }} />
-            Em progresso
+            {t('enums:graphStatus.in-progress')}
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full" style={{ background: '#B4B2A9' }} />
-            Pendente
+            {t('enums:graphStatus.pending')}
           </div>
         </div>
 
         {/* Dica de uso (bottom-right) */}
         <div className="absolute bottom-3 right-3 text-[10px] text-gray-400 bg-white/85 px-3 py-1.5 rounded-md border border-gray-200">
-          Ctrl+clique para multiseleção &bull; arraste no fundo para seleção em caixa &bull; Alt+arraste para pan &bull; setas movem a seleção
+          {t('graph:usageHint')}
         </div>
       </div>
     </div>

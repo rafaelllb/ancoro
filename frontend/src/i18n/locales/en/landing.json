@@ -1,0 +1,84 @@
+{
+  "brandMethod": "Ancora ReqOps Method",
+  "badges": {
+    "governance": "Requirements Governance",
+    "foundation": "Foundation-first"
+  },
+  "hero": {
+    "pill": "Requirements management for projects where every decision must leave a trail",
+    "headline": "Requirements truly organized. Not just documented.",
+    "subtitle": "Built for teams where poorly defined scope turns into costly rework. Structured requirements, mapped dependencies, traceable validations.",
+    "ctaAuthenticated": "Open Dashboard",
+    "ctaGuest": "Access Platform",
+    "ctaDemo": "See demo",
+    "highlights": [
+      "Fewer meetings to decide what was already decided",
+      "Each area knows what impacts its own work",
+      "Export the way the client needs to see it"
+    ],
+    "panel": {
+      "eyebrow": "Executive panel",
+      "title": "What a PM needs and what a stakeholder can actually read.",
+      "items": [
+        {
+          "title": "Organized requirements",
+          "text": "Every field exists for a reason. Nothing loose."
+        },
+        {
+          "title": "Auditable decisions",
+          "text": "When someone asks 'who approved this?', the answer is already there."
+        },
+        {
+          "title": "Cross-area view",
+          "text": "What impacts Billing when Contracts change. Visible before it becomes a problem."
+        }
+      ]
+    }
+  },
+  "features": {
+    "eyebrow": "Key features",
+    "title": "Three points where projects usually stall",
+    "subtitle": "Each module was designed from real problems in scope gathering.",
+    "items": [
+      {
+        "title": "5W2H Requirements",
+        "description": "Every requirement needs an owner, a reason and a date. 5W2H puts that into structure before scope becomes hallway talk."
+      },
+      {
+        "title": "Cross Matrix",
+        "description": "Does one module depend on another? Does the integration affect billing? The matrix shows it while there's still time to act."
+      },
+      {
+        "title": "Real-time Collaboration",
+        "description": "Comments, status and decision history in the same place. No more digging through an email from three weeks ago."
+      }
+    ]
+  },
+  "howItWorks": {
+    "eyebrow": "Workflow",
+    "title": "Three steps. No guesswork in between.",
+    "subtitle": "What comes in structured, goes out structured. Without losing rigor along the way.",
+    "steps": [
+      {
+        "number": "01",
+        "title": "Structure the scope",
+        "description": "Every requirement with who decided, why it was decided that way, and what changes if the scope shifts."
+      },
+      {
+        "number": "02",
+        "title": "Connect the impacts",
+        "description": "Before someone is caught off guard in a validation meeting, you already know where the conflict is."
+      },
+      {
+        "number": "03",
+        "title": "Validate with clarity",
+        "description": "Generate the validation material straight from the platform. What the client sees is what's at the source."
+      }
+    ]
+  },
+  "footer": {
+    "tagline": "For projects where a poorly documented decision costs dearly.",
+    "ctaAuthenticated": "Go to the environment",
+    "ctaGuest": "Get started"
+  }
+}

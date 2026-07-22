@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { Project } from '../hooks/useProjects'
 
@@ -9,12 +10,13 @@ interface ProjectSwitcherProps {
   onCreateProject?: () => void
 }
 
-const statusConfig: Record<string, { label: string; color: string }> = {
-  DISCOVERY: { label: 'Discovery', color: 'bg-blue-100 text-blue-800' },
-  REALIZATION: { label: 'Realização', color: 'bg-yellow-100 text-yellow-800' },
-  GOLIVE: { label: 'Go-Live', color: 'bg-green-100 text-green-800' },
-  HYPERCARE: { label: 'Hypercare', color: 'bg-purple-100 text-purple-800' },
-  CLOSED: { label: 'Encerrado', color: 'bg-gray-100 text-gray-800' },
+// Apenas a cor do badge por status (o label vem do namespace `enums`, traduzido).
+const statusColors: Record<string, string> = {
+  DISCOVERY: 'bg-blue-100 text-blue-800',
+  REALIZATION: 'bg-yellow-100 text-yellow-800',
+  GOLIVE: 'bg-green-100 text-green-800',
+  HYPERCARE: 'bg-purple-100 text-purple-800',
+  CLOSED: 'bg-gray-100 text-gray-800',
 }
 
 export default function ProjectSwitcher({
@@ -24,6 +26,7 @@ export default function ProjectSwitcher({
   onCreateProject,
 }: ProjectSwitcherProps) {
   const { user } = useAuth()
+  const { t } = useTranslation(['projects', 'enums'])
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const canCreateProject = user?.role === 'ADMIN' || user?.role === 'MANAGER'
@@ -53,7 +56,7 @@ export default function ProjectSwitcher({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex min-w-[180px] max-w-[320px] items-center gap-3 rounded-2xl border border-ancoro-navy-100 bg-white/85 px-3 py-2.5 shadow-sm transition hover:bg-ancoro-navy-50"
-        title={currentProject ? `${currentProject.name} - ${currentProject.client}` : 'Selecionar projeto'}
+        title={currentProject ? `${currentProject.name} - ${currentProject.client}` : t('projects:switcher.selectProject')}
       >
         <svg className="h-5 w-5 flex-shrink-0 text-ancoro-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -61,7 +64,7 @@ export default function ProjectSwitcher({
 
         <div className="min-w-0 flex-1 text-left">
           <p className="truncate text-sm font-semibold text-ancoro-navy-950">
-            {currentProject?.name || 'Nenhum projeto'}
+            {currentProject?.name || t('projects:switcher.none')}
           </p>
           {currentProject?.client && (
             <p className="truncate text-xs text-ancoro-navy-500">{currentProject.client}</p>
@@ -81,10 +84,11 @@ export default function ProjectSwitcher({
       {isOpen && (
         <div className="absolute z-50 mt-2 max-h-80 w-72 overflow-y-auto rounded-2xl border border-ancoro-navy-100 bg-white/95 p-1 shadow-xl backdrop-blur">
           {projects.length === 0 ? (
-            <div className="px-4 py-3 text-sm text-ancoro-navy-500">Nenhum projeto disponível</div>
+            <div className="px-4 py-3 text-sm text-ancoro-navy-500">{t('projects:switcher.empty')}</div>
           ) : (
             projects.map((project) => {
-              const projStatus = statusConfig[project.status] || statusConfig.DISCOVERY
+              const statusColor = statusColors[project.status] || statusColors.DISCOVERY
+              const statusLabel = t(`enums:projectStatus.${project.status}`, { defaultValue: project.status })
               const isSelected = project.id === currentProject?.id
 
               return (
@@ -104,8 +108,8 @@ export default function ProjectSwitcher({
                       <p className="truncate text-xs text-ancoro-navy-500">{project.client}</p>
                     </div>
                     <div className="ml-2 flex flex-shrink-0 items-center gap-2">
-                      <span className={`rounded-full px-2 py-0.5 text-xs ${projStatus.color}`}>
-                        {projStatus.label}
+                      <span className={`rounded-full px-2 py-0.5 text-xs ${statusColor}`}>
+                        {statusLabel}
                       </span>
                       {isSelected && (
                         <svg className="h-4 w-4 text-ancoro-teal-600" fill="currentColor" viewBox="0 0 20 20">
@@ -121,8 +125,8 @@ export default function ProjectSwitcher({
 
                   {project._count && (
                     <div className="mt-1 flex gap-3 text-xs text-ancoro-navy-400">
-                      <span>{project._count.requirements} requisitos</span>
-                      <span>{project._count.users} membros</span>
+                      <span>{t('projects:switcher.requirements', { count: project._count.requirements })}</span>
+                      <span>{t('projects:switcher.members', { count: project._count.users })}</span>
                     </div>
                   )}
                 </button>
@@ -143,7 +147,7 @@ export default function ProjectSwitcher({
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="text-sm font-medium">Criar Novo Projeto</span>
+                <span className="text-sm font-medium">{t('projects:switcher.createNew')}</span>
               </button>
             </>
           )}

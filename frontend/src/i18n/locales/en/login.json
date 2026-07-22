@@ -1,0 +1,31 @@
+{
+  "brandMethod": "Ancora ReqOps Method",
+  "hero": {
+    "eyebrow": "Requirements governance",
+    "headline": "A more elegant entry point for a more reliable operation.",
+    "subtitle": "Centralize requirements, decisions and dependencies in a more executive, clean experience built for complex projects.",
+    "cards": {
+      "traceabilityTitle": "Traceability",
+      "traceabilityText": "History, comments and evolution preserved",
+      "crossTitle": "Cross-area view",
+      "crossText": "Conflicts and impacts with clearer reading"
+    },
+    "footer": "Foundation-first · Stability, Precision and Reliability"
+  },
+  "form": {
+    "eyebrow": "Secure access",
+    "title": "Sign in to the platform",
+    "subtitle": "Use your credentials to access the requirements management and collaboration environment.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "your.email@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "submit": "Sign in",
+    "submitting": "Signing in...",
+    "invalidCredentials": "Invalid email or password"
+  },
+  "demo": {
+    "title": "Demo credentials",
+    "passwordBadge": "Password: `demo123`"
+  }
+}

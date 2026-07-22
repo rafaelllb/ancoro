@@ -1,0 +1,38 @@
+{
+  "projectStatus": {
+    "DISCOVERY": "Discovery",
+    "REALIZATION": "Realization",
+    "GOLIVE": "Go-Live",
+    "HYPERCARE": "Hypercare",
+    "CLOSED": "Closed"
+  },
+  "reqStatus": {
+    "PENDING": "Pending",
+    "IN_PROGRESS": "In Progress",
+    "VALIDATED": "Validated",
+    "APPROVED": "Approved",
+    "CONFLICT": "Conflict",
+    "REJECTED": "Rejected"
+  },
+  "matrixStatus": {
+    "PENDING": "Pending",
+    "OK": "OK",
+    "CONFLICT": "Conflicts",
+    "CIRCULAR": "Circular"
+  },
+  "graphStatus": {
+    "done": "Done",
+    "in-progress": "In progress",
+    "pending": "Pending"
+  },
+  "modules": {
+    "ISU": "IS-U",
+    "CRM": "CRM",
+    "FICA": "FI-CA",
+    "DEVICE": "Device",
+    "SD": "SD",
+    "MM": "MM",
+    "PM": "PM",
+    "OTHER": "Others"
+  }
+}

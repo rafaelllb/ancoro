@@ -1,0 +1,14 @@
+{
+  "dashboard": "Dashboard",
+  "dependencyGraph": "Dependency Graph",
+  "crossMatrix": "Cross Matrix",
+  "metrics": "Metrics",
+  "graphShort": "Graph",
+  "matrixShort": "Matrix",
+  "logout": "Log out",
+  "requirementsLink": "← Requirements",
+  "members": "Members",
+  "menuLabel": "Navigation menu",
+  "openMenu": "Open menu",
+  "closeMenu": "Close menu"
+}

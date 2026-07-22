@@ -8,6 +8,7 @@
  */
 
 import { Link, Navigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrentProject } from '../hooks/useProjects'
@@ -19,29 +20,19 @@ import MetricsCharts from '../components/MetricsCharts'
 import { NotificationBell } from '../components/NotificationBell'
 import ProjectSwitcher from '../components/ProjectSwitcher'
 
-// Mapeamento de status para labels e cores
-const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
-  PENDING: { label: 'Pendente', color: 'text-yellow-700', bgColor: 'bg-yellow-100' },
-  IN_PROGRESS: { label: 'Em Progresso', color: 'text-ancoro-navy-700', bgColor: 'bg-ancoro-navy-100' },
-  VALIDATED: { label: 'Validado', color: 'text-green-700', bgColor: 'bg-green-100' },
-  APPROVED: { label: 'Aprovado', color: 'text-emerald-700', bgColor: 'bg-emerald-100' },
-  CONFLICT: { label: 'Conflito', color: 'text-red-700', bgColor: 'bg-red-100' },
-  REJECTED: { label: 'Rejeitado', color: 'text-gray-700', bgColor: 'bg-gray-100' },
-}
-
-// Mapeamento de módulos para nomes
-const MODULE_NAMES: Record<string, string> = {
-  ISU: 'IS-U',
-  CRM: 'CRM',
-  FICA: 'FI-CA',
-  DEVICE: 'Device',
-  SD: 'SD',
-  MM: 'MM',
-  PM: 'PM',
-  OTHER: 'Outros',
+// Mapeamento de status para cores. Os labels são traduzidos via enums:reqStatus
+// (fonte única no namespace `enums`), mantendo aqui apenas a apresentação.
+const STATUS_COLORS: Record<string, { color: string; bgColor: string }> = {
+  PENDING: { color: 'text-yellow-700', bgColor: 'bg-yellow-100' },
+  IN_PROGRESS: { color: 'text-ancoro-navy-700', bgColor: 'bg-ancoro-navy-100' },
+  VALIDATED: { color: 'text-green-700', bgColor: 'bg-green-100' },
+  APPROVED: { color: 'text-emerald-700', bgColor: 'bg-emerald-100' },
+  CONFLICT: { color: 'text-red-700', bgColor: 'bg-red-100' },
+  REJECTED: { color: 'text-gray-700', bgColor: 'bg-gray-100' },
 }
 
 export default function Metrics() {
+  const { t } = useTranslation(['metrics', 'nav', 'enums'])
   const { user, logout } = useAuth()
   const { canViewMetrics } = useCapabilities()
 
@@ -95,7 +86,7 @@ export default function Metrics() {
             <img src="/logo.png" alt="Ancoro" className="h-10" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Ancoro</h1>
-              <p className="text-sm text-gray-600">Dashboard de Métricas</p>
+              <p className="text-sm text-gray-600">{t('metrics:subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -108,13 +99,13 @@ export default function Metrics() {
               to="/dashboard"
               className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm transition-colors"
             >
-              Requisitos
+              {t('nav:dashboard')}
             </Link>
             <Link
               to="/cross-matrix"
               className="px-4 py-2 bg-ancoro-teal-500 hover:bg-ancoro-teal-600 text-white rounded text-sm transition-colors"
             >
-              Matriz de Cruzamento
+              {t('nav:crossMatrix')}
             </Link>
 
             <NotificationBell />
@@ -128,7 +119,7 @@ export default function Metrics() {
               onClick={logout}
               className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm transition-colors"
             >
-              Sair
+              {t('nav:logout')}
             </button>
           </div>
         </div>
@@ -158,7 +149,7 @@ export default function Metrics() {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            <span className="ml-2 text-gray-500">Carregando métricas...</span>
+            <span className="ml-2 text-gray-500">{t('metrics:loading')}</span>
           </div>
         ) : metrics ? (
           <div className="space-y-8">
@@ -168,7 +159,7 @@ export default function Metrics() {
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Taxa de Validação</p>
+                    <p className="text-sm font-medium text-gray-500">{t('metrics:kpi.validationRate')}</p>
                     <p className="text-3xl font-bold text-green-600">
                       {(metrics.validationRate * 100).toFixed(1)}%
                     </p>
@@ -190,8 +181,11 @@ export default function Metrics() {
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-gray-400">
-                  {metrics.requirementsByStatus['VALIDATED'] || 0} +{' '}
-                  {metrics.requirementsByStatus['APPROVED'] || 0} de {metrics.totalRequirements}
+                  {t('metrics:kpi.validationRateHint', {
+                    validated: metrics.requirementsByStatus['VALIDATED'] || 0,
+                    approved: metrics.requirementsByStatus['APPROVED'] || 0,
+                    total: metrics.totalRequirements,
+                  })}
                 </p>
               </div>
 
@@ -199,7 +193,7 @@ export default function Metrics() {
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Conflitos Abertos</p>
+                    <p className="text-sm font-medium text-gray-500">{t('metrics:kpi.openConflicts')}</p>
                     <p
                       className={`text-3xl font-bold ${
                         metrics.openConflicts > 0 ? 'text-red-600' : 'text-gray-400'
@@ -230,14 +224,14 @@ export default function Metrics() {
                     </svg>
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-gray-400">Requisitos com status CONFLICT</p>
+                <p className="mt-2 text-xs text-gray-400">{t('metrics:kpi.openConflictsHint')}</p>
               </div>
 
               {/* Integrações Pendentes */}
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Integrações Pendentes</p>
+                    <p className="text-sm font-medium text-gray-500">{t('metrics:kpi.pendingIntegrations')}</p>
                     <p
                       className={`text-3xl font-bold ${
                         metrics.pendingIntegrations > 0 ? 'text-yellow-600' : 'text-gray-400'
@@ -269,7 +263,7 @@ export default function Metrics() {
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-gray-400">
-                  de {metrics.totalIntegrations} total na matriz
+                  {t('metrics:kpi.pendingIntegrationsHint', { total: metrics.totalIntegrations })}
                 </p>
               </div>
 
@@ -277,7 +271,7 @@ export default function Metrics() {
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Dep. Circulares</p>
+                    <p className="text-sm font-medium text-gray-500">{t('metrics:kpi.circularDependencies')}</p>
                     <p
                       className={`text-3xl font-bold ${
                         metrics.circularDependencies > 0 ? 'text-purple-600' : 'text-gray-400'
@@ -308,7 +302,7 @@ export default function Metrics() {
                     </svg>
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-gray-400">Loops de dependência detectados</p>
+                <p className="mt-2 text-xs text-gray-400">{t('metrics:kpi.circularDependenciesHint')}</p>
               </div>
             </div>
 
@@ -316,25 +310,25 @@ export default function Metrics() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {/* Total Requisitos */}
               <div className="bg-white rounded-lg shadow p-4">
-                <p className="text-sm font-medium text-gray-500">Total Requisitos</p>
+                <p className="text-sm font-medium text-gray-500">{t('metrics:kpi.totalRequirements')}</p>
                 <p className="text-2xl font-bold text-gray-900">{metrics.totalRequirements}</p>
               </div>
 
               {/* Total Integrações */}
               <div className="bg-white rounded-lg shadow p-4">
-                <p className="text-sm font-medium text-gray-500">Total Integrações</p>
+                <p className="text-sm font-medium text-gray-500">{t('metrics:kpi.totalIntegrations')}</p>
                 <p className="text-2xl font-bold text-gray-900">{metrics.totalIntegrations}</p>
               </div>
 
               {/* Atividade 24h */}
               <div className="bg-white rounded-lg shadow p-4">
-                <p className="text-sm font-medium text-gray-500">Mudanças (24h)</p>
+                <p className="text-sm font-medium text-gray-500">{t('metrics:kpi.recentChanges')}</p>
                 <p className="text-2xl font-bold text-ancoro-teal-500">{metrics.recentChanges}</p>
               </div>
 
               {/* Comentários 24h */}
               <div className="bg-white rounded-lg shadow p-4">
-                <p className="text-sm font-medium text-gray-500">Comentários (24h)</p>
+                <p className="text-sm font-medium text-gray-500">{t('metrics:kpi.recentComments')}</p>
                 <p className="text-2xl font-bold text-ancoro-teal-500">{metrics.recentComments}</p>
               </div>
             </div>
@@ -344,15 +338,15 @@ export default function Metrics() {
               {/* Requisitos por Status */}
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Requisitos por Status
+                  {t('metrics:byStatus')}
                 </h3>
                 <div className="space-y-3">
                   {Object.entries(metrics.requirementsByStatus).map(([status, count]) => {
-                    const config = STATUS_CONFIG[status] || {
-                      label: status,
+                    const config = STATUS_COLORS[status] || {
                       color: 'text-gray-700',
                       bgColor: 'bg-gray-100',
                     }
+                    const label = t(`enums:reqStatus.${status}`, { defaultValue: status })
                     const percentage =
                       metrics.totalRequirements > 0
                         ? ((count / metrics.totalRequirements) * 100).toFixed(1)
@@ -363,7 +357,7 @@ export default function Metrics() {
                         <span
                           className={`px-2 py-1 rounded text-xs font-medium ${config.bgColor} ${config.color}`}
                         >
-                          {config.label}
+                          {label}
                         </span>
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
                           <div
@@ -383,7 +377,7 @@ export default function Metrics() {
 
               {/* Requisitos por área/módulo */}
               <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Requisitos por {moduleLabel}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('metrics:byModule', { label: moduleLabel })}</h3>
                 <div className="space-y-3">
                   {Object.entries(metrics.requirementsByModule)
                     .sort(([, a], [, b]) => b - a)
@@ -396,7 +390,7 @@ export default function Metrics() {
                       return (
                         <div key={module} className="flex items-center gap-3">
                           <span className="px-2 py-1 rounded text-xs font-medium bg-ancoro-navy-100 text-ancoro-navy-700 w-16 text-center">
-                            {moduleNames[module] || MODULE_NAMES[module] || module}
+                            {moduleNames[module] || t(`enums:modules.${module}`, { defaultValue: module })}
                           </span>
                           <div className="flex-1 bg-gray-200 rounded-full h-2">
                             <div
@@ -424,26 +418,26 @@ export default function Metrics() {
             {consultants.length > 0 && (
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Consultores com Pendências
+                  {t('metrics:consultants.title')}
                 </h3>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Consultor
+                          {t('metrics:consultants.consultant')}
                         </th>
                         <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                          Total
+                          {t('metrics:consultants.total')}
                         </th>
                         <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                          Pendentes
+                          {t('metrics:consultants.pending')}
                         </th>
                         <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                          Conflitos
+                          {t('metrics:consultants.conflicts')}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Status
+                          {t('metrics:consultants.status')}
                         </th>
                       </tr>
                     </thead>
@@ -506,7 +500,7 @@ export default function Metrics() {
                                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                                     />
                                   </svg>
-                                  Pendências
+                                  {t('metrics:consultants.hasPendencies')}
                                 </span>
                               ) : (
                                 <span className="flex items-center text-green-600 text-sm">
@@ -523,7 +517,7 @@ export default function Metrics() {
                                       d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                                     />
                                   </svg>
-                                  Em dia
+                                  {t('metrics:consultants.upToDate')}
                                 </span>
                               )}
                             </td>
@@ -538,7 +532,7 @@ export default function Metrics() {
           </div>
         ) : (
           <div className="text-center py-12 text-gray-500">
-            Nenhum projeto selecionado ou erro ao carregar métricas.
+            {t('metrics:empty')}
           </div>
         )}
       </main>

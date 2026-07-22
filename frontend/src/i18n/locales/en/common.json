@@ -1,0 +1,30 @@
+{
+  "appName": "Ancoro",
+  "appSubtitle": "Requirements Dashboard",
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "create": "Create",
+    "edit": "Edit",
+    "confirm": "Confirm",
+    "back": "Back"
+  },
+  "states": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "empty": "No results",
+    "notFound": "Page not found"
+  },
+  "errors": {
+    "network": "Connection error. Check your internet.",
+    "unexpected": "An unexpected error occurred",
+    "refreshFailed": "Failed to refresh: {{message}}"
+  },
+  "language": {
+    "label": "Language",
+    "pt": "Português",
+    "en": "English"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "workspace": "Workspace Ancoro",
+  "selectProject": "Selecione um projeto para começar",
+  "intro": "Visualize requisitos, acompanhe a saúde das validações e mantenha o alinhamento entre áreas em um espaço mais claro e executivo.",
+  "stats": {
+    "requirements": "Requisitos",
+    "validated": "Validados",
+    "coverage": "Cobertura",
+    "activeConflicts": "{{count}} conflito(s) ativo(s)"
+  },
+  "list": {
+    "title": "Requisitos",
+    "subtitle": "Base operacional estruturada para acompanhamento e revisão.",
+    "showAll": "Ver todas as {{label}}"
+  },
+  "noProject": {
+    "title": "Nenhum projeto atribuído",
+    "description": "Você não está associado a nenhum projeto. Entre em contato com um gerente ou administrador para ser adicionado."
+  },
+  "actions": {
+    "newRequirement": "Novo Requisito",
+    "newShort": "Novo",
+    "newRequirementTitleDisabled": "Selecione um projeto primeiro",
+    "newRequirementTitle": "Criar novo requisito",
+    "configureIdPattern": "Configurar padrão de ID",
+    "configureLists": "Configurar listas ({{label}}, Status, etc.)",
+    "spreadsheet": "Planilha",
+    "export": "Exportar",
+    "import": "Importar",
+    "exportBpd": "Exportar BPD",
+    "exportBpdShort": "BPD",
+    "manageMembers": "Gerenciar Membros",
+    "manageMembersShort": "Membros"
+  }
+}

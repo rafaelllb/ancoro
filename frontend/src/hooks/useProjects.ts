@@ -179,3 +179,30 @@ export function useCreateProject() {
     },
   })
 }
+
+/**
+ * Hook para excluir projeto (apenas ADMIN).
+ * O backend executa cascade delete (requisitos, membros, matriz, sprints, etc.).
+ */
+export function useDeleteProject() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (projectId: string) => {
+      if (!projectId) {
+        throw new Error('Project ID é obrigatório')
+      }
+      const response = await projectsAPI.remove(projectId)
+      return response.data
+    },
+    onSuccess: (_, projectId) => {
+      // Se o projeto excluído era o selecionado, limpa a seleção persistida
+      // para que useCurrentProject caia no primeiro projeto disponível.
+      if (localStorage.getItem(CURRENT_PROJECT_KEY) === projectId) {
+        localStorage.removeItem(CURRENT_PROJECT_KEY)
+      }
+      // Recarrega a lista de projetos
+      queryClient.invalidateQueries({ queryKey: projectKeys.all })
+    },
+  })
+}

@@ -1,0 +1,39 @@
+{
+  "switcher": {
+    "selectProject": "Select project",
+    "none": "No project",
+    "empty": "No projects available",
+    "createNew": "Create New Project",
+    "requirements": "{{count}} requirements",
+    "members": "{{count}} members"
+  },
+  "settings": {
+    "title": "Project Settings",
+    "idPreview": "Generated ID format:",
+    "moduleLabelField": "Categorization column label",
+    "moduleLabelHint": "Example: Area, Stream, Discipline, Squad or System. The technical field remains `module`.",
+    "existingRequirementsWarning": "This project already has {{count}} requirement(s)",
+    "existingRequirementsHint": "Changing the pattern does not rename existing requirements. New requirements will follow the new pattern.",
+    "prefix": "Prefix",
+    "prefixHint": "1-{{max}} alphanumeric characters (e.g. REQ, US, PROJ1)",
+    "separator": "Separator",
+    "separatorHint": "Optional. Accepts any separator up to {{max}} characters, including empty.",
+    "digitCount": "Digit count",
+    "digitCountHint": "Use {{min}} to {{max}} digits. Smaller numbers are zero-padded on the left.",
+    "saveError": "Error saving settings",
+    "prefixRequired": "Prefix is required",
+    "prefixMaxLength": "Prefix must be at most {{max}} characters",
+    "prefixAlphanumeric": "Prefix must contain only letters and numbers",
+    "separatorMaxLength": "Separator must be at most {{max}} characters",
+    "digitCountRange": "Digit count must be between {{min}} and {{max}}"
+  },
+  "danger": {
+    "title": "Danger zone",
+    "description": "Deleting the project permanently removes all requirements, members, cross matrix and sprints. This action is irreversible.",
+    "deleteButton": "Delete project",
+    "confirmLabel": "To confirm, type the project name:",
+    "confirmButton": "Delete permanently",
+    "deleteSuccess": "Project \"{{name}}\" deleted successfully",
+    "deleteError": "Error deleting project"
+  }
+}

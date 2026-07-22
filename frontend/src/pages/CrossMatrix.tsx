@@ -8,6 +8,7 @@
 
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrentProject } from '../hooks/useProjects'
 import { useCapabilities } from '../hooks/useCapabilities'
@@ -21,6 +22,7 @@ import MatrixTable from '../components/MatrixTable'
 import ManageMembersModal from '../components/ManageMembersModal'
 
 export default function CrossMatrix() {
+  const { t } = useTranslation(['matrix', 'nav', 'enums'])
   const { user, logout } = useAuth()
   const [moduleFilter, setModuleFilter] = useState<string>('')
   const [isManageMembersModalOpen, setIsManageMembersModalOpen] = useState(false)
@@ -65,10 +67,10 @@ export default function CrossMatrix() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Matriz de Cruzamento
+              {t('matrix:title')}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Mapeamento automático de dependências e integrações
+              {t('matrix:subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -76,14 +78,14 @@ export default function CrossMatrix() {
               to="/dashboard"
               className="px-4 py-2 text-sm text-ancoro-navy-600 hover:text-ancoro-navy-700 border border-ancoro-navy-300 rounded-lg hover:bg-ancoro-navy-50"
             >
-              ← Requisitos
+              {t('nav:requirementsLink')}
             </Link>
             {canViewMetrics && (
               <Link
                 to="/metrics"
                 className="px-4 py-2 text-sm text-ancoro-teal-500 hover:text-ancoro-teal-600 border border-ancoro-teal-300 rounded-lg hover:bg-ancoro-teal-50"
               >
-                Métricas
+                {t('nav:metrics')}
               </Link>
             )}
             {canManageMembers && (
@@ -95,7 +97,7 @@ export default function CrossMatrix() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                 </svg>
-                Membros
+                {t('nav:members')}
               </button>
             )}
             <span className="text-sm text-gray-600">
@@ -105,7 +107,7 @@ export default function CrossMatrix() {
               onClick={logout}
               className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50"
             >
-              Logout
+              {t('nav:logout')}
             </button>
           </div>
         </div>
@@ -120,14 +122,15 @@ export default function CrossMatrix() {
               {/* Module filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Filtrar por {moduleLabel.toLowerCase()}
+                  {t('matrix:filterLabel', { label: moduleLabel.toLowerCase() })}
                 </label>
                 <select
                   value={moduleFilter}
                   onChange={(e) => setModuleFilter(e.target.value)}
+                  title={t('matrix:filterLabel', { label: moduleLabel.toLowerCase() })}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-ancoro-teal-500"
                 >
-                  <option value="">Todos</option>
+                  <option value="">{t('matrix:filterAll')}</option>
                   {projectModules.map((item) => (
                     <option key={item.id} value={item.code}>{item.name}</option>
                   ))}
@@ -141,7 +144,7 @@ export default function CrossMatrix() {
               disabled={!projectId || regenerateMutation.isPending}
               className="px-6 py-2 bg-ancoro-teal-500 text-white rounded-lg hover:bg-ancoro-teal-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {regenerateMutation.isPending ? 'Regerando...' : '🔄 Regerar Matriz'}
+              {regenerateMutation.isPending ? t('matrix:regenerating') : t('matrix:regenerate')}
             </button>}
           </div>
 
@@ -152,31 +155,31 @@ export default function CrossMatrix() {
                 <div className="text-2xl font-bold text-gray-900">
                   {stats.total}
                 </div>
-                <div className="text-sm text-gray-500">Total</div>
+                <div className="text-sm text-gray-500">{t('matrix:statsTotal')}</div>
               </div>
               <div className="bg-yellow-50 rounded-lg p-4">
                 <div className="text-2xl font-bold text-yellow-800">
                   {stats.pending}
                 </div>
-                <div className="text-sm text-yellow-600">⚠️ Pendentes</div>
+                <div className="text-sm text-yellow-600">⚠️ {t('enums:matrixStatus.PENDING')}</div>
               </div>
               <div className="bg-green-50 rounded-lg p-4">
                 <div className="text-2xl font-bold text-green-800">
                   {stats.ok}
                 </div>
-                <div className="text-sm text-green-600">✅ OK</div>
+                <div className="text-sm text-green-600">✅ {t('enums:matrixStatus.OK')}</div>
               </div>
               <div className="bg-red-50 rounded-lg p-4">
                 <div className="text-2xl font-bold text-red-800">
                   {stats.conflict}
                 </div>
-                <div className="text-sm text-red-600">🔴 Conflitos</div>
+                <div className="text-sm text-red-600">🔴 {t('enums:matrixStatus.CONFLICT')}</div>
               </div>
               <div className="bg-purple-50 rounded-lg p-4">
                 <div className="text-2xl font-bold text-purple-800">
                   {stats.circular}
                 </div>
-                <div className="text-sm text-purple-600">🔄 Circulares</div>
+                <div className="text-sm text-purple-600">🔄 {t('enums:matrixStatus.CIRCULAR')}</div>
               </div>
             </div>
           )}
@@ -191,12 +194,11 @@ export default function CrossMatrix() {
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-purple-800">
-                  Dependências circulares detectadas!
+                  {t('matrix:circularAlert.title')}
                 </h3>
                 <div className="mt-2 text-sm text-purple-700">
                   <p>
-                    Foram detectadas {stats.circular} integrações com dependências
-                    circulares. Revise o campo "Notes" para identificar os ciclos.
+                    {t('matrix:circularAlert.description', { count: stats.circular })}
                   </p>
                 </div>
               </div>
@@ -209,13 +211,13 @@ export default function CrossMatrix() {
           {isLoading && (
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-              <p className="mt-2 text-gray-600">Carregando matriz...</p>
+              <p className="mt-2 text-gray-600">{t('matrix:loading')}</p>
             </div>
           )}
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <p className="text-red-800 font-medium">Erro ao carregar matriz</p>
+              <p className="text-red-800 font-medium">{t('matrix:error.title')}</p>
               <p className="text-sm text-red-600 mt-1">
                 {(error as any).response?.data?.message || (error as Error).message}
               </p>
@@ -224,7 +226,7 @@ export default function CrossMatrix() {
               {canManageMembers && (error as any).response?.status === 403 && (
                 <div className="mt-4 pt-4 border-t border-red-200">
                   <p className="text-sm text-gray-700 mb-3">
-                    Como gerente, você pode adicionar usuários ao projeto:
+                    {t('matrix:error.managerHint')}
                   </p>
                   <button
                     type="button"
@@ -234,7 +236,7 @@ export default function CrossMatrix() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                     </svg>
-                    Gerenciar Membros do Projeto
+                    {t('matrix:error.manageMembers')}
                   </button>
                 </div>
               )}

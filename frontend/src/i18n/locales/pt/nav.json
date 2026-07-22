@@ -1,0 +1,14 @@
+{
+  "dashboard": "Dashboard",
+  "dependencyGraph": "Grafo de Dependências",
+  "crossMatrix": "Matriz de Cruzamento",
+  "metrics": "Métricas",
+  "graphShort": "Grafo",
+  "matrixShort": "Matriz",
+  "logout": "Sair",
+  "requirementsLink": "← Requisitos",
+  "members": "Membros",
+  "menuLabel": "Menu de navegação",
+  "openMenu": "Abrir menu",
+  "closeMenu": "Fechar menu"
+}

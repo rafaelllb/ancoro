@@ -1,0 +1,19 @@
+{
+  "title": "Cross Matrix",
+  "subtitle": "Automatic mapping of dependencies and integrations",
+  "filterLabel": "Filter by {{label}}",
+  "filterAll": "All",
+  "regenerate": "🔄 Regenerate Matrix",
+  "regenerating": "Regenerating...",
+  "statsTotal": "Total",
+  "loading": "Loading matrix...",
+  "circularAlert": {
+    "title": "Circular dependencies detected!",
+    "description": "{{count}} integrations with circular dependencies were detected. Review the \"Notes\" field to identify the cycles."
+  },
+  "error": {
+    "title": "Error loading matrix",
+    "managerHint": "As a manager, you can add users to the project:",
+    "manageMembers": "Manage Project Members"
+  }
+}
