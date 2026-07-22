@@ -136,6 +136,17 @@ export async function seedFromDataset(
         where: req.where,
         howToday: req.howToday,
         howMuch: req.howMuch,
+        // Ancora Method v2: campos TO-BE e HOW/HOW-MUCH separados (opcionais no dataset)
+        howAsIs: req.howAsIs ?? null,
+        howToBe: req.howToBe ?? null,
+        howMuchPromised: req.howMuchPromised ?? null,
+        howMuchActual: req.howMuchActual ?? null,
+        whatToBe: req.whatToBe ?? null,
+        whyToBe: req.whyToBe ?? null,
+        whoToBe: req.whoToBe ?? null,
+        whenToBe: req.whenToBe ?? null,
+        whereToBe: req.whereToBe ?? null,
+        howMuchToBe: req.howMuchToBe ?? null,
         // dependsOn e providesFor armazenam reqIds (REQ-001, etc.), não keys
         dependsOn: JSON.stringify(req.dependsOn),
         providesFor: JSON.stringify(req.providesFor),

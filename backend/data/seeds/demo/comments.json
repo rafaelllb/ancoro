@@ -1,28 +1,88 @@
 {
   "comments": [
     {
-      "requirementKey": "req3",
-      "userKey": "client",
-      "content": "O batch deve rodar dia 1º porque precisamos fechar contabilidade no dia 5. Quem disse dia 5 está errado.",
-      "type": "CONFLICT"
-    },
-    {
-      "requirementKey": "req3",
-      "userKey": "user1",
-      "content": "Entendido. Vou atualizar o requisito para dia 1º e documentar a decisão.",
-      "type": "ANSWER"
-    },
-    {
-      "requirementKey": "req1",
-      "userKey": "user1",
-      "content": "Pergunta: CRM valida BP antes de criar contrato ou ISU faz essa validação?",
+      "requirementKey": "req4",
+      "userKey": "user2",
+      "content": "A API do Serasa já está contratada? Precisamos definir o fallback caso a API fique indisponível durante a criação do contrato.",
       "type": "QUESTION"
     },
     {
-      "requirementKey": "req1",
-      "userKey": "user2",
-      "content": "CRM valida BP via BAPI_BUPA_EXISTENCE_CHECK antes de criar service order. ISU não precisa re-validar.",
+      "requirementKey": "req4",
+      "userKey": "client",
+      "content": "A contratação do Serasa está em andamento pelo jurídico. Enquanto isso, o fallback deve exigir depósito caução, nunca liberar sem consulta.",
       "type": "ANSWER"
+    },
+    {
+      "requirementKey": "req17",
+      "userKey": "user4",
+      "content": "O fornecedor AMI propõe API própria, mas o padrão SAP é MDUS. Precisamos decidir a arquitetura antes de dimensionar o EDM.",
+      "type": "CONFLICT"
+    },
+    {
+      "requirementKey": "req17",
+      "userKey": "manager",
+      "content": "Vamos levar a decisão de arquitetura AMI (MDUS x API) para o comitê técnico da próxima semana. Bloqueante para REQ-020 e REQ-024.",
+      "type": "OBSERVATION"
+    },
+    {
+      "requirementKey": "req24",
+      "userKey": "client",
+      "content": "O regulatório exige retenção de 5 anos de interval data. Não podemos reduzir para 2 anos por custo de storage.",
+      "type": "CONFLICT"
+    },
+    {
+      "requirementKey": "req25",
+      "userKey": "user1",
+      "content": "Confirmado com a operação: o faturamento é por ciclo de leitura de cada rota, não em data fixa. Corrigi o entendimento anterior do dia 1º.",
+      "type": "ANSWER"
+    },
+    {
+      "requirementKey": "req25",
+      "userKey": "client",
+      "content": "Perfeito. A contabilidade precisa apenas que o fechamento do ciclo esteja disponível até o 5º dia útil.",
+      "type": "OBSERVATION"
+    },
+    {
+      "requirementKey": "req30",
+      "userKey": "user3",
+      "content": "O fiscal exige NF de ajuste para todo estorno. Como fica o estorno no mesmo mês de competência? Emitimos NF de ajuste mesmo assim?",
+      "type": "QUESTION"
+    },
+    {
+      "requirementKey": "req35",
+      "userKey": "user3",
+      "content": "O prazo da SEFAZ para NF3e obrigatória está antes do nosso go-live. Precisamos de uma solução fiscal intermediária ou antecipar o escopo.",
+      "type": "CONFLICT"
+    },
+    {
+      "requirementKey": "req39",
+      "userKey": "client",
+      "content": "Os prazos de aviso e corte precisam seguir a resolução da ANEEL. Antes do corte, quero pelo menos duas tentativas digitais (SMS e app).",
+      "type": "OBSERVATION"
+    },
+    {
+      "requirementKey": "req41",
+      "userKey": "user3",
+      "content": "A devolução automática de caução após 12 meses adimplentes precisa considerar clientes com parcelamento ativo. Vou validar a regra de clearing.",
+      "type": "OBSERVATION"
+    },
+    {
+      "requirementKey": "req46",
+      "userKey": "user6",
+      "content": "No mock 1 chegamos a 99,2% de sucesso. As falhas se concentram em contas com saldo credor. Ajustando a regra de transformação para o mock 2.",
+      "type": "OBSERVATION"
+    },
+    {
+      "requirementKey": "req46",
+      "userKey": "manager",
+      "content": "Precisamos da estratégia de reconciliação financeira do cutover fechada antes do mock 2. Esse é o maior risco do go-live.",
+      "type": "QUESTION"
+    },
+    {
+      "requirementKey": "req50",
+      "userKey": "user6",
+      "content": "O desenho do cockpit depende da definição PI/PO on-prem vs Integration Suite (BTP). Sem isso, não consigo mapear os endpoints de monitoramento.",
+      "type": "CONFLICT"
     }
   ]
 }

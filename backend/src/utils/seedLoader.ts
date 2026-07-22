@@ -59,6 +59,18 @@ const RequirementSchema = z.object({
   where: z.string(),
   howToday: z.string(),
   howMuch: z.string(),
+  // Ancora Method v2: HOW/HOW-MUCH separados AS-IS vs TO-BE e demais campos TO-BE.
+  // Opcionais/nuláveis: datasets antigos (sem TO-BE) continuam válidos.
+  howAsIs: z.string().nullable().optional(),
+  howToBe: z.string().nullable().optional(),
+  howMuchPromised: z.string().nullable().optional(),
+  howMuchActual: z.string().nullable().optional(),
+  whatToBe: z.string().nullable().optional(),
+  whyToBe: z.string().nullable().optional(),
+  whoToBe: z.string().nullable().optional(),
+  whenToBe: z.string().nullable().optional(),
+  whereToBe: z.string().nullable().optional(),
+  howMuchToBe: z.string().nullable().optional(),
   dependsOn: z.array(z.string()),
   providesFor: z.array(z.string()),
   consultantKey: z.string().optional(),

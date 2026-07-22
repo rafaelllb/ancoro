@@ -25,6 +25,24 @@
       "role": "CONSULTANT"
     },
     {
+      "key": "user4",
+      "name": "Carla Nunes",
+      "email": "carla.nunes@ancoro.com",
+      "role": "CONSULTANT"
+    },
+    {
+      "key": "user5",
+      "name": "Bruno Almeida",
+      "email": "bruno.almeida@ancoro.com",
+      "role": "CONSULTANT"
+    },
+    {
+      "key": "user6",
+      "name": "Diego Ramos",
+      "email": "diego.ramos@ancoro.com",
+      "role": "CONSULTANT"
+    },
+    {
       "key": "manager",
       "name": "Rafael Brito",
       "email": "rafael.brito@ancoro.com",

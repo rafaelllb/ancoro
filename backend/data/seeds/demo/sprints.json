@@ -5,15 +5,31 @@
       "sprintNumber": 1,
       "startDate": "2026-01-15",
       "endDate": "2026-01-29",
-      "goals": "Discovery: mapear processos AS-IS de CRM e ISU",
-      "retrospective": null
+      "goals": "Discovery Onda 1 - Cliente & Contrato: mapear AS-IS de BP, conta contrato, contrato, crédito e move-in/move-out (CRM/ISU-CS/FI-CA)",
+      "retrospective": "Boa participação do negócio. Pendência: contratação da API Serasa (REQ-004) trava o desenho do fluxo de crédito."
     },
     {
       "projectKey": "project1",
       "sprintNumber": 2,
       "startDate": "2026-01-30",
       "endDate": "2026-02-13",
-      "goals": "Discovery: validar TO-BE e matriz de cruzamento",
+      "goals": "Discovery Onda 2 - Device & EDM: installation, instalação/troca de medidor, master data, MRO, leitura de campo e ingestão AMI (ISU-IDE/DM/EDM)",
+      "retrospective": "Arquitetura AMI (MDUS x API própria) ficou em aberto e virou conflito em REQ-017/020/024. Escalado ao comitê técnico."
+    },
+    {
+      "projectKey": "project1",
+      "sprintNumber": 3,
+      "startDate": "2026-02-16",
+      "endDate": "2026-03-02",
+      "goals": "Discovery Onda 3 - Billing: billing run por ciclo, tarifas, backbilling, parcelamento, encargos/tributos e refaturamento (ISU-BILLING)",
+      "retrospective": null
+    },
+    {
+      "projectKey": "project1",
+      "sprintNumber": 4,
+      "startDate": "2026-03-03",
+      "endDate": "2026-03-17",
+      "goals": "Discovery Onda 4 - Invoicing/FI-CA & Cross: invoicing, NF3e, contabilização, pagamentos, dunning, migração e monitoramento de interfaces (FI-CA/CROSS)",
       "retrospective": null
     }
   ]
