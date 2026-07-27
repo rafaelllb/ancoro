@@ -83,6 +83,114 @@
       "userKey": "user6",
       "content": "O desenho do cockpit depende da definição PI/PO on-prem vs Integration Suite (BTP). Sem isso, não consigo mapear os endpoints de monitoramento.",
       "type": "CONFLICT"
+    },
+    {
+      "requirementKey": "breq2",
+      "userKey": "user2",
+      "content": "O mapeamento produto SOM → charging plan do CC é 1:1 ou 1:N? Isso muda a modelagem do catálogo e a governança de preço.",
+      "type": "QUESTION"
+    },
+    {
+      "requirementKey": "breq2",
+      "userKey": "user4",
+      "content": "Na maioria dos planos é 1:1, mas os bundles (REQ-009) precisam de 1:N. Sugiro modelar como solução comercial com componentes.",
+      "type": "ANSWER"
+    },
+    {
+      "requirementKey": "breq14",
+      "userKey": "user5",
+      "content": "O guiding online consultando o CC a cada evento pode estourar a latência em pico. Uma réplica local de assinantes resolveria a performance, mas há risco de inconsistência em mudança de plano.",
+      "type": "CONFLICT"
+    },
+    {
+      "requirementKey": "breq14",
+      "userKey": "user4",
+      "content": "Concordo com o risco. O CC suporta notificação de mudança para invalidar cache. Precisamos medir o TPS de pico antes de decidir. Bloqueia REQ-015/016.",
+      "type": "OBSERVATION"
+    },
+    {
+      "requirementKey": "breq14",
+      "userKey": "manager",
+      "content": "Levo a decisão de arquitetura de guiding (online x réplica) ao comitê. Precisamos do volume de pico por segundo do time de rede até sexta.",
+      "type": "OBSERVATION"
+    },
+    {
+      "requirementKey": "breq23",
+      "userKey": "user6",
+      "content": "Precisamos decidir o motor tributário: SAP TDF, Mastersaf ou Avalara? E se o cálculo ocorre no rating (tempo real) ou no invoicing. Isso afeta REQ-024 e a NFCom.",
+      "type": "CONFLICT"
+    },
+    {
+      "requirementKey": "breq23",
+      "userKey": "client",
+      "content": "O fiscal já usa Mastersaf hoje. Preferência por manter, mas estamos abertos ao TDF se a integração com o CI for nativa. Cálculo no invoicing é aceitável para pós-pago.",
+      "type": "ANSWER"
+    },
+    {
+      "requirementKey": "breq17",
+      "userKey": "user4",
+      "content": "A migração dos saldos pré-pagos (REQ-048) precisa de janela de congelamento? Recarga durante o cutover é o ponto mais sensível para o cliente.",
+      "type": "QUESTION"
+    },
+    {
+      "requirementKey": "breq29",
+      "userKey": "client",
+      "content": "A fatura única convergente é exatamente o que buscamos. Só precisamos garantir a opção de split billing para clientes corporativos que exigem fatura por linha.",
+      "type": "OBSERVATION"
+    },
+    {
+      "requirementKey": "breq33",
+      "userKey": "user6",
+      "content": "A NFCom (modelo 62) é mandatória. Recomendo emissão via SAP DRC para manter tudo no S/4. Precisamos definir a estratégia de contingência antes do piloto.",
+      "type": "OBSERVATION"
+    },
+    {
+      "requirementKey": "breq37",
+      "userKey": "user3",
+      "content": "Para reduzir churn involuntário por cartão, o account updater do PSP é essencial. Qual adquirente/PSP vamos usar e ele oferece esse serviço?",
+      "type": "QUESTION"
+    },
+    {
+      "requirementKey": "breq43",
+      "userKey": "user3",
+      "content": "O RAR (IFRS15) na fase 1 aumenta bastante a complexidade por causa da alocação em bundles. Proponho avaliar diferir para a fase 2, mantendo reconhecimento simplificado no go-live.",
+      "type": "CONFLICT"
+    },
+    {
+      "requirementKey": "breq43",
+      "userKey": "manager",
+      "content": "Entendo o trade-off, mas auditoria pode exigir IFRS15 desde o go-live. Vou alinhar com a controladoria e o auditor antes de fechar o escopo da fase 1.",
+      "type": "OBSERVATION"
+    },
+    {
+      "requirementKey": "breq48",
+      "userKey": "user6",
+      "content": "A estratégia de cutover (big-bang x por onda/segmento) precisa ser decidida já: ela dita o cronograma, o esforço de reconciliação e o risco de go-live. É o maior risco do programa.",
+      "type": "CONFLICT"
+    },
+    {
+      "requirementKey": "breq48",
+      "userKey": "manager",
+      "content": "Minha recomendação é cutover por onda (pré-pago, depois pós-pago, depois B2B) para reduzir risco. Vamos validar com o cliente na próxima steering.",
+      "type": "OBSERVATION"
+    },
+    {
+      "requirementKey": "breq11",
+      "userKey": "user5",
+      "content": "Preciso do volume de pico (TPS) e dos protocolos por tecnologia (Diameter, arquivos ASN.1, Kafka para IoT) para dimensionar o Convergent Mediation.",
+      "type": "QUESTION"
+    },
+    {
+      "requirementKey": "breq24",
+      "userKey": "user1",
+      "content": "A reconciliação CC↔CI dos billable items precisa de uma rotina diária por totais. Sem isso, não fecho a completude do faturamento. Qual a frequência aceitável?",
+      "type": "QUESTION"
+    },
+    {
+      "requirementKey": "breq40",
+      "userKey": "user3",
+      "content": "A segmentação de risco do dunning será por score interno ou bureau externo? E a suspensão automática via SOM (REQ-006) precisa respeitar prazo regulatório da Anatel.",
+      "type": "QUESTION"
     }
   ]
 }

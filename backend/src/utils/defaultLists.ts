@@ -48,6 +48,11 @@ export const DEFAULT_MODULES: DefaultListItem[] = [
   { code: 'MM', name: 'MM - Materials Management', color: '#6366F1', sortOrder: 31 },
   { code: 'PP', name: 'PP - Production Planning', color: '#6366F1', sortOrder: 32 },
   { code: 'PM', name: 'PM - Plant Maintenance', color: '#14B8A6', sortOrder: 33 },
+  // BRIM - Billing and Revenue Innovation Management (subscription/convergent)
+  { code: 'SOM', name: 'SOM - Subscription Order Management', color: '#06B6D4', sortOrder: 60 },
+  { code: 'CC', name: 'CC - Convergent Charging', color: '#0EA5E9', sortOrder: 61 },
+  { code: 'CM', name: 'CM - Convergent Mediation', color: '#22D3EE', sortOrder: 62 },
+  { code: 'CI', name: 'CI - Convergent Invoicing', color: '#0891B2', sortOrder: 63 },
   // Outros
   { code: 'CO', name: 'CO - Controlling', color: '#8B5CF6', sortOrder: 40 },
   { code: 'HR', name: 'HR - Human Resources', color: '#8B5CF6', sortOrder: 41 },

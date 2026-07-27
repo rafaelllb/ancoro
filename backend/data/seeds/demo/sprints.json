@@ -31,6 +31,38 @@
       "endDate": "2026-03-17",
       "goals": "Discovery Onda 4 - Invoicing/FI-CA & Cross: invoicing, NF3e, contabilização, pagamentos, dunning, migração e monitoramento de interfaces (FI-CA/CROSS)",
       "retrospective": null
+    },
+    {
+      "projectKey": "project2",
+      "sprintNumber": 1,
+      "startDate": "2026-04-13",
+      "endDate": "2026-04-24",
+      "goals": "Discovery Onda 1 - SOM: catálogo comercial, subscription products, captura de pedido, provisionamento, mudanças de plano, suspensão, churn, proration, bundles e contratos/fidelidade (SOM)",
+      "retrospective": "Boa aderência do negócio ao modelo de subscription. Pendência: mapeamento produto SOM → charging plan (1:1 x 1:N) para bundles ficou para a onda de charging."
+    },
+    {
+      "projectKey": "project2",
+      "sprintNumber": 2,
+      "startDate": "2026-04-27",
+      "endDate": "2026-05-08",
+      "goals": "Discovery Onda 2 - Mediation & Charging: coleta de eventos/CDR, mediação, dedup, guiding, rating online/batch, saldo/recarga, allowances, promoções, tiers, credit control e billable items (CM/CC)",
+      "retrospective": "Arquitetura de guiding (online x réplica local) e motor tributário viraram conflito (REQ-014/023). Escalados ao comitê. Falta volume de pico (TPS) da rede."
+    },
+    {
+      "projectKey": "project2",
+      "sprintNumber": 3,
+      "startDate": "2026-05-11",
+      "endDate": "2026-05-22",
+      "goals": "Discovery Onda 3 - Convergent Invoicing: billable items, BIT classes, billing, invoicing run, one convergent bill, ciclos, ajustes/créditos, output, NFCom, consolidação B2B e distribuição de receita (CI)",
+      "retrospective": null
+    },
+    {
+      "projectKey": "project2",
+      "sprintNumber": 4,
+      "startDate": "2026-05-25",
+      "endDate": "2026-06-05",
+      "goals": "Discovery Onda 4 - FI-CA & Cross: contabilização, pagamentos (cartão/PIX/débito), conciliação, dunning, disputas, parcelamento, RAR IFRS15, revenue sharing, migração e cockpit de interfaces (FI-CA/CROSS)",
+      "retrospective": null
     }
   ]
 }

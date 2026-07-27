@@ -6,6 +6,13 @@
       "client": "Distribuidora Demo Energia S.A.",
       "startDate": "2026-01-01",
       "status": "DISCOVERY"
+    },
+    {
+      "key": "project2",
+      "name": "Projeto Demo - BRIM Telco/Subscription",
+      "client": "Telecom Demo Conecta S.A.",
+      "startDate": "2026-04-01",
+      "status": "DISCOVERY"
     }
   ],
   "projectUsers": [
@@ -17,6 +24,15 @@
     { "projectKey": "project1", "userKey": "user5", "module": "ISU-CS" },
     { "projectKey": "project1", "userKey": "user6", "module": "CROSS" },
     { "projectKey": "project1", "userKey": "manager", "module": null },
-    { "projectKey": "project1", "userKey": "client", "module": null }
+    { "projectKey": "project1", "userKey": "client", "module": null },
+    { "projectKey": "project2", "userKey": "admin", "module": null },
+    { "projectKey": "project2", "userKey": "user1", "module": "CI" },
+    { "projectKey": "project2", "userKey": "user2", "module": "SOM" },
+    { "projectKey": "project2", "userKey": "user3", "module": "FI-CA" },
+    { "projectKey": "project2", "userKey": "user4", "module": "CC" },
+    { "projectKey": "project2", "userKey": "user5", "module": "CM" },
+    { "projectKey": "project2", "userKey": "user6", "module": "CROSS" },
+    { "projectKey": "project2", "userKey": "manager", "module": null },
+    { "projectKey": "project2", "userKey": "client", "module": null }
   ]
 }
