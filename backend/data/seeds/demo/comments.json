@@ -191,6 +191,48 @@
       "userKey": "user3",
       "content": "A segmentação de risco do dunning será por score interno ou bureau externo? E a suspensão automática via SOM (REQ-006) precisa respeitar prazo regulatório da Anatel.",
       "type": "QUESTION"
+    },
+    {
+      "requirementKey": "sfreq17",
+      "userKey": "user4",
+      "content": "Quem será o sistema-mestre do pedido: o Salesforce OMS ou o ERP? Isso muda toda a integração de faturamento e a experiência de status no portal e no atendimento.",
+      "type": "QUESTION"
+    },
+    {
+      "requirementKey": "sfreq17",
+      "userKey": "user6",
+      "content": "Do lado da integração, o ERP hoje é o master do pedido faturado. Se o OMS assumir, precisamos de um contrato de eventos claro para não duplicar baixa de estoque.",
+      "type": "CONFLICT"
+    },
+    {
+      "requirementKey": "sfreq46",
+      "userKey": "user6",
+      "content": "A arquitetura de integração com o ERP (estoque e faturamento) ainda está indefinida: API síncrona por pedido ou eventos assíncronos? Precisa decidir com o time de ERP antes do blueprint.",
+      "type": "CONFLICT"
+    },
+    {
+      "requirementKey": "sfreq2",
+      "userKey": "user3",
+      "content": "O consentimento LGPD precisa ser granular por canal (e-mail, SMS, WhatsApp) e ter data/origem auditável. A base legada tem opt-in confiável ou vamos precisar de recoleta?",
+      "type": "QUESTION"
+    },
+    {
+      "requirementKey": "sfreq38",
+      "userKey": "user5",
+      "content": "A chave de unificação será CPF, e-mail ou telefone? Nas lojas físicas nem sempre o CPF é informado — isso impacta a taxa de match POS x e-commerce.",
+      "type": "QUESTION"
+    },
+    {
+      "requirementKey": "sfreq37",
+      "userKey": "user5",
+      "content": "Saldo unificado online + loja depende da integração em tempo real com o PDV (REQ-047). Se o PDV ficar offline, como tratamos o acúmulo/resgate? Fila de compensação?",
+      "type": "OBSERVATION"
+    },
+    {
+      "requirementKey": "sfreq49",
+      "userKey": "manager",
+      "content": "Migração do CRM legado é pré-requisito do cadastro único (REQ-007). Vamos priorizar a limpeza e deduplicação antes do cutover para não carregar duplicidade para o Data Cloud.",
+      "type": "OBSERVATION"
     }
   ]
 }

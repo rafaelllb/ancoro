@@ -53,6 +53,16 @@ export const DEFAULT_MODULES: DefaultListItem[] = [
   { code: 'CC', name: 'CC - Convergent Charging', color: '#0EA5E9', sortOrder: 61 },
   { code: 'CM', name: 'CM - Convergent Mediation', color: '#22D3EE', sortOrder: 62 },
   { code: 'CI', name: 'CI - Convergent Invoicing', color: '#0891B2', sortOrder: 63 },
+  // Salesforce Clouds (demo Varejo Omnichannel — não-SAP)
+  { code: 'SF-SALES', name: 'Sales Cloud', color: '#00A1E0', sortOrder: 70 },
+  { code: 'SF-SERVICE', name: 'Service Cloud', color: '#0176D3', sortOrder: 71 },
+  { code: 'SF-MKT', name: 'Marketing Cloud', color: '#1798C1', sortOrder: 72 },
+  { code: 'SF-COMMERCE', name: 'Commerce Cloud', color: '#0B827C', sortOrder: 73 },
+  { code: 'SF-EXP', name: 'Experience Cloud', color: '#2E844A', sortOrder: 74 },
+  { code: 'SF-LOYALTY', name: 'Loyalty Management', color: '#9050E9', sortOrder: 75 },
+  { code: 'SF-DATA', name: 'Data Cloud', color: '#032D60', sortOrder: 76 },
+  { code: 'SF-PLATFORM', name: 'Salesforce Platform', color: '#5867E8', sortOrder: 77 },
+  { code: 'SF-INTEG', name: 'Integração (MuleSoft)', color: '#00B4AB', sortOrder: 78 },
   // Outros
   { code: 'CO', name: 'CO - Controlling', color: '#8B5CF6', sortOrder: 40 },
   { code: 'HR', name: 'HR - Human Resources', color: '#8B5CF6', sortOrder: 41 },

@@ -63,6 +63,22 @@
       "endDate": "2026-06-05",
       "goals": "Discovery Onda 4 - FI-CA & Cross: contabilização, pagamentos (cartão/PIX/débito), conciliação, dunning, disputas, parcelamento, RAR IFRS15, revenue sharing, migração e cockpit de interfaces (FI-CA/CROSS)",
       "retrospective": null
+    },
+    {
+      "projectKey": "project3",
+      "sprintNumber": 1,
+      "startDate": "2026-07-15",
+      "endDate": "2026-07-29",
+      "goals": "Discovery Onda 1 - Aquisição & Venda: captura de leads, consentimento LGPD, jornadas de marketing, cadastro único de cliente, qualificação/roteamento de leads e oportunidades B2B (SF-MKT/SF-SALES)",
+      "retrospective": "Negócio muito engajado. Pendência: qualidade do opt-in na base legada (REQ-002) e definição da chave de unificação de perfil (REQ-038) travam o desenho do 360."
+    },
+    {
+      "projectKey": "project3",
+      "sprintNumber": 2,
+      "startDate": "2026-07-30",
+      "endDate": "2026-08-13",
+      "goals": "Discovery Onda 2 - Commerce & Integração: catálogo, storefront, carrinho/checkout, OMS, pagamentos, click-and-collect e integrações com ERP/PDV/gateway (SF-COMMERCE/SF-INTEG)",
+      "retrospective": "Master do pedido (Salesforce OMS x ERP) ficou em aberto e virou conflito em REQ-017/REQ-046. Escalado para decisão conjunta com o time de ERP antes do blueprint."
     }
   ]
 }

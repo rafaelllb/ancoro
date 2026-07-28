@@ -13,6 +13,13 @@
       "client": "Telecom Demo Conecta S.A.",
       "startDate": "2026-04-01",
       "status": "DISCOVERY"
+    },
+    {
+      "key": "project3",
+      "name": "Projeto Demo - Salesforce Varejo Omnichannel",
+      "client": "Varejo Demo Estilo & Casa S.A.",
+      "startDate": "2026-07-01",
+      "status": "DISCOVERY"
     }
   ],
   "projectUsers": [
@@ -33,6 +40,15 @@
     { "projectKey": "project2", "userKey": "user5", "module": "CM" },
     { "projectKey": "project2", "userKey": "user6", "module": "CROSS" },
     { "projectKey": "project2", "userKey": "manager", "module": null },
-    { "projectKey": "project2", "userKey": "client", "module": null }
+    { "projectKey": "project2", "userKey": "client", "module": null },
+    { "projectKey": "project3", "userKey": "admin", "module": null },
+    { "projectKey": "project3", "userKey": "user1", "module": "SF-SALES" },
+    { "projectKey": "project3", "userKey": "user2", "module": "SF-SERVICE" },
+    { "projectKey": "project3", "userKey": "user3", "module": "SF-MKT" },
+    { "projectKey": "project3", "userKey": "user4", "module": "SF-COMMERCE" },
+    { "projectKey": "project3", "userKey": "user5", "module": "SF-DATA" },
+    { "projectKey": "project3", "userKey": "user6", "module": "SF-INTEG" },
+    { "projectKey": "project3", "userKey": "manager", "module": null },
+    { "projectKey": "project3", "userKey": "client", "module": null }
   ]
 }

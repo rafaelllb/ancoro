@@ -1,8 +1,8 @@
 {
-  "version": "2.0.0",
+  "version": "3.0.0",
   "name": "demo-dataset",
-  "description": "Ancoro Demo - 2 projetos SAP: (1) S/4HANA Utilities Discovery e (2) BRIM Telco/Subscription (SOM, Convergent Charging/Mediation/Invoicing, FI-CA). 100 requisitos end-to-end com 5W2H AS-IS/TO-BE e matriz de cruzamento",
+  "description": "Ancoro Demo - 3 projetos: (1) S/4HANA Utilities Discovery, (2) BRIM Telco/Subscription (SOM, Convergent Charging/Mediation/Invoicing, FI-CA) e (3) Salesforce Varejo Omnichannel (Sales, Service, Marketing, Commerce, Experience, Loyalty, Data Cloud, Platform, MuleSoft). 150 requisitos end-to-end com 5W2H AS-IS/TO-BE e matriz de cruzamento",
   "defaultPassword": "demo123",
   "created": "2026-03-22",
-  "updated": "2026-07-22"
+  "updated": "2026-07-28"
 }
