@@ -16,6 +16,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { toast } from 'react-hot-toast'
 import { Requirement, Comment } from '../services/api'
 import { useUpdateRequirement } from '../hooks/useRequirements'
@@ -322,7 +323,9 @@ function CompareModal({
     same: 'border-gray-200 bg-white',
   }
 
-  return (
+  // Renderiza via portal em document.body para escapar do containing block criado pelo
+  // backdrop-blur do painel lateral (que prendia/clipava o modal aos ~400px do painel).
+  return createPortal(
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Overlay */}
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
@@ -418,7 +421,8 @@ function CompareModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
