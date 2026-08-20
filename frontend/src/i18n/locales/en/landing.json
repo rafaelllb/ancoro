@@ -5,9 +5,9 @@
     "foundation": "Foundation-first"
   },
   "hero": {
-    "pill": "Requirements management for projects where every decision must leave a trail",
-    "headline": "Requirements truly organized. Not just documented.",
-    "subtitle": "Built for teams where poorly defined scope turns into costly rework. Structured requirements, mapped dependencies, traceable validations.",
+    "pill": "Requirements governance for projects where poorly defined scope turns into loss",
+    "headline": "Poorly defined scope costs 45% of your budget.",
+    "subtitle": "Ancoro brings governance to the requirement lifecycle: every decision structured, every dependency mapped, every validation traceable — before it becomes an expensive surprise at delivery.",
     "ctaAuthenticated": "Open Dashboard",
     "ctaGuest": "Access Platform",
     "ctaDemo": "See demo",
@@ -35,22 +35,96 @@
       ]
     }
   },
+  "problem": {
+    "eyebrow": "The problem is expensive",
+    "title": "A poorly governed requirement is the invoice that arrives later.",
+    "subtitle": "It's not opinion. It's what the industry has measured for decades in IT and ERP projects.",
+    "stats": [
+      {
+        "value": "45%",
+        "label": "over budget, on average",
+        "source": "McKinsey + Oxford, 5,400+ IT projects"
+      },
+      {
+        "value": "56%",
+        "label": "less value delivered than promised",
+        "source": "McKinsey + Oxford"
+      },
+      {
+        "value": "70–85%",
+        "label": "of rework originates in requirements",
+        "source": "Research on the cost of requirement errors"
+      },
+      {
+        "value": "up to 100x",
+        "label": "the cost to fix in production what's solved in the requirements phase",
+        "source": "IBM / Boehm / NIST"
+      }
+    ],
+    "closing": "1 in 4 projects fails due to bad requirements. Ancoro attacks exactly that root cause."
+  },
+  "roi": {
+    "eyebrow": "How much you recover",
+    "title": "Governance isn't a cost. It's budget you stop burning.",
+    "subtitle": "Adjust your project budget and see the savings range that requirements governance puts back in your pocket.",
+    "inputLabel": "Project budget",
+    "resultLabel": "Estimated savings with requirements governance",
+    "rangeConservative": "Conservative",
+    "rangeOptimistic": "Optimistic",
+    "examplesTitle": "Examples",
+    "examples": [
+      { "budget": "$100K", "saving": "$6K – 12K" },
+      { "budget": "$400K", "saving": "$24K – 48K" },
+      { "budget": "$2M", "saving": "$120K – 240K" }
+    ],
+    "methodologyTitle": "How we calculate",
+    "methodology": "Rework accounts for ~30% of a project's effort; 70% of that rework comes from requirements defects (≈21% of the budget). Ancoro cuts 30% to 50% of that share by catching conflicts, orphan requirements and circular dependencies before the build — recovering 6% to 12% of the budget. An estimated range, not a promise: actual gains depend on the project and method adoption."
+  },
   "features": {
     "eyebrow": "Key features",
     "title": "Three points where projects usually stall",
     "subtitle": "Each module was designed from real problems in scope gathering.",
     "items": [
       {
-        "title": "5W2H Requirements",
-        "description": "Every requirement needs an owner, a reason and a date. 5W2H puts that into structure before scope becomes hallway talk."
+        "title": "Dual 5W2H (AS-IS / TO-BE)",
+        "description": "Every requirement describes the current and future state, with owner, reason and date. It forces the comparison nobody does in a spreadsheet — killing the generic requirement before it costs dearly at build time."
       },
       {
         "title": "Cross Matrix",
-        "description": "Does one module depend on another? Does the integration affect billing? The matrix shows it while there's still time to act."
+        "description": "Does one module depend on another? Does the integration affect billing? The matrix detects conflicts and circular dependencies while there's still time to act — not in the validation meeting."
       },
       {
-        "title": "Real-time Collaboration",
-        "description": "Comments, status and decision history in the same place. No more digging through an email from three weeks ago."
+        "title": "Collaboration + Audit",
+        "description": "Comments, status and field-level decision history in one place. 'Who approved this?' has an instant answer, no digging through a three-week-old email."
+      }
+    ]
+  },
+  "beforeAfter": {
+    "eyebrow": "Before vs. After",
+    "title": "Same question. Two realities.",
+    "subtitle": "The daily life of managing requirements in spreadsheets, Jira and email — versus having real governance.",
+    "columnBefore": "Excel + Jira + email",
+    "columnAfter": "With Ancoro",
+    "rows": [
+      {
+        "question": "Who approved this requirement?",
+        "before": "Digging through a three-week-old email.",
+        "after": "It's in the auditable changelog, with author and date."
+      },
+      {
+        "question": "What breaks if Contracts change?",
+        "before": "You find out in the validation meeting, when it already hurts.",
+        "after": "The Cross Matrix warns before it becomes a problem."
+      },
+      {
+        "question": "Does TO-BE match AS-IS?",
+        "before": "Nobody checks. The spreadsheet only shows the future.",
+        "after": "Dual 5W2H forces the side-by-side comparison."
+      },
+      {
+        "question": "Does this requirement serve any objective?",
+        "before": "Orphan requirements slip by until go-live.",
+        "after": "Requirements without an objective are flagged automatically."
       }
     ]
   },
@@ -75,6 +149,55 @@
         "description": "Generate the validation material straight from the platform. What the client sees is what's at the source."
       }
     ]
+  },
+  "forWhom": {
+    "eyebrow": "Who it's for",
+    "title": "Every role has a pain. Ancoro solves yours.",
+    "subtitle": "Requirements governance protects who delivers, who pays and who signs off.",
+    "personas": [
+      {
+        "role": "Consultancy / Integrator",
+        "pain": "Scope rework erodes the contract margin.",
+        "gain": "Governance shields delivery: less unplanned rework, defensible scope, protected margin."
+      },
+      {
+        "role": "Sponsor / End client",
+        "pain": "Paying a lot and getting something different from what was agreed.",
+        "gain": "Traceability and audit from the first requirement to delivery. You pay for what was agreed."
+      },
+      {
+        "role": "Independent consultant",
+        "pain": "Delivering solo with the rigor a large team would have.",
+        "gain": "Method, matrix and validation that fit a single person — and impress the client."
+      }
+    ]
+  },
+  "proof": {
+    "eyebrow": "Living proof",
+    "title": "Not theory. Already running with 50+ real requirements per project.",
+    "subtitle": "Three complete market scenarios, with integrations, conflicts and validation — ready to explore.",
+    "cta": "See demo",
+    "demos": [
+      {
+        "tag": "SAP Utilities",
+        "title": "Energy distributor",
+        "description": "S/4HANA Utilities (ISU) migration: Business Partner, Contract Account, contracts and CRM → FI-CA → ISU integrations."
+      },
+      {
+        "tag": "SAP BRIM",
+        "title": "Telco / Subscription",
+        "description": "Convergent invoicing (voice + data), subscription management and automatic contract renewal."
+      },
+      {
+        "tag": "Salesforce",
+        "title": "Omnichannel Retail",
+        "description": "Customer 360, omnichannel service and online + physical store integration with the ERP."
+      }
+    ]
+  },
+  "methodologyNote": {
+    "title": "About the numbers",
+    "text": "Statistics from public sources: McKinsey + University of Oxford (5,400+ IT projects), Standish Group CHAOS Report, Statista (ERP budget overrun, 2023) and the IBM/Boehm/NIST cost-of-defect curve. Savings estimates are methodological ranges, not guarantees of results."
   },
   "footer": {
     "tagline": "For projects where a poorly documented decision costs dearly.",

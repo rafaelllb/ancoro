@@ -5,9 +5,9 @@
     "foundation": "Foundation-first"
   },
   "hero": {
-    "pill": "Gestão de requisitos para projetos onde cada decisão precisa deixar rastro",
-    "headline": "Requisitos organizados de verdade. Não só documentados.",
-    "subtitle": "Feita para times onde escopo mal definido vira retrabalho caro. Requisitos estruturados, dependências mapeadas, validações rastreáveis.",
+    "pill": "Governança de requisitos para projetos onde escopo mal definido vira prejuízo",
+    "headline": "Escopo mal definido custa 45% do orçamento.",
+    "subtitle": "Ancoro põe governança no ciclo de vida do requisito: cada decisão estruturada, cada dependência mapeada, cada validação rastreável — antes de virar surpresa cara na entrega.",
     "ctaAuthenticated": "Abrir Dashboard",
     "ctaGuest": "Acessar Plataforma",
     "ctaDemo": "Ver demonstração",
@@ -35,22 +35,96 @@
       ]
     }
   },
+  "problem": {
+    "eyebrow": "O problema custa caro",
+    "title": "Requisito mal governado é a fatura que chega depois.",
+    "subtitle": "Não é opinião. É o que a indústria mede há décadas em projetos de TI e ERP.",
+    "stats": [
+      {
+        "value": "45%",
+        "label": "acima do orçamento, em média",
+        "source": "McKinsey + Oxford, 5.400+ projetos de TI"
+      },
+      {
+        "value": "56%",
+        "label": "menos valor entregue que o prometido",
+        "source": "McKinsey + Oxford"
+      },
+      {
+        "value": "70–85%",
+        "label": "do retrabalho tem origem em requisitos",
+        "source": "Pesquisa sobre custo de erros de requisito"
+      },
+      {
+        "value": "até 100x",
+        "label": "o custo de corrigir em produção o que se resolve na fase de requisitos",
+        "source": "IBM / Boehm / NIST"
+      }
+    ],
+    "closing": "1 em cada 4 projetos falha por requisitos ruins. Ancoro ataca exatamente essa causa raiz."
+  },
+  "roi": {
+    "eyebrow": "Quanto você recupera",
+    "title": "Governança não é custo. É orçamento que você deixa de queimar.",
+    "subtitle": "Ajuste o orçamento do seu projeto e veja a faixa de economia que a governança de requisitos coloca de volta no bolso.",
+    "inputLabel": "Orçamento do projeto",
+    "resultLabel": "Economia estimada com governança de requisitos",
+    "rangeConservative": "Conservador",
+    "rangeOptimistic": "Otimista",
+    "examplesTitle": "Exemplos",
+    "examples": [
+      { "budget": "R$ 500 mil", "saving": "R$ 30k – 60k" },
+      { "budget": "R$ 2 milhões", "saving": "R$ 120k – 240k" },
+      { "budget": "R$ 10 milhões", "saving": "R$ 600k – 1,2M" }
+    ],
+    "methodologyTitle": "Como calculamos",
+    "methodology": "Retrabalho representa ~30% do esforço de um projeto; 70% desse retrabalho nasce de defeitos de requisitos (≈21% do orçamento). Ancoro reduz de 30% a 50% dessa parcela ao capturar conflitos, requisitos órfãos e dependências circulares antes do build — resultando em 6% a 12% do orçamento recuperado. Faixa estimada, não promessa: o ganho real depende do projeto e da adesão ao método."
+  },
   "features": {
     "eyebrow": "Recursos principais",
     "title": "Três pontos onde projetos normalmente travam",
     "subtitle": "Cada módulo foi pensado a partir de problemas reais em levantamentos de escopo.",
     "items": [
       {
-        "title": "Requisitos 5W2H",
-        "description": "Cada requisito precisa de um dono, um motivo e uma data. O 5W2H coloca isso em estrutura antes que o escopo vire conversa de corredor."
+        "title": "5W2H Duplo (AS-IS / TO-BE)",
+        "description": "Cada requisito descreve o estado atual e o futuro, com dono, motivo e data. Força o comparativo que ninguém faz na planilha — e mata o requisito genérico antes que ele custe caro no build."
       },
       {
         "title": "Matriz de Cruzamento",
-        "description": "Um módulo depende do outro? A integração afeta faturamento? A matriz mostra isso enquanto ainda dá tempo de agir."
+        "description": "Um módulo depende do outro? A integração afeta faturamento? A matriz detecta conflitos e dependências circulares enquanto ainda dá tempo de agir — não na reunião de validação."
       },
       {
-        "title": "Colaboração Real-time",
-        "description": "Comentários, status e histórico de decisão no mesmo lugar. Sem precisar procurar no e-mail de três semanas atrás."
+        "title": "Colaboração + Auditoria",
+        "description": "Comentários, status e histórico de decisão field-level no mesmo lugar. 'Quem aprovou isso?' tem resposta imediata, sem procurar no e-mail de três semanas atrás."
+      }
+    ]
+  },
+  "beforeAfter": {
+    "eyebrow": "Antes vs. Depois",
+    "title": "A mesma pergunta. Duas realidades.",
+    "subtitle": "O dia a dia de quem gerencia requisitos em planilha, Jira e e-mail — versus quem tem governança de verdade.",
+    "columnBefore": "Excel + Jira + e-mail",
+    "columnAfter": "Com Ancoro",
+    "rows": [
+      {
+        "question": "Quem aprovou este requisito?",
+        "before": "Caça no e-mail de três semanas atrás.",
+        "after": "Está no changelog auditável, com autor e data."
+      },
+      {
+        "question": "O que quebra se Contratos mudar?",
+        "before": "Descobre na reunião de validação, quando já dói.",
+        "after": "A Matriz de Cruzamento avisa antes de virar problema."
+      },
+      {
+        "question": "O TO-BE bate com o AS-IS?",
+        "before": "Ninguém confere. A planilha só mostra o futuro.",
+        "after": "O 5W2H Duplo obriga o comparativo lado a lado."
+      },
+      {
+        "question": "Esse requisito atende a algum objetivo?",
+        "before": "Requisito órfão passa despercebido até o go-live.",
+        "after": "Requisitos sem objetivo são sinalizados automaticamente."
       }
     ]
   },
@@ -75,6 +149,55 @@
         "description": "Gere o material de validação direto da plataforma. O que o cliente vê é o que está na fonte."
       }
     ]
+  },
+  "forWhom": {
+    "eyebrow": "Para quem é",
+    "title": "Cada papel tem uma dor. Ancoro resolve a sua.",
+    "subtitle": "Governança de requisitos protege quem entrega, quem paga e quem assina embaixo.",
+    "personas": [
+      {
+        "role": "Consultoria / Integradora",
+        "pain": "Retrabalho de escopo corrói a margem do contrato.",
+        "gain": "Governança blinda a entrega: menos retrabalho não previsto, escopo defensável, margem protegida."
+      },
+      {
+        "role": "Sponsor / Cliente final",
+        "pain": "Pagar caro e receber algo diferente do combinado.",
+        "gain": "Rastreabilidade e auditoria do primeiro requisito à entrega. Você paga pelo que foi acordado."
+      },
+      {
+        "role": "Consultor independente",
+        "pain": "Entregar sozinho com o rigor que um time grande teria.",
+        "gain": "Método, matriz e validação que cabem numa pessoa só — e impressionam o cliente."
+      }
+    ]
+  },
+  "proof": {
+    "eyebrow": "Prova viva",
+    "title": "Não é teoria. Já roda com 50+ requisitos reais por projeto.",
+    "subtitle": "Três cenários de mercado completos, com integrações, conflitos e validação — prontos para explorar.",
+    "cta": "Ver demonstração",
+    "demos": [
+      {
+        "tag": "SAP Utilities",
+        "title": "Distribuidora de energia",
+        "description": "Migração S/4HANA Utilities (ISU): Business Partner, Conta Contrato, contratos e integrações CRM → FI-CA → ISU."
+      },
+      {
+        "tag": "SAP BRIM",
+        "title": "Telco / Subscription",
+        "description": "Faturamento convergente (voz + dados), gestão de assinaturas e renovação automática de contratos."
+      },
+      {
+        "tag": "Salesforce",
+        "title": "Varejo Omnichannel",
+        "description": "Customer 360, atendimento omnichannel e integração loja online + física com o ERP."
+      }
+    ]
+  },
+  "methodologyNote": {
+    "title": "Sobre os números",
+    "text": "Estatísticas de fontes públicas: McKinsey + University of Oxford (5.400+ projetos de TI), Standish Group CHAOS Report, Statista (estouro de orçamento em ERP, 2023) e a curva de custo de defeitos IBM/Boehm/NIST. As estimativas de economia são faixas metodológicas, não garantias de resultado."
   },
   "footer": {
     "tagline": "Para projetos onde uma decisão mal documentada custa caro.",
