@@ -295,3 +295,47 @@ export function useBulkDeleteRequirements() {
     },
   })
 }
+
+// ===== CONEXÕES (dependsOn / providesFor) =====
+
+/**
+ * Hook para criar uma conexão bidirecional entre dois requisitos (from → to).
+ * Um único request atômico no backend sincroniza providesFor/dependsOn dos dois lados.
+ * Invalida requisitos + crossMatrix para o grafo e a tabela refletirem a mudança.
+ */
+export function useCreateConnection() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ projectId, fromReqId, toReqId }: { projectId: string; fromReqId: string; toReqId: string }) =>
+      requirementsAPI.connect(projectId, fromReqId, toReqId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: requirementKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['crossMatrix'] })
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Erro ao criar conexão'
+      toast.error(message)
+    },
+  })
+}
+
+/**
+ * Hook para remover uma conexão bidirecional entre dois requisitos (from → to).
+ */
+export function useDeleteConnection() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ projectId, fromReqId, toReqId }: { projectId: string; fromReqId: string; toReqId: string }) =>
+      requirementsAPI.disconnect(projectId, fromReqId, toReqId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: requirementKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['crossMatrix'] })
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Erro ao remover conexão'
+      toast.error(message)
+    },
+  })
+}

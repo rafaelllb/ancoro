@@ -180,6 +180,24 @@ export const updateRequirementSchema = z.object({
   observations: z.string().optional(),
 })
 
+// ===== CONNECTION SCHEMAS =====
+
+/**
+ * Schema para criar/remover conexão entre dois requisitos.
+ * A conexão é atômica e bidirecional: from.providesFor += to e to.dependsOn += from.
+ * Usa reqIds (ex.: "REQ-001") + projectId, pois o grafo trabalha com reqIds.
+ */
+export const connectionSchema = z
+  .object({
+    projectId: z.string().cuid('projectId inválido'),
+    fromReqId: z.string().min(1, 'fromReqId é obrigatório'),
+    toReqId: z.string().min(1, 'toReqId é obrigatório'),
+  })
+  .refine((data) => data.fromReqId !== data.toReqId, {
+    message: 'Um requisito não pode se conectar a si mesmo',
+    path: ['toReqId'],
+  })
+
 // ===== COMMENT SCHEMAS =====
 
 export const createCommentSchema = z.object({

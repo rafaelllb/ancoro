@@ -312,13 +312,55 @@ export async function rollbackChange(
   // Verifica se o campo ainda existe e pode ser revertido
   const currentValue = (change.requirement as any)[change.field]
 
-  // Atualiza o requisito com o valor antigo
-  const updated = await prisma.requirement.update({
-    where: { id: change.requirementId },
-    data: {
-      [change.field]: change.oldValue,
-    },
-  })
+  // Operações a executar atomicamente (o próprio campo + espelhos de conexão, se aplicável)
+  const ops: any[] = [
+    prisma.requirement.update({
+      where: { id: change.requirementId },
+      data: { [change.field]: change.oldValue },
+    }),
+  ]
+
+  // Rollback BIDIRECIONAL de conexões:
+  // dependsOn/providesFor são dois lados da mesma aresta. Reverter só um campo deixa a
+  // relação inconsistente (o grafo deriva arestas apenas de dependsOn) e a linha não volta.
+  // Aqui restauramos o campo-espelho nos requisitos contraparte na MESMA transação.
+  if (change.field === 'dependsOn' || change.field === 'providesFor') {
+    const source = change.requirement as Requirement
+    const mirrorField = change.field === 'dependsOn' ? 'providesFor' : 'dependsOn'
+
+    const oldArr = parseReqArray(change.oldValue)
+    const curArr = parseReqArray(currentValue != null ? String(currentValue) : null)
+
+    // reqIds que o rollback vai (re)adicionar ou remover deste requisito
+    const toAdd = oldArr.filter((id) => !curArr.includes(id))
+    const toRemove = curArr.filter((id) => !oldArr.includes(id))
+    const affectedReqIds = [...toAdd, ...toRemove]
+
+    if (affectedReqIds.length > 0) {
+      const counterparts = await prisma.requirement.findMany({
+        where: { projectId: source.projectId, reqId: { in: affectedReqIds } },
+      })
+
+      for (const cp of counterparts) {
+        let mirror = parseReqArray((cp as any)[mirrorField])
+        if (toAdd.includes(cp.reqId) && !mirror.includes(source.reqId)) {
+          mirror = [...mirror, source.reqId]
+        }
+        if (toRemove.includes(cp.reqId)) {
+          mirror = mirror.filter((id) => id !== source.reqId)
+        }
+        ops.push(
+          prisma.requirement.update({
+            where: { id: cp.id },
+            data: { [mirrorField]: JSON.stringify(mirror) },
+          })
+        )
+      }
+    }
+  }
+
+  const results = await prisma.$transaction(ops)
+  const updated = results[0] as Requirement
 
   // Registra o rollback como uma nova mudança
   await prisma.changeLog.create({
@@ -333,4 +375,17 @@ export async function rollbackChange(
   })
 
   return updated
+}
+
+/**
+ * Parse seguro de campo JSON array (dependsOn/providesFor) armazenado como string.
+ */
+function parseReqArray(value: string | null): string[] {
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : []
+  } catch {
+    return []
+  }
 }

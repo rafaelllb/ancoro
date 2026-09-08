@@ -303,6 +303,21 @@ export const requirementsAPI = {
 
   bulkDelete: (projectId: string, ids: string[], force?: boolean) =>
     api.delete<BulkDeleteResponse>(`/api/projects/${projectId}/requirements/bulk`, { data: { ids, force } }),
+
+  // Conexões bidirecionais atômicas (from → to): sincroniza providesFor/dependsOn nos dois lados.
+  connect: (projectId: string, fromReqId: string, toReqId: string) =>
+    api.post<ConnectionResponse>('/api/requirements/connections', { projectId, fromReqId, toReqId }),
+
+  disconnect: (projectId: string, fromReqId: string, toReqId: string) =>
+    api.delete<ConnectionResponse>('/api/requirements/connections', {
+      data: { projectId, fromReqId, toReqId },
+    }),
+}
+
+export interface ConnectionResponse {
+  message: string
+  from: Requirement
+  to: Requirement
 }
 
 // Projects

@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express'
 import { prisma } from '../index'
 import { authenticate } from '../middleware/auth'
-import { requireEditPermission, requireDeletePermission, requireProjectAccess, canEditResponsibleBusiness } from '../middleware/permissions'
+import { requireEditPermission, requireDeletePermission, requireProjectAccess, canEditResponsibleBusiness, canEditConnection } from '../middleware/permissions'
 import {
   createRequirementSchemaForProject,
   updateRequirementSchema,
   createBulkImportItemSchemaForProject,
+  connectionSchema,
 } from '../schemas'
 import { CreateRequirementRequest, UpdateRequirementRequest } from '../types'
 import { regenerateCrossMatrix } from '../services/crossMatrixService'
@@ -71,6 +72,166 @@ async function validateResponsibleConsultant(projectId: string, responsibleConsu
 
   return { valid: true as const, user: projectMember.user }
 }
+
+/**
+ * Parse seguro de um campo JSON array (dependsOn/providesFor).
+ * Campos são armazenados como JSON string; retorna [] em qualquer inconsistência.
+ */
+function parseReqArray(value: string | null | undefined): string[] {
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Aplica (ou remove) uma conexão bidirecional entre dois requisitos de forma ATÔMICA.
+ *
+ * Semântica da aresta: from → to significa "from fornece para to" e "to depende de from".
+ * Portanto sincroniza os dois lados espelhados:
+ *   - from.providesFor  ⇄  to.dependsOn
+ *
+ * @returns os dois requisitos atualizados (já com arrays parseados) ou null se algum não existir
+ *
+ * NOTA [ESTIGMERGIA]: os dois updates rodam numa transação para nunca deixar a relação pela
+ * metade (problema antigo do createEdge no frontend que fazia 2 PATCHes independentes).
+ */
+async function applyConnection(
+  projectId: string,
+  fromReqId: string,
+  toReqId: string,
+  connect: boolean,
+  userId: string
+): Promise<{ from: any; to: any } | null> {
+  const [fromReq, toReq] = await Promise.all([
+    prisma.requirement.findFirst({ where: { projectId, reqId: fromReqId } }),
+    prisma.requirement.findFirst({ where: { projectId, reqId: toReqId } }),
+  ])
+
+  if (!fromReq || !toReq) {
+    return null
+  }
+
+  const currentProvides = parseReqArray(fromReq.providesFor)
+  const currentDepends = parseReqArray(toReq.dependsOn)
+
+  const nextProvides = connect
+    ? Array.from(new Set([...currentProvides, toReqId]))
+    : currentProvides.filter((id) => id !== toReqId)
+
+  const nextDepends = connect
+    ? Array.from(new Set([...currentDepends, fromReqId]))
+    : currentDepends.filter((id) => id !== fromReqId)
+
+  const [updatedFrom, updatedTo] = await prisma.$transaction([
+    prisma.requirement.update({
+      where: { id: fromReq.id },
+      data: { providesFor: JSON.stringify(nextProvides) },
+      include: { responsibleConsultant: { select: { id: true, name: true, email: true } } },
+    }),
+    prisma.requirement.update({
+      where: { id: toReq.id },
+      data: { dependsOn: JSON.stringify(nextDepends) },
+      include: { responsibleConsultant: { select: { id: true, name: true, email: true } } },
+    }),
+  ])
+
+  // Changelog dos dois lados (best-effort, fora da transação — segue o padrão do PATCH)
+  logRequirementChanges(prisma, fromReq.id, fromReq, updatedFrom, { userId }).catch((err) =>
+    console.error('Error logging connection change (from):', err)
+  )
+  logRequirementChanges(prisma, toReq.id, toReq, updatedTo, { userId }).catch((err) =>
+    console.error('Error logging connection change (to):', err)
+  )
+
+  return {
+    from: { ...updatedFrom, dependsOn: parseReqArray(updatedFrom.dependsOn), providesFor: parseReqArray(updatedFrom.providesFor) },
+    to: { ...updatedTo, dependsOn: parseReqArray(updatedTo.dependsOn), providesFor: parseReqArray(updatedTo.providesFor) },
+  }
+}
+
+/**
+ * Handler compartilhado das rotas de conexão (POST cria, DELETE remove).
+ */
+async function handleConnectionRoute(req: Request, res: Response, connect: boolean) {
+  try {
+    const validation = connectionSchema.safeParse(req.body)
+    if (!validation.success) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: validation.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', '),
+      })
+    }
+
+    const { projectId, fromReqId, toReqId } = validation.data
+
+    const [fromReq, toReq] = await Promise.all([
+      prisma.requirement.findFirst({ where: { projectId, reqId: fromReqId }, select: { id: true } }),
+      prisma.requirement.findFirst({ where: { projectId, reqId: toReqId }, select: { id: true } }),
+    ])
+
+    if (!fromReq || !toReq) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Requisito de origem ou destino não encontrado neste projeto',
+      })
+    }
+
+    // Permissão "dono de 1 dos lados" (ou ADMIN/MANAGER)
+    const allowed = await canEditConnection(req.user!.userId, req.user!.role, fromReq.id, toReq.id)
+    if (!allowed) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Você não tem permissão para editar conexões destes requisitos',
+      })
+    }
+
+    const result = await applyConnection(projectId, fromReqId, toReqId, connect, req.user!.userId)
+    if (!result) {
+      return res.status(404).json({ error: 'Not Found', message: 'Requisito não encontrado' })
+    }
+
+    // Regenera a matriz de cruzamento em background (não bloqueia a resposta)
+    regenerateCrossMatrix(projectId).catch((err) =>
+      console.error('Error regenerating cross matrix after connection change:', err)
+    )
+
+    return res.json({
+      message: connect ? 'Conexão criada' : 'Conexão removida',
+      from: result.from,
+      to: result.to,
+    })
+  } catch (error) {
+    console.error('Error handling connection:', error)
+    return res.status(500).json({
+      error: 'Internal Server Error',
+      message: error instanceof Error ? error.message : 'Erro ao atualizar conexão',
+    })
+  }
+}
+
+/**
+ * POST /api/requirements/connections
+ * Cria uma conexão bidirecional entre dois requisitos (from → to).
+ * Permissão: dono de um dos lados, MANAGER ou ADMIN.
+ *
+ * IMPORTANTE: registrado ANTES das rotas /requirements/:id para o segmento estático
+ * "connections" não ser capturado como :id.
+ */
+router.post('/requirements/connections', authenticate, (req: Request, res: Response) =>
+  handleConnectionRoute(req, res, true)
+)
+
+/**
+ * DELETE /api/requirements/connections
+ * Remove uma conexão bidirecional entre dois requisitos (from → to).
+ */
+router.delete('/requirements/connections', authenticate, (req: Request, res: Response) =>
+  handleConnectionRoute(req, res, false)
+)
 
 /**
  * GET /api/projects/:projectId/requirements

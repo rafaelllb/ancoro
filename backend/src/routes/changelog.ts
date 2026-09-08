@@ -13,6 +13,7 @@ import { prisma } from '../index'
 import { authenticate } from '../middleware/auth'
 import { UserRole } from '../types'
 import { getRequirementChanges, rollbackChange } from '../middleware/changelog'
+import { regenerateCrossMatrix } from '../services/crossMatrixService'
 
 const router = Router()
 
@@ -141,6 +142,14 @@ router.post(
       const updated = await rollbackChange(prisma, changeId, {
         userId: req.user!.userId,
       })
+
+      // Se a mudança revertida envolve conexões, regenera a matriz de cruzamento
+      // para refletir as arestas restauradas/removidas (background, não bloqueia resposta)
+      if (updated && (change.field === 'dependsOn' || change.field === 'providesFor')) {
+        regenerateCrossMatrix(updated.projectId).catch((err) =>
+          console.error('Error regenerating cross matrix after rollback:', err)
+        )
+      }
 
       return res.json({
         message: 'Rollback realizado com sucesso',

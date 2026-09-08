@@ -272,7 +272,12 @@ export function RequirementMultiSelect({
                   className={`px-3 py-2 cursor-pointer text-sm
                     ${index === highlightedIndex ? 'bg-blue-50 text-blue-900' : 'text-gray-900 hover:bg-gray-50'}
                   `}
-                  onClick={() => handleSelect(option.reqId)}
+                  // onMouseDown + preventDefault dispara ANTES do blur/click-outside e mantém o
+                  // foco no input, evitando que o dropdown feche antes de registrar a seleção.
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    handleSelect(option.reqId)
+                  }}
                   onMouseEnter={() => setHighlightedIndex(index)}
                 >
                   <span className="font-medium">{option.reqId}</span>

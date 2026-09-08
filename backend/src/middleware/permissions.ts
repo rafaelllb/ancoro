@@ -316,6 +316,75 @@ export async function requireEditPermission(req: Request, res: Response, next: N
 }
 
 /**
+ * Verifica se o usuário pode criar/remover uma conexão entre dois requisitos.
+ *
+ * Uma conexão altera SEMPRE os dois lados (from.providesFor + to.dependsOn), que podem
+ * pertencer a consultores diferentes. Regra de negócio (decisão Rafael Brito):
+ * - ADMIN: qualquer conexão
+ * - MANAGER: qualquer conexão do projeto que participa
+ * - CONSULTANT: basta ser responsável por UM dos lados (from OU to)
+ * - CLIENT: não pode editar conexões (não é "dono" de requisito)
+ *
+ * Ambos os requisitos devem pertencer ao mesmo projeto e o usuário deve ser membro dele.
+ */
+export async function canEditConnection(
+  userId: string,
+  userRole: string,
+  fromRequirementId: string,
+  toRequirementId: string
+): Promise<boolean> {
+  const [from, to] = await Promise.all([
+    prisma.requirement.findUnique({
+      where: { id: fromRequirementId },
+      select: { responsibleConsultantId: true, projectId: true },
+    }),
+    prisma.requirement.findUnique({
+      where: { id: toRequirementId },
+      select: { responsibleConsultantId: true, projectId: true },
+    }),
+  ])
+
+  if (!from || !to) {
+    return false
+  }
+
+  // Conexão só faz sentido dentro do mesmo projeto
+  if (from.projectId !== to.projectId) {
+    return false
+  }
+
+  // Admin tem acesso global
+  if (userRole === UserRole.ADMIN) {
+    return true
+  }
+
+  // Demais roles precisam ser membros do projeto
+  const isProjectMember = await prisma.projectUser.findFirst({
+    where: { projectId: from.projectId, userId },
+  })
+
+  if (!isProjectMember) {
+    return false
+  }
+
+  // MANAGER edita qualquer conexão do projeto
+  if (userRole === UserRole.MANAGER) {
+    return true
+  }
+
+  // CONSULTANT: dono de ao menos um dos lados
+  if (userRole === UserRole.CONSULTANT) {
+    return (
+      from.responsibleConsultantId === userId ||
+      to.responsibleConsultantId === userId
+    )
+  }
+
+  // CLIENT e demais: não podem editar conexões
+  return false
+}
+
+/**
  * Middleware para verificar permissão de comentar em requisito
  */
 export async function requireCommentPermission(req: Request, res: Response, next: NextFunction) {

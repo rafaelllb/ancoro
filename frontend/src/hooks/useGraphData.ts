@@ -4,8 +4,9 @@
  *
  * A sincronização bidirecional funciona assim:
  * - Dados → Grafo: campos dependsOn/providesFor geram edges visuais
- * - Grafo → Dados: criar/remover edge visual chama PATCH no backend
- *   atualizando dependsOn do target e providesFor do source
+ * - Grafo → Dados: criar/remover edge visual chama o endpoint atômico de conexão
+ *   (/api/requirements/connections), que sincroniza dependsOn/providesFor dos dois
+ *   lados numa única transação — evitando o antigo problema de conexão "pela metade".
  *
  * @author Rafael Brito
  */
@@ -14,7 +15,7 @@ import { useMemo, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import { Requirement } from '../services/api'
 import { ProjectListItem } from '../hooks/useProjectLists'
-import { useUpdateRequirement } from '../hooks/useRequirements'
+import { useCreateConnection, useDeleteConnection } from '../hooks/useRequirements'
 import { generateNodeColors, getFallbackColor, NodeColors } from '../utils/colorUtils'
 
 // ===== TIPOS DO GRAFO =====
@@ -241,7 +242,8 @@ export function useGraphData(
   projectModules: ProjectListItem[],
   showOnlyConnected: boolean = true
 ): UseGraphDataReturn {
-  const updateRequirement = useUpdateRequirement()
+  const createConnection = useCreateConnection()
+  const deleteConnection = useDeleteConnection()
 
   // Mapa reqId → Requirement para lookups rápidos nas mutações
   const reqMap = useMemo(() => {
@@ -359,26 +361,18 @@ export function useGraphData(
     }
 
     try {
-      // Atualiza ambos os lados da relação
-      // PATCH no source: adiciona toReqId ao providesFor
-      await updateRequirement.mutateAsync({
-        id: sourceReq.id,
-        data: { providesFor: [...sourceProvides, toReqId] },
+      // Endpoint atômico: sincroniza providesFor/dependsOn dos dois lados numa transação
+      await createConnection.mutateAsync({
+        projectId: sourceReq.projectId,
+        fromReqId,
+        toReqId,
       })
-
-      // PATCH no target: adiciona fromReqId ao dependsOn
-      await updateRequirement.mutateAsync({
-        id: targetReq.id,
-        data: { dependsOn: [...targetDepends, fromReqId] },
-      })
-
       toast.success(`Conexão criada: ${fromReqId} → ${toReqId}`)
     } catch (error) {
-      // Se o segundo PATCH falhar, tenta reverter o primeiro
-      // O toast de erro já é exibido pelo hook useUpdateRequirement
-      console.error('Erro ao criar conexão bidirecional:', error)
+      // O toast de erro (incl. 403 de permissão) já é exibido pelo hook useCreateConnection
+      console.error('Erro ao criar conexão:', error)
     }
-  }, [reqMap, updateRequirement])
+  }, [reqMap, createConnection])
 
   /**
    * Remove uma aresta visual e sincroniza com o banco:
@@ -395,25 +389,18 @@ export function useGraphData(
     }
 
     try {
-      // Remove de ambos os lados
-      const newProvides = (sourceReq.providesFor || []).filter(id => id !== toReqId)
-      const newDepends = (targetReq.dependsOn || []).filter(id => id !== fromReqId)
-
-      await updateRequirement.mutateAsync({
-        id: sourceReq.id,
-        data: { providesFor: newProvides },
+      // Endpoint atômico: remove providesFor/dependsOn dos dois lados numa transação
+      await deleteConnection.mutateAsync({
+        projectId: sourceReq.projectId,
+        fromReqId,
+        toReqId,
       })
-
-      await updateRequirement.mutateAsync({
-        id: targetReq.id,
-        data: { dependsOn: newDepends },
-      })
-
       toast.success(`Conexão removida: ${fromReqId} → ${toReqId}`)
     } catch (error) {
-      console.error('Erro ao remover conexão bidirecional:', error)
+      // O toast de erro (incl. 403 de permissão) já é exibido pelo hook useDeleteConnection
+      console.error('Erro ao remover conexão:', error)
     }
-  }, [reqMap, updateRequirement])
+  }, [reqMap, deleteConnection])
 
   return { nodes, edges, colorPalette, createEdge, deleteEdge }
 }

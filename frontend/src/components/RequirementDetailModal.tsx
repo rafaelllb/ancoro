@@ -13,9 +13,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import { Requirement, Comment } from '../services/api'
-import { useUpdateRequirement } from '../hooks/useRequirements'
+import { useUpdateRequirement, useCreateConnection, useDeleteConnection } from '../hooks/useRequirements'
 import { useComments, useDeleteComment } from '../hooks/useComments'
 import { useProjectMembers } from '../hooks/useProjectMembers'
+import { canEditRequirement } from '../hooks/useCapabilities'
 import { useAuth } from '../contexts/AuthContext'
 import { FIELD_PAIRS, hasToBe } from '../utils/requirementHelpers'
 import { EditableField } from './RequirementDetailPanel'
@@ -151,7 +152,8 @@ function DetailsTab({
   allRequirements,
   userRole,
 }: DetailsTabProps) {
-  const updateMutation = useUpdateRequirement()
+  const createConnection = useCreateConnection()
+  const deleteConnection = useDeleteConnection()
 
   const statusOptions: SelectOption[] = Object.entries(STATUS_CONFIG).map(([key, cfg]) => ({
     value: key,
@@ -163,18 +165,32 @@ function DetailsTab({
     new Set(allRequirements.map((r) => r.module).filter(Boolean))
   ).sort().map((m) => ({ value: m, label: m }))
 
-  // Handler para atualizar dependências via multiselect
+  // Handlers de relações via multiselect: usam o endpoint atômico de conexão (diff add/remove),
+  // garantindo sincronização bidirecional (providesFor/dependsOn) e permissão "dono de 1 lado".
+  //
+  // "Depende de" de R: X no array significa a aresta X → R (X fornece para R).
   const handleDependsOnChange = (newValue: string[]) => {
-    updateMutation.mutate(
-      { id: requirement.id, data: { dependsOn: newValue } },
-      { onError: () => toast.error('Erro ao salvar dependências') }
+    const current = requirement.dependsOn || []
+    const added = newValue.filter((id) => !current.includes(id))
+    const removed = current.filter((id) => !newValue.includes(id))
+    added.forEach((depReqId) =>
+      createConnection.mutate({ projectId: requirement.projectId, fromReqId: depReqId, toReqId: requirement.reqId })
+    )
+    removed.forEach((depReqId) =>
+      deleteConnection.mutate({ projectId: requirement.projectId, fromReqId: depReqId, toReqId: requirement.reqId })
     )
   }
 
+  // "Fornece para" de R: Y no array significa a aresta R → Y (R fornece para Y).
   const handleProvidesForChange = (newValue: string[]) => {
-    updateMutation.mutate(
-      { id: requirement.id, data: { providesFor: newValue } },
-      { onError: () => toast.error('Erro ao salvar relações') }
+    const current = requirement.providesFor || []
+    const added = newValue.filter((id) => !current.includes(id))
+    const removed = current.filter((id) => !newValue.includes(id))
+    added.forEach((provReqId) =>
+      createConnection.mutate({ projectId: requirement.projectId, fromReqId: requirement.reqId, toReqId: provReqId })
+    )
+    removed.forEach((provReqId) =>
+      deleteConnection.mutate({ projectId: requirement.projectId, fromReqId: requirement.reqId, toReqId: provReqId })
     )
   }
 
@@ -504,8 +520,9 @@ export default function RequirementDetailModal({
   const { data: membersResponse } = useProjectMembers(projectId)
   const members = membersResponse?.data || []
 
-  // Permissões
-  const canEdit = user?.role === 'ADMIN' || requirement?.responsibleConsultantId === user?.id
+  // Permissões — alinhadas ao backend/roleCapabilities:
+  // ADMIN e MANAGER editam qualquer; CONSULTANT edita os seus; CLIENT conforme regra de negócio.
+  const canEdit = canEditRequirement(user?.role, user?.id, requirement?.responsibleConsultantId)
   const canEditConsultant = user?.role === 'ADMIN'
 
   // Opções de consultores a partir dos membros do projeto
