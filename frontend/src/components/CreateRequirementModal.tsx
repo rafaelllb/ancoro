@@ -561,8 +561,13 @@ export default function CreateRequirementModal({
                     className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       errors.where && touched.where ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="Onde será implementado?"
+                    placeholder="Em qual etapa do processo ou sistema atual isso acontece?"
                   />
+                  {/* [2026-10-07] Alterado: Where é descrito pela área de negócio (etapa do processo / sistema legado);
+                      o detalhe técnico fica com o consultor — Rafael Brito */}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Descreva no nível do negócio: etapa do processo ou sistema legado. O detalhe técnico fica com o consultor.
+                  </p>
                   {errors.where && touched.where && (
                     <p className="mt-1 text-sm text-red-600">{errors.where}</p>
                   )}
@@ -711,7 +716,7 @@ export default function CreateRequirementModal({
                       value={form.whereToBe}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-orange-200 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-400"
-                      placeholder="Onde será implementado?"
+                      placeholder="Onde no processo ou em qual sistema isso deve passar a acontecer?"
                     />
                   </div>
 
