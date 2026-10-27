@@ -1,0 +1,31 @@
+{
+  "name": "@ancoro/process-editor",
+  "version": "0.1.0",
+  "description": "Editor/visualizador BPMN do Process Studio (React). Consome @ancoro/process-core; não depende do Ancoro.",
+  "author": "Rafael Brito",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:ancoro": "tsc --noEmit && vite build --outDir ../../frontend/public/process-studio --emptyOutDir",
+    "typecheck": "tsc --noEmit",
+    "e2e": "node e2e/phase2.mjs",
+    "e2e:ancoro": "node e2e/ancoro-fullstack.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^4.5.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "puppeteer-core": "^25.14.0",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21"
+  }
+}

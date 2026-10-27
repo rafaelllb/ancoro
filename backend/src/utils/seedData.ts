@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { getProcessKit } from '../services/processKit'
 import * as bcrypt from 'bcrypt'
 import { loadSeedDataset, SeedDataset } from './seedLoader'
 import { generateDefaultListItemsData } from './defaultLists'
@@ -211,6 +212,31 @@ export async function seedFromDataset(
         retrospective: sprint.retrospective,
       },
     })
+  }
+
+  // ===== PROCESS STUDIO (demo) =====
+  // [2026-10-15] Criado: 1 processo de exemplo por projeto com requisitos, já vinculado a requisitos reais — Rafael Brito
+  // Tolerante: se o processkit ainda não foi gerado (npm run build:processkit), o seed segue sem o processo.
+  try {
+    const kit = getProcessKit()
+    const admin = dataset.users.find((u) => u.role === 'ADMIN')
+    for (const project of dataset.projects) {
+      const reqs = dataset.requirements.filter((r) => r.projectKey === project.key).slice(0, 7)
+      if (!reqs.length) continue
+      const model = kit.demoProcess(reqs.map((r) => r.reqId))
+      const projectId = idMap[project.key]
+      const proc = await prisma.businessProcess.create({
+        data: { projectId, key: model.id, name: model.name, model: JSON.stringify(model), createdById: admin ? idMap[admin.key] : null },
+      })
+      const byReqId = new Map(reqs.map((r) => [r.reqId, idMap[r.key]]))
+      for (const ref of kit.requirementRefsOf(model)) {
+        const requirementId = byReqId.get(ref.ref)
+        if (requirementId) await prisma.processRequirementLink.create({ data: { processId: proc.id, elementId: ref.elementId, elementName: ref.elementName, requirementId } })
+      }
+    }
+    console.log('  - Processo de exemplo (Process Studio) criado em cada projeto')
+  } catch (e) {
+    console.warn(`  - Process Studio: processo de exemplo ignorado (${e instanceof Error ? e.message : e})`)
   }
 
   // ===== RESUMO =====

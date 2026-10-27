@@ -748,3 +748,138 @@ export const projectMembersAPI = {
       `/api/projects/${projectId}/members/${userId}`
     ),
 }
+
+// ===== PROCESS STUDIO (Fase 4) =====
+// [2026-10-15] Criado: modelagem de processos BPMN do projeto — ver docs/process-studio/README.md §6.4 — Rafael Brito
+// O `model` é o ProcessModel do editor (JSON opaco para o Ancoro: só o editor e o servidor o interpretam).
+
+export interface ProcessSummary {
+  id: string
+  key: string
+  name: string
+  rev: number
+  createdById: string | null
+  createdAt: string
+  updatedAt: string
+  /** o servidor já resolve a regra "ADMIN qualquer / criador (MANAGER, CONSULTANT)" */
+  canDelete: boolean
+  linkCount: number
+  versionCount: number
+}
+
+export interface ProcessPermissions {
+  canEdit: boolean
+  canPublish: boolean
+}
+
+export interface ProcessDetail extends Omit<ProcessSummary, 'linkCount' | 'versionCount'> {
+  model: unknown
+  permissions: ProcessPermissions
+}
+
+export interface ProcessVersionRow {
+  version: number
+  label: string | null
+  /** [2026-10-27] r (revisão salva) do processo quando a versão foi tirada; null em versões antigas */
+  rev?: number | null
+  createdById: string | null
+  createdAt: string
+}
+
+export interface ProcessCoverage {
+  total: number
+  covered: number
+  uncovered: Array<{ id: string; reqId: string; shortDesc: string; module: string }>
+}
+
+export interface RequirementProcessLink {
+  processId: string
+  processName: string
+  elementId: string
+  elementName: string
+}
+
+export interface ProcessSaveResult {
+  rev: number
+  updatedAt: string
+  unresolvedRefs: Array<{ elementId: string; ref: string }>
+}
+
+// [2026-10-16] Direitos da assinatura (GET /api/entitlements) — gate do Process Studio
+export const entitlementsAPI = {
+  get: () => api.get<{ processStudio: boolean }>('/api/entitlements'),
+}
+
+// [2026-10-24] Criado: formulário público de /planos (POST /api/leads, sem autenticação) — Rafael Brito
+export interface CreateLeadRequest {
+  interest: 'ENTERPRISE' | 'SELF_SERVICE_WAITLIST'
+  name: string
+  email: string
+  company?: string
+  phone?: string
+  teamSize?: '1' | '2-5' | '6-20' | '21-100' | '100+'
+  deployment?: 'SAAS' | 'DEDICATED' | 'ONPREMISE' | 'UNSURE'
+  message?: string
+  locale: 'pt' | 'en'
+  consent: boolean
+  /** Honeypot anti-bot: deve ir vazio (campo invisível ao humano). */
+  website?: string
+}
+
+export const leadsAPI = {
+  create: (data: CreateLeadRequest) => api.post<{ ok: true }>('/api/leads', data),
+}
+
+export const processesAPI = {
+  list: (projectId: string) =>
+    api.get<{ processes: ProcessSummary[]; permissions: ProcessPermissions }>(`/api/projects/${projectId}/processes`),
+
+  get: (projectId: string, processId: string) =>
+    api.get<ProcessDetail>(`/api/projects/${projectId}/processes/${processId}`),
+
+  create: (projectId: string, data: { name: string; model?: unknown }) =>
+    api.post<ProcessSummary & { unresolvedRefs: unknown[] }>(`/api/projects/${projectId}/processes`, data),
+
+  /** `baseRev` = revisão em que o editor se baseou; 409 se outra pessoa salvou antes */
+  save: (projectId: string, processId: string, data: { baseRev: number; model: unknown }) =>
+    api.put<ProcessSaveResult>(`/api/projects/${projectId}/processes/${processId}`, data),
+
+  remove: (projectId: string, processId: string) =>
+    api.delete<void>(`/api/projects/${projectId}/processes/${processId}`),
+
+  listVersions: (projectId: string, processId: string) =>
+    api.get<{ versions: ProcessVersionRow[] }>(`/api/projects/${projectId}/processes/${processId}/versions`),
+
+  snapshot: (projectId: string, processId: string, label?: string) =>
+    api.post<{ version: number }>(`/api/projects/${projectId}/processes/${processId}/versions`, { label }),
+
+  // [2026-10-19] Criado: lê o conteúdo de uma versão sem gravar nada (o editor carrega como rascunho; salvar é manual) — Rafael Brito
+  getVersion: (projectId: string, processId: string, version: number) =>
+    api.get<{ version: number; label: string | null; createdAt: string; model: unknown }>(`/api/projects/${projectId}/processes/${processId}/versions/${version}`),
+
+  /** @deprecated O editor não usa mais: restaurar agora é rascunho local (getVersion) + Salvar manual. */
+  restoreVersion: (projectId: string, processId: string, version: number) =>
+    api.post<ProcessSaveResult>(`/api/projects/${projectId}/processes/${processId}/versions/${version}/restore`),
+
+  importFile: (projectId: string, data: { kind: 'bpm' | 'bpmn'; data: string }) =>
+    api.post<{ processes: ProcessSummary[]; warnings: string[] }>(`/api/projects/${projectId}/processes/import`, data),
+
+  exportBpmn: (projectId: string, processId: string) =>
+    api.get<Blob>(`/api/projects/${projectId}/processes/${processId}/bpmn`, { responseType: 'blob' }),
+
+  coverage: (projectId: string) =>
+    api.get<ProcessCoverage>(`/api/projects/${projectId}/processes/coverage`),
+
+  forRequirement: (projectId: string, requirementId: string) =>
+    api.get<{ links: RequirementProcessLink[] }>(`/api/projects/${projectId}/requirements/${requirementId}/processes`),
+
+  searchRequirements: (projectId: string, q: string) =>
+    api.get<{ requirements: Array<{ id: string; reqId: string; shortDesc: string; module: string }> }>(
+      `/api/projects/${projectId}/process-requirements`,
+      { params: { q } }
+    ),
+
+  /** Publica o portal estático do projeto: devolve o ZIP (Blob) */
+  publish: (projectId: string, data: { label?: string; password?: string }) =>
+    api.post<Blob>(`/api/projects/${projectId}/processes/publish`, data, { responseType: 'blob' }),
+}

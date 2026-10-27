@@ -1,0 +1,74 @@
+{
+  "title": "Processos",
+  "subtitle": "Modelagem BPMN vinculada aos requisitos do projeto",
+  "list": {
+    "title": "Processos do projeto",
+    "empty": "Nenhum processo ainda. Crie um ou importe um .bpm (Bizagi) / .bpmn.",
+    "newPlaceholder": "Nome do novo processo",
+    "create": "Criar",
+    "new": "Novo processo",
+    "import": "Importar…",
+    "export": "Exportar .bpmn",
+    "delete": "Excluir",
+    "links": "{{count}} vínculo(s)",
+    "revision": "rev. {{rev}}",
+    "unsavedConfirm": "Há alterações não salvas neste processo. Sair mesmo assim?",
+    "collapse": "Recolher lista",
+    "expand": "Expandir lista"
+  },
+  "select": {
+    "title": "Selecione um processo",
+    "body": "Escolha um processo na lista para visualizar ou editar o diagrama."
+  },
+  "editor": {
+    "title": "Editor de processo",
+    "loading": "Abrindo o editor…",
+    "missing": "O editor de processos não está instalado neste ambiente. Rode \"npm run build:process-studio\" na raiz do projeto e recarregue a página.",
+    "readOnly": "Seu perfil tem acesso somente leitura aos processos."
+  },
+  "coverage": {
+    "title": "Cobertura de requisitos",
+    "summary": "{{covered}} de {{total}} requisitos aparecem em algum processo",
+    "allCovered": "Todos os requisitos do projeto aparecem em pelo menos um processo.",
+    "uncovered": "Sem processo ({{count}})",
+    "show": "Ver lista",
+    "hide": "Ocultar lista"
+  },
+  "publish": {
+    "button": "Publicar portal",
+    "title": "Publicar portal de processos",
+    "body": "Gera um site estático (ZIP) com todos os processos do projeto, pronto para hospedar. Cada publicação registra uma nova versão e o que mudou.",
+    "label": "Rótulo da publicação (opcional)",
+    "labelPlaceholder": "ex.: Release 2026.10",
+    "password": "Senha de acesso (opcional)",
+    "passwordHint": "Com senha, o conteúdo é cifrado no navegador (AES-256). Mínimo 6 caracteres.",
+    "confirm": "Gerar ZIP",
+    "cancel": "Cancelar"
+  },
+  "requirement": {
+    "tab": "Processos",
+    "empty": "Este requisito ainda não aparece em nenhum processo.",
+    "element": "elemento",
+    "open": "Abrir processo"
+  },
+  "delete": {
+    "title": "Excluir processo",
+    "message": "Excluir o processo \"{{name}}\" e todas as suas versões? Esta ação não pode ser desfeita.",
+    "confirm": "Excluir",
+    "cancel": "Cancelar"
+  },
+  "toast": {
+    "deleted": "Processo excluído.",
+    "imported": "{{count}} processo(s) importado(s).",
+    "importWarnings": "O import teve {{count}} aviso(s).",
+    "published": "Portal publicado — ZIP baixado."
+  },
+  "errors": {
+    "create": "Não foi possível criar o processo.",
+    "delete": "Não foi possível excluir o processo.",
+    "import": "Não foi possível importar o arquivo.",
+    "publish": "Não foi possível publicar o portal.",
+    "export": "Não foi possível exportar o BPMN.",
+    "load": "Não foi possível carregar os processos."
+  }
+}

@@ -28,6 +28,12 @@ type CapabilityMap = {
   canManageMembers: boolean
   canImportRequirements: boolean
   canExportBPD: boolean
+  // [2026-10-15] Criado: Process Studio (Fase 4) — ver docs/process-studio/README.md §6.4 — Rafael Brito
+  canViewProcesses: boolean
+  canEditProcesses: boolean
+  canDeleteAnyProcess: boolean
+  canDeleteOwnProcess: boolean
+  canPublishProcesses: boolean
 }
 
 type RoleCapabilityMap = Record<UserRole, Partial<CapabilityMap>>
@@ -50,6 +56,11 @@ export const RoleCapabilities: RoleCapabilityMap = {
     canManageMembers: true,
     canImportRequirements: true,
     canExportBPD: true,
+    canViewProcesses: true,
+    canEditProcesses: true,
+    canDeleteAnyProcess: true,
+    canDeleteOwnProcess: false,
+    canPublishProcesses: true,
   },
 
   MANAGER: {
@@ -69,6 +80,11 @@ export const RoleCapabilities: RoleCapabilityMap = {
     canManageMembers: true,
     canImportRequirements: true,
     canExportBPD: true,
+    canViewProcesses: true,
+    canEditProcesses: true,
+    canDeleteAnyProcess: false,
+    canDeleteOwnProcess: true,
+    canPublishProcesses: true,
   },
 
   CONSULTANT: {
@@ -88,6 +104,11 @@ export const RoleCapabilities: RoleCapabilityMap = {
     canManageMembers: false,
     canImportRequirements: false,
     canExportBPD: true,
+    canViewProcesses: true,
+    canEditProcesses: true,
+    canDeleteAnyProcess: false,
+    canDeleteOwnProcess: true,
+    canPublishProcesses: false,
   },
 
   CLIENT: {
@@ -107,6 +128,11 @@ export const RoleCapabilities: RoleCapabilityMap = {
     canManageMembers: false,
     canImportRequirements: false,
     canExportBPD: false,
+    canViewProcesses: true,
+    canEditProcesses: false,
+    canDeleteAnyProcess: false,
+    canDeleteOwnProcess: false,
+    canPublishProcesses: false,
   },
 }
 
@@ -139,4 +165,14 @@ export function getCapabilities(
   if (!normalizedRole) return {}
 
   return RoleCapabilities[normalizedRole] ?? {}
+}
+
+/** [2026-10-15] Criado: espelha backend canDeleteProcess — Rafael Brito */
+export function canDeleteProcess(
+  role: string | undefined,
+  userId: string | undefined,
+  createdById: string | null | undefined
+): boolean {
+  if (hasCapability(role, 'canDeleteAnyProcess')) return true
+  return !!userId && hasCapability(role, 'canDeleteOwnProcess') && createdById === userId
 }

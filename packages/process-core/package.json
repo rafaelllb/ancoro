@@ -1,0 +1,29 @@
+{
+  "name": "@ancoro/process-core",
+  "version": "0.1.0",
+  "description": "Núcleo independente do Process Studio: modelo de domínio, BPMN 2.0 XML, validação. Não importa nada do Ancoro.",
+  "author": "Rafael Brito",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "preview": "tsx scripts/preview-layout.ts",
+    "report:bizagi": "tsx scripts/report-bizagi.ts",
+    "viewer": "tsx scripts/build-viewer.ts"
+  },
+  "dependencies": {
+    "@dagrejs/dagre": "^3.1.1",
+    "bpmn-moddle": "^10.3.1",
+    "fast-xml-parser": "^5.11.2",
+    "fflate": "^0.8.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
+  }
+}

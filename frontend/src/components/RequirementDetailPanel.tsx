@@ -22,6 +22,10 @@ import { Requirement, Comment } from '../services/api'
 import { useUpdateRequirement } from '../hooks/useRequirements'
 import { useComments, useDeleteComment } from '../hooks/useComments'
 import { useAuth } from '../contexts/AuthContext'
+import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { useRequirementProcesses } from '../hooks/useProcesses'
+import { useEntitlements } from '../hooks/useEntitlements'
 import CommentForm, { COMMENT_TYPE_CONFIG } from './CommentForm'
 import ChangeHistory from './ChangeHistory'
 import { DiffView } from './DiffView'
@@ -40,7 +44,7 @@ interface RequirementDetailPanelProps {
   projectId: string
 }
 
-type TabType = '5w2h' | 'comments' | 'history'
+type TabType = '5w2h' | 'comments' | 'history' | 'processes'
 type ViewMode = 'as-is' | 'to-be'
 
 // ===== HELPERS LOCAIS =====
@@ -524,6 +528,33 @@ function FiveW2HTab({
   )
 }
 
+// ===== ABA PROCESSOS (Process Studio, Fase 4) =====
+// [2026-10-15] Criado: lista os processos/elementos BPMN que referenciam este requisito (projeção ProcessRequirementLink) — Rafael Brito
+
+function RequirementProcessesTab({ projectId, requirementId }: { projectId: string; requirementId: string }) {
+  const { t } = useTranslation('processes')
+  const { data: links, isLoading } = useRequirementProcesses(projectId, requirementId)
+
+  return (
+    <div className="flex-1 overflow-auto px-4 py-3" data-testid="requirement-processes">
+      {isLoading ? (
+        <p className="py-6 text-center text-sm text-gray-500">…</p>
+      ) : !links || links.length === 0 ? (
+        <p className="py-6 text-center text-sm text-gray-500">{t('requirement.empty')}</p>
+      ) : (
+        <ul className="space-y-2">
+          {links.map((l) => (
+            <li key={`${l.processId}:${l.elementId}`} className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
+              <Link to={`/processes/${l.processId}`} className="font-medium text-ancoro-navy-700 hover:underline">{l.processName}</Link>
+              <p className="text-xs text-gray-500">{t('requirement.element')}: {l.elementName || l.elementId}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 // ===== COMPONENTE PRINCIPAL =====
 
 export default function RequirementDetailPanel({
@@ -531,6 +562,8 @@ export default function RequirementDetailPanel({
   onClose,
 }: RequirementDetailPanelProps) {
   const { user } = useAuth()
+  const { t: tProc } = useTranslation('processes')
+  const { processStudio } = useEntitlements() // [2026-10-16] aba só para assinantes
   const [activeTab, setActiveTab] = useState<TabType>('5w2h')
   const { data: comments, isLoading: commentsLoading } = useComments(requirement?.id || null)
   const deleteMutation = useDeleteComment()
@@ -612,6 +645,8 @@ export default function RequirementDetailPanel({
           { key: '5w2h' as const, label: '📋 5W2H' },
           { key: 'comments' as const, label: '💬 Comentários' },
           { key: 'history' as const, label: '📜 Histórico' },
+          // [2026-10-15] Process Studio: em quais processos este requisito aparece
+          ...(processStudio ? [{ key: 'processes' as const, label: `🔀 ${tProc('requirement.tab')}` }] : []),
         ]).map((tab) => (
           <button
             key={tab.key}
@@ -676,6 +711,10 @@ export default function RequirementDetailPanel({
         <div className="flex-1 overflow-auto">
           <ChangeHistory requirementId={requirement.id} embedded />
         </div>
+      )}
+
+      {processStudio && activeTab === 'processes' && (
+        <RequirementProcessesTab projectId={requirement.projectId} requirementId={requirement.id} />
       )}
     </div>
   )

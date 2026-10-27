@@ -1,0 +1,11 @@
+# [2026-10-16] Criado: contexto mínimo (BuildKit lê <Dockerfile>.dockerignore) — o repo tem vídeos/áudios na raiz — Rafael Brito
+*
+!packages
+!apps/standalone
+**/node_modules
+**/dist
+**/out
+apps/standalone/vendor
+apps/standalone/public/editor
+apps/standalone/data
+apps/standalone/e2e/out

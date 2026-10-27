@@ -565,3 +565,18 @@ export async function requireIdPatternAccess(req: Request, res: Response, next: 
     })
   }
 }
+
+/**
+ * [2026-10-15] Criado: exige uma capability do papel (ex.: canEditProcesses). Complementa requireProjectAccess (membership). — Rafael Brito
+ */
+export function requireCapability(capability: Parameters<typeof hasCapability>[1]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Usuário não autenticado' })
+    }
+    if (!hasCapability(req.user.role, capability)) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Seu papel não tem permissão para esta ação' })
+    }
+    next()
+  }
+}

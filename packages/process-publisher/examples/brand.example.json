@@ -1,0 +1,12 @@
+{
+  "title": "Portal de Processos — ACME Utilities",
+  "subtitle": "Faturamento e Medição (S/4HANA IS-U)",
+  "lang": "pt",
+  "accent": "#d94f00",
+  "logo": "logo.png",
+  "tokens": { "--gateway": "#e08a00", "--user": "#2f6fe4" },
+  "tokensDark": { "--user": "#8ab4ff" },
+  "fontFamily": "Inter, system-ui, sans-serif",
+  "footer": "© ACME Utilities — documentação oficial dos processos",
+  "publishedAt": "2026-10-14T12:00:00Z"
+}

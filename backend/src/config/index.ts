@@ -35,6 +35,13 @@ dotenv.config({ path: path.resolve(__dirname, '../../..', '.env') })
 
 // Schema de validação para variáveis de ambiente de INFRAESTRUTURA
 // Falha rápido se configuração inválida - evita erros em runtime
+// [2026-10-15] Criado: booleano de env lido de verdade — z.coerce.boolean() trata a string "false" como true (qualquer string não vazia),
+// o que ligava o modo demo em dev/prod mesmo com DEMO_MODE=false. Aceita 1/true/yes/on (sem diferenciar maiúsculas); o resto é falso — Rafael Brito
+const envBool = z.preprocess(
+  (v) => (typeof v === 'string' ? ['1', 'true', 'yes', 'on'].includes(v.trim().toLowerCase()) : v),
+  z.boolean()
+).default(false)
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['demo', 'development', 'staging', 'production']).default('development'),
   PORT: z.coerce.number().default(3000),
@@ -47,8 +54,9 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('7d'),
 
   // Demo mode - controle explícito além do NODE_ENV (para compatibilidade)
-  DEMO_MODE: z.coerce.boolean().default(false),
-  DEMO_AUTO_SEED: z.coerce.boolean().default(false),
+  // [2026-10-15] Alterado: envBool no lugar de z.coerce.boolean() (ver acima)
+  DEMO_MODE: envBool,
+  DEMO_AUTO_SEED: envBool,
 
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
@@ -81,6 +89,19 @@ function loadEnv(): Env {
 }
 
 const env = loadEnv()
+
+// [2026-10-24] Criado: guarda-corpos de produção — fail-fast em vez de subir inseguro (CLAUDE.md exige JWT >= 32 chars em prod;
+// o schema só impunha 16) e CORS aberto ('*' é o default do schema, perigoso em prod com credentials: true) — Rafael Brito
+if (env.NODE_ENV === 'production') {
+  const problems: string[] = []
+  if (env.JWT_SECRET.length < 32) problems.push('JWT_SECRET deve ter no mínimo 32 caracteres em produção')
+  if (env.CORS_ORIGIN.split(',').some((o) => o.trim() === '*')) problems.push("CORS_ORIGIN não pode ser '*' em produção")
+  if (problems.length > 0) {
+    console.error('Configuração de produção insegura:')
+    problems.forEach((p) => console.error(`  ${p}`))
+    process.exit(1)
+  }
+}
 
 // Defaults hardcoded para fallback (antes do banco estar disponível)
 // Estes são usados apenas durante bootstrap, depois o ConfigService assume

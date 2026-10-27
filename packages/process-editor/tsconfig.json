@@ -1,0 +1,49 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "types": [
+      "vite/client",
+      "node"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@ancoro/process-core": [
+        "../process-core/src/index.ts"
+      ],
+      "@ancoro/process-render": [
+        "../process-render/src/index.ts"
+      ],
+      "@ancoro/process-render/diagram.css": [
+        "../process-render/src/diagram.css"
+      ],
+      "react": [
+        "./node_modules/@types/react"
+      ],
+      "react/jsx-runtime": [
+        "./node_modules/@types/react/jsx-runtime"
+      ],
+      "react/jsx-dev-runtime": [
+        "./node_modules/@types/react/jsx-dev-runtime"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "vite.config.ts",
+    "../process-core/src/**/*.d.ts",
+    "../process-render/src/**/*"
+  ]
+}

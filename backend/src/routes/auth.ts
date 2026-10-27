@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import bcrypt from 'bcrypt'
 import { prisma } from '../index'
-import { generateToken } from '../middleware/auth'
+import { generateToken, optionalAuthenticate } from '../middleware/auth'
 import { loginSchema, registerSchema } from '../schemas'
 import { LoginRequest, LoginResponse, RegisterRequest, UserPublic } from '../types'
 import { logger } from '../utils/logger'
@@ -117,10 +117,11 @@ router.post('/login', async (req: Request, res: Response) => {
 
     res.json(response)
   } catch (error) {
-    console.error('Login error:', error)
+    // [2026-10-24] Alterado: logger estruturado e mensagem genérica — error.message do Prisma/driver não vai para o cliente
+    logger.error({ err: error }, 'Login error')
     res.status(500).json({
       error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Erro ao fazer login',
+      message: 'Erro ao fazer login',
     })
   }
 })
@@ -129,7 +130,7 @@ router.post('/login', async (req: Request, res: Response) => {
  * POST /api/auth/register (opcional - para criar novos usuários)
  * Por enquanto, usuários são criados via seed ou diretamente no banco
  */
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', optionalAuthenticate, async (req: Request, res: Response) => {
   try {
     const validationResult = registerSchema.safeParse(req.body)
     if (!validationResult.success) {
@@ -155,11 +156,15 @@ router.post('/register', async (req: Request, res: Response) => {
 
     const pendingMemberships = await listPendingProjectMembershipsByEmail(prisma, normalizedEmail)
 
-    const assignedRole = pendingMemberships[0]?.role || role
+    // [2026-10-24] Alterado: fechada a escalada de privilégio — antes qualquer anônimo se cadastrava como ADMIN
+    // enviando `role` no body. Agora: (a) convidado (pending membership por e-mail) herda o papel do convite;
+    // (b) `role` do body só vale para ADMIN autenticado; (c) qualquer outro caso é recusado (sem auto-cadastro aberto).
+    const callerIsAdmin = req.user?.role === 'ADMIN'
+    const assignedRole = pendingMemberships[0]?.role || (callerIsAdmin ? role : undefined)
     if (!assignedRole) {
-      return res.status(400).json({
-        error: 'Validation Error',
-        message: 'O usuário deve ser criado com um perfil específico ou ter um perfil previamente atribuído por e-mail',
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Cadastro permitido apenas mediante convite ou por um administrador',
       })
     }
 
@@ -215,10 +220,10 @@ router.post('/register', async (req: Request, res: Response) => {
       pendingMembershipsApplied: pendingMemberships.length,
     })
   } catch (error) {
-    console.error('Register error:', error)
+    logger.error({ err: error }, 'Register error')
     return res.status(500).json({
       error: 'Internal Server Error',
-      message: error instanceof Error ? error.message : 'Erro ao criar usuário',
+      message: 'Erro ao criar usuário',
     })
   }
 })

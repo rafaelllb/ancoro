@@ -17,6 +17,7 @@ import { useCapabilities } from '../hooks/useCapabilities'
 import { useRequirements } from '../hooks/useRequirements'
 import { useProjectModules } from '../hooks/useProjectLists'
 // useProjectTerminology disponível se necessário para labels customizados
+import { useEntitlements } from '../hooks/useEntitlements'
 import { useGraphData, GraphNode } from '../hooks/useGraphData'
 import RequirementsGraph from '../components/graph'
 
@@ -32,6 +33,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function DependencyGraph() {
   const { t } = useTranslation(['graph', 'nav', 'enums'])
   const { user, logout } = useAuth()
+  const { processStudio } = useEntitlements() // [2026-10-16] gate de assinatura
   const { currentProject } = useCurrentProject()
   const projectId = currentProject?.id || ''
 
@@ -92,6 +94,14 @@ export default function DependencyGraph() {
             >
               {t('nav:requirementsLink')}
             </Link>
+            {processStudio && (
+              <Link
+                to="/processes"
+                className="px-4 py-2 text-sm text-ancoro-navy-600 hover:text-ancoro-navy-700 border border-ancoro-navy-300 rounded-lg hover:bg-ancoro-navy-50"
+              >
+                {t('nav:processes')}
+              </Link>
+            )}
             {canViewMetrics && (
               <Link
                 to="/metrics"

@@ -7,11 +7,11 @@
  *
  * Uso:
  *   npx ts-node scripts/generate-license.ts \
- *     --customer "Seidor Brasil" \
- *     --customer-id "seidor-001" \
+ *     --customer "Cliente Exemplo" \
+ *     --customer-id "cliente-001" \
  *     --tier professional \
  *     --days 365 \
- *     --output ./seidor.license
+ *     --output ./cliente.license
  *
  * Pré-requisitos:
  *   - Chave privada em keys/license-private.pem
@@ -185,8 +185,8 @@ function printUsage(): void {
 Uso: npx ts-node scripts/generate-license.ts [opções]
 
 Opções obrigatórias:
-  --customer      Nome do cliente (ex: "Seidor Brasil")
-  --customer-id   ID único do cliente (ex: "seidor-001")
+  --customer      Nome do cliente (ex: "Cliente Exemplo")
+  --customer-id   ID único do cliente (ex: "cliente-001")
 
 Opções:
   --tier          Tier da licença: pilot|starter|professional|enterprise (default: starter)
@@ -196,8 +196,8 @@ Opções:
 
 Exemplos:
   npx ts-node scripts/generate-license.ts \\
-    --customer "Seidor Brasil" \\
-    --customer-id "seidor-001" \\
+    --customer "Cliente Exemplo" \\
+    --customer-id "cliente-001" \\
     --tier professional \\
     --days 365
 

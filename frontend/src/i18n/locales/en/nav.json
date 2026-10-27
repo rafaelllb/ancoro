@@ -10,5 +10,6 @@
   "members": "Members",
   "menuLabel": "Navigation menu",
   "openMenu": "Open menu",
-  "closeMenu": "Close menu"
+  "closeMenu": "Close menu",
+  "processes": "Processes"
 }

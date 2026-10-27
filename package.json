@@ -5,6 +5,7 @@
   "author": "Rafael Brito",
   "license": "UNLICENSED",
   "scripts": {
+    "predev": "cd backend && npm run db:start",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
@@ -31,6 +32,11 @@
     "electron:build": "cd frontend && npm run electron:build",
 
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "install:process-studio": "cd packages/process-core && npm install && cd ../process-render && npm install && cd ../process-editor && npm install && cd ../process-publisher && npm install",
+    "build:process-studio": "cd packages/process-editor && npm run build:ancoro",
+    "standalone:build": "cd apps/standalone && npm run build",
+    "standalone:start": "cd apps/standalone && npm start",
+    "build:processkit": "cd packages/process-publisher && node build-viewer.mjs && node build-kit.mjs",
     "prisma:migrate": "cd backend && npm run prisma:migrate",
     "prisma:seed": "cd backend && npm run prisma:seed",
     "prisma:studio": "cd backend && npm run prisma:studio"

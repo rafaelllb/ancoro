@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor de Música — Ancoro</title>
+<!--
+  [2026-10-08] Criado: editor visual de emendas (extensão de música por saltos entre trechos similares) — Rafael Brito
+  [2026-10-08] Alterado: independente (abre QUALQUER áudio; análise de batidas/ataques/similaridade no próprio navegador).
+  [2026-10-08] Alterado: MODELO DE EDIÇÃO REFEITO. Antes: lista de "saltos" (saída/chegada) que o usuário tinha de
+    entender. Agora: o resultado é uma lista de TRECHOS do original (clips) e o usuário edita o resultado direto, como
+    num editor de áudio: selecionar, apagar, copiar/recortar, colar SOBRE uma seleção (substitui) ou num ponto marcado
+    (insere). Cada edição vale para a próxima. As "emendas" (descontinuidades entre trechos) são derivadas e ficam
+    numa tabela só para ouvir/ajustar. — pedido do Rafael
+  Abre com duplo clique (file://). Sem dependências externas.
+-->
+<style>
+  :root{
+    --bg:#f3f5f8; --panel:#fff; --ink:#18212d; --muted:#667386; --line:#d8dee7;
+    --wave:#7e90a8; --accent:#2f6fed; --leave:#d9480f; --land:#1c7ed6; --beat:rgba(0,0,0,.09); --onset:rgba(0,0,0,.30);
+    --play:#12a37a; --warn:#c92a2a; --ok:#2b8a3e; --chip:#eef1f6; --cursor:#9c36b5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0e131a; --panel:#161d27; --ink:#e6ebf2; --muted:#93a0b3; --line:#283342;
+      --wave:#5d7491; --accent:#6ea0ff; --leave:#ff8a4c; --land:#5aa9ff; --beat:rgba(255,255,255,.09); --onset:rgba(255,255,255,.30);
+      --play:#38d9a9; --warn:#ff6b6b; --ok:#69db7c; --chip:#212b39; --cursor:#d0a0ff; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,sans-serif}
+  header{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);padding:10px 16px}
+  main{max-width:1320px;margin:0 auto;padding:14px 16px 40px}
+  h1{font-size:16px;margin:0}
+  .row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+  .grow{flex:1}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:14px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 8px;font-weight:600}
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:color-mix(in srgb,var(--bg) 60%,var(--panel))}
+  .wrap{position:relative;height:174px;min-width:100%}
+  .wrap canvas{position:absolute;left:0;top:24px;height:150px}
+  .wrap canvas.ruler{top:0;height:24px}
+  .tm{font-variant-numeric:tabular-nums;color:var(--muted)} .tm b{color:var(--ink);font-weight:600}
+  button,.btn{font:inherit;color:var(--ink);background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+  button:hover:not(:disabled),.btn:hover{border-color:var(--accent)}
+  button:disabled{opacity:.45;cursor:default}
+  button.primary,.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.danger:hover:not(:disabled){border-color:var(--warn)}
+  button.icon{padding:3px 7px}
+  button.primary kbd{color:#fff;background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.45)}
+  kbd{font:11px ui-monospace,Consolas,monospace;background:var(--chip);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px}
+  label{color:var(--muted);display:inline-flex;align-items:center;gap:5px}
+  input[type=number],select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:3px 6px}
+  input[type=number]{width:92px}
+  table{border-collapse:collapse;width:100%}
+  th,td{padding:5px 6px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{color:var(--muted);font-weight:500;font-size:12px}
+  tr.sel{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+  tr.jr{cursor:pointer}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}
+  .stat{font-variant-numeric:tabular-nums}
+  .ok{color:var(--ok)} .bad{color:var(--warn)} .mut{color:var(--muted)}
+  textarea{width:100%;height:110px;font:12px/1.4 ui-monospace,Consolas,monospace;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px}
+  .hint{color:var(--muted);font-size:12px;margin-top:6px}
+  .nowrap{white-space:nowrap}
+  .sub{text-transform:none;letter-spacing:0}
+  #drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed var(--line);border-radius:14px;padding:70px 20px;text-align:center;color:var(--muted);margin:30px 0}
+  #drop.over{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent)}
+  #drop strong{color:var(--ink);font-size:16px}
+  #overlay{position:fixed;inset:0;background:rgba(10,14,20,.55);display:none;align-items:center;justify-content:center;z-index:50}
+  #overlay .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 26px;min-width:280px;text-align:center}
+  progress{width:100%;margin-top:8px}
+  #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:60;max-width:90vw}
+  #toast.show{opacity:.96}
+  #app{display:none}
+  .hidden{display:none!important}
+  @media (max-width:760px){main{padding:10px}input[type=number]{width:78px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="row">
+    <h1>Editor de Música</h1>
+    <label class="btn primary" for="fileIn">📂 Abrir áudio…</label>
+    <input id="fileIn" type="file" accept="audio/*,video/*,.mp3,.wav,.m4a,.ogg,.flac,.aac,.mp4" hidden>
+    <span id="fileInfo" class="mut"></span>
+    <span class="grow"></span>
+    <span id="hdrCtl" class="row hidden">
+      <label>Duração alvo <input id="tg" type="number" step="0.001" min="1" value="178.651"> s</label>
+      <label class="btn" for="vidIn" title="Lê a duração de um vídeo/áudio e usa como alvo">🎬 Usar duração de um vídeo…</label>
+      <input id="vidIn" type="file" accept="video/*,audio/*" hidden>
+      <label title="Impede que a sugestão volte para os primeiros 12% (introdução)"><input id="noIntro" type="checkbox" checked> não voltar à intro</label>
+      <button id="suggest" class="primary" title="Monta automaticamente um resultado que fecha na duração alvo (substitui as edições atuais; Ctrl+Z desfaz)">✨ Sugerir extensão</button>
+      <button id="reset" title="Volta o resultado para o áudio original, sem edições">↺ Restaurar original</button>
+      <button id="undo" class="icon" title="Desfazer (Ctrl+Z)">↶</button>
+      <button id="redo" class="icon" title="Refazer (Ctrl+Y)">↷</button>
+    </span>
+  </div>
+</header>
+
+<main>
+  <div id="drop">
+    <strong>Arraste um arquivo de áudio aqui</strong>
+    <span>ou use <em>Abrir áudio…</em> — mp3, wav, m4a, ogg, flac (também extrai o som de um mp4).</span>
+    <label class="btn primary" for="fileIn">Escolher arquivo</label>
+    <span class="hint">Tudo roda localmente no navegador; nada é enviado para fora.</span>
+  </div>
+
+  <div id="app">
+    <section>
+      <h2>Original <span class="mut sub">— referência (somente leitura): selecione e copie trechos daqui</span></h2>
+      <div class="row" style="margin-bottom:8px">
+        <button id="playSrc">▶ Original</button>
+        <button id="playSelSrc" disabled>▶ Seleção</button>
+        <button id="cpSrc" disabled title="Copia o trecho selecionado do Original (Ctrl+C)">⧉ Copiar <kbd>Ctrl+C</kbd></button>
+        <label>Encaixe
+          <select id="snap"><option value="beat">Ímã na batida</option><option value="onset">Ímã no ataque</option><option value="free">Livre</option></select>
+        </label>
+        <span class="tm" id="selInfoSrc"></span>
+        <span class="tm">cursor <b id="curSrc">0:00.00</b> · mouse <span id="hovSrc">—</span></span>
+        <span class="grow"></span>
+        <label>Zoom <input id="zoomSrc" type="range" min="4" max="200" value="40"></label>
+        <button id="fitSrc" class="icon" title="Ajustar à largura">↔</button>
+      </div>
+      <div class="scroll" id="scrSrc"><div class="wrap" id="wrapSrc"><canvas id="rSrc" class="ruler"></canvas><canvas id="wSrc"></canvas><canvas id="oSrc"></canvas></div></div>
+      <div class="hint">Clique = posiciona o cursor <span style="color:var(--cursor)">(roxo)</span>. Arraste em área vazia, ou <kbd>Shift</kbd>+clique no início e no fim, para selecionar. <kbd>Alt</kbd> desliga o ímã. <kbd>Ctrl</kbd>+roda = zoom. Os marcadores <b style="color:var(--leave)">S</b>/<b style="color:var(--land)">C</b> mostram onde cada emenda do resultado sai/chega; dá para arrastá-los.</div>
+    </section>
+
+    <section>
+      <h2>Resultado <span class="mut sub">— é aqui que você edita</span></h2>
+      <div class="row" style="margin-bottom:8px">
+        <button class="primary" id="playOut">▶ Resultado</button>
+        <button id="playSelOut" disabled>▶ Seleção</button>
+        <button id="stop">⏹ Parar <kbd>Esc</kbd></button>
+        <span style="width:6px"></span>
+        <button id="cpOut" disabled title="Copiar o trecho selecionado (Ctrl+C)">⧉ Copiar</button>
+        <button id="cutOut" disabled title="Recortar: copia e apaga (Ctrl+X)">✂ Recortar</button>
+        <button id="pasteOut" disabled title="Colar (Ctrl+V)">📋 Colar</button>
+        <button id="delOut" class="danger" disabled title="Apagar o trecho selecionado (Delete ou Backspace)">🗑 Apagar <kbd>Del</kbd></button>
+      </div>
+      <div class="row" style="margin-bottom:8px">
+        <span class="stat" id="status"></span>
+        <span class="tm" id="selInfoOut"></span>
+        <span class="tm">cursor <b id="curOut">0:00.00</b> · mouse <span id="hovOut">—</span></span>
+        <span class="grow"></span>
+        <label>Zoom <input id="zoomOut" type="range" min="4" max="200" value="40"></label>
+        <button id="fitOut" class="icon" title="Ajustar à largura">↔</button>
+      </div>
+      <div class="scroll" id="scrOut"><div class="wrap" id="wrapOut"><canvas id="rOut" class="ruler"></canvas><canvas id="wOut"></canvas><canvas id="oOut"></canvas></div></div>
+      <div class="hint">
+        <b>Colar sobre uma seleção = substitui. Colar num ponto (só o cursor roxo, sem seleção) = insere, empurrando o resto.</b>
+        Selecione arrastando ou com <kbd>Shift</kbd>+clique no início e no fim (novos Shift+cliques movem o término); clicar em outro ponto desfaz a seleção.
+        <kbd>Delete</kbd>/<kbd>Backspace</kbd> apaga · <kbd>Ctrl</kbd>+<kbd>C</kbd> copia · <kbd>Ctrl</kbd>+<kbd>X</kbd> recorta · <kbd>Ctrl</kbd>+<kbd>V</kbd> cola · <kbd>Espaço</kbd> toca/pausa o painel em que você clicou por último · <kbd>Ctrl</kbd>+<kbd>Z</kbd> desfaz.
+        A parte sombreada além da linha de duração alvo será cortada na exportação.
+      </div>
+    </section>
+
+    <section>
+      <h2>Emendas <span class="mut sub">— pontos do resultado onde a música pula para outro lugar do original</span></h2>
+      <div class="row" style="margin-bottom:8px">
+        <label>Ouvir emenda ±<select id="ctxLen"><option value="2">2 s</option><option value="4" selected>4 s</option><option value="8">8 s</option></select></label>
+        <label>Ao criar emendas, cortar
+          <select id="cutMode"><option value="attack">antes do ataque (recomendado)</option><option value="exact">exatamente onde selecionei</option></select>
+        </label>
+        <label>margem <input id="mg" type="number" min="0" max="200" step="1" value="15"> ms</label>
+        <label>crossfade <input id="xf" type="number" min="1" max="2000" step="1" value="20"> ms</label>
+        <label>fade-out <input id="fo" type="number" min="0" max="15" step="0.5" value="3"> s</label>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th><span class="dot" style="background:var(--leave)"></span>Sai do original em (s)</th><th><span class="dot" style="background:var(--land)"></span>Continua no original em (s)</th><th>No resultado</th><th>Qualidade da saída</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="noJumps" class="hint hidden">Nenhuma emenda: o resultado ainda é o original contínuo. Apague, cole ou use <b>✨ Sugerir extensão</b>.</div>
+    </section>
+
+    <section>
+      <h2>Exportar</h2>
+      <div class="row">
+        <button class="primary" id="dlWav">⬇ Baixar WAV do resultado</button>
+        <button id="dlProj">⬇ Salvar projeto (.json)</button>
+        <label class="btn" for="projIn">📂 Abrir projeto…</label><input id="projIn" type="file" accept=".json" hidden>
+        <button id="cpPy">Copiar JUMPS (extend_song.py)</button>
+        <button id="cpFf">Copiar comandos ffmpeg</button>
+      </div>
+      <textarea id="outTxt" readonly spellcheck="false" style="margin-top:8px"></textarea>
+    </section>
+  </div>
+</main>
+
+<div id="overlay"><div class="box"><div id="ovTxt">Analisando…</div><progress id="ovBar" max="1" value="0"></progress></div></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+// =====================================================================================
+// Estado
+//   clips  = lista de trechos do ORIGINAL, [[a,b],...], na ordem em que tocam. Concatenados formam o RESULTADO.
+//            Todas as edições (apagar, colar, recortar, sugerir) transformam esta lista.
+//   P.src / P.out = cursor e seleção de cada painel (tempo do original / tempo do resultado).
+// =====================================================================================
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let ctx, SL, SR, sr, dur, fileName = '', fileKey = '', videoName = '';
+let A = null;                       // análise: {beats, onsets, bpm, feat, tail}
+let clips = [];
+const mkP = () => ({ cursor:0, selA:null, selB:null, anchor:null });
+const P = { src: mkP(), out: mkP() };
+let active = 'src';                 // painel ativo: alvo do atalho Espaço e do Ctrl+C
+let clipboard = null;               // [[a,b],...] em tempo do original
+let L2 = null;                      // layout do resultado: {T:[início de cada trecho], total, joins:[], beats:[], onsets:[]}
+let result = null, play = null, raf = 0;
+let srcPeaks = null, outPeaks = null, ppsS = 40, ppsO = 40;
+let undoStack = [], redoStack = [];
+let selJoin = 0;
+const BLK = 256, MAGNET_PX = 8, MIN_SEL = 0.02;
+
+const opts = () => ({ xf:+$('xf').value, mg:+$('mg').value, fo:+$('fo').value, tg:+$('tg').value, mode:$('cutMode').value });
+const cloneC = c => c.map(x => x.slice());
+const fmt = t => `${Math.floor(t/60)}:${(t%60).toFixed(2).padStart(5,'0')}`;
+const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
+function toast(msg, ms=3200){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),ms); }
+
+// =====================================================================================
+// Análise de áudio (FFT própria; roda no navegador)
+// [2026-10-08] Criado: onsets por fluxo espectral + refino de ataque em amostra, beat tracking por programação
+//   dinâmica (Ellis 2007) e features por batida (bandas log) para sugerir extensão — substitui o librosa do Python.
+// =====================================================================================
+function makeFFT(n){
+  const lv=Math.log2(n)|0, rev=new Uint32Array(n), cs=new Float64Array(n/2), sn=new Float64Array(n/2);
+  for(let i=0;i<n;i++){ let r=0; for(let b=0;b<lv;b++) r|=((i>>b)&1)<<(lv-1-b); rev[i]=r; }
+  for(let i=0;i<n/2;i++){ cs[i]=Math.cos(2*Math.PI*i/n); sn[i]=-Math.sin(2*Math.PI*i/n); }
+  return (re,im)=>{
+    for(let i=0;i<n;i++){ const j=rev[i]; if(j>i){ let t=re[i];re[i]=re[j];re[j]=t; t=im[i];im[i]=im[j];im[j]=t; } }
+    for(let size=2;size<=n;size<<=1){
+      const half=size>>1, step=n/size;
+      for(let s=0;s<n;s+=size) for(let k=0,w=0;k<half;k++,w+=step){
+        const a=s+k, b=a+half, tr=re[b]*cs[w]-im[b]*sn[w], ti=re[b]*sn[w]+im[b]*cs[w];
+        re[b]=re[a]-tr; im[b]=im[a]-ti; re[a]+=tr; im[a]+=ti;
+      }
+    }
+  };
+}
+const yieldUI = () => new Promise(r => setTimeout(r, 0));
+const nearestIdx = (arr,t) => { // arr ordenado
+  if(!arr.length) return -1; let lo=0, hi=arr.length-1;
+  while(hi-lo>1){ const m=(lo+hi)>>1; if(arr[m]<t) lo=m; else hi=m; }
+  return Math.abs(arr[lo]-t) <= Math.abs(arr[hi]-t) ? lo : hi;
+};
+
+async function analyze(L,R,rate,progress){
+  const len=L.length, mono=new Float32Array(len); for(let i=0;i<len;i++) mono[i]=(L[i]+R[i])*0.5;
+  const N=1024, hop=Math.max(1,Math.round(rate/100)), fps=rate/hop, nf=Math.max(0,Math.floor((len-N)/hop));
+  if(nf<200) throw new Error('Áudio curto demais para analisar (mínimo ~3 s).');
+  const fft=makeFFT(N), re=new Float64Array(N), im=new Float64Array(N), win=new Float64Array(N);
+  for(let i=0;i<N;i++) win[i]=0.5-0.5*Math.cos(2*Math.PI*i/(N-1));
+  const NB=24, fmin=60, fmax=Math.min(9000,rate/2*0.95), edge=[];
+  for(let b=0;b<=NB;b++) edge.push(Math.round(fmin*Math.pow(fmax/fmin,b/NB)*N/rate));
+  const bandOf=new Int16Array(N/2).fill(-1);
+  for(let b=0;b<NB;b++) for(let k=edge[b];k<Math.max(edge[b]+1,edge[b+1])&&k<N/2;k++) bandOf[k]=b;
+  const maxBin=Math.min(N/2-1,Math.floor(8000*N/rate));
+  const bandE=new Float32Array(nf*NB), flux=new Float32Array(nf), prev=new Float32Array(N/2), acc=new Float64Array(NB);
+  for(let t=0;t<nf;t++){
+    const o=t*hop; for(let n=0;n<N;n++){ re[n]=mono[o+n]*win[n]; im[n]=0; }
+    fft(re,im); acc.fill(0); let fl=0;
+    for(let k=1;k<N/2;k++){
+      const m=Math.hypot(re[k],im[k]), lm=Math.log1p(m*20);
+      if(k<=maxBin){ const d=lm-prev[k]; if(d>0) fl+=d; }
+      prev[k]=lm; const b=bandOf[k]; if(b>=0) acc[b]+=m*m;
+    }
+    flux[t]=fl; for(let b=0;b<NB;b++) bandE[t*NB+b]=Math.log(1e-9+acc[b]);
+    if(t%400===0){ progress(0.8*t/nf,'Analisando espectro…'); await yieldUI(); }
+  }
+  const oe=new Float32Array(nf), w=Math.round(fps*0.25);
+  const pre=new Float64Array(nf+1); for(let t=0;t<nf;t++) pre[t+1]=pre[t]+flux[t];
+  let sd=0; for(let t=0;t<nf;t++){ const a=Math.max(0,t-w), b=Math.min(nf,t+w+1); const v=Math.max(0,flux[t]-(pre[b]-pre[a])/(b-a)); oe[t]=v; sd+=v*v; }
+  sd=Math.sqrt(sd/nf)||1; for(let t=0;t<nf;t++) oe[t]/=sd;
+  progress(0.85,'Detectando ataques…'); await yieldUI();
+  const onsets=[], cen=t=>(t*hop+N/2)/rate;
+  for(let t=2;t<nf-2;t++){
+    const v=oe[t]; if(v<0.6) continue; let isMax=true; for(let d=-2;d<=2;d++) if(oe[t+d]>v){isMax=false;break;}
+    if(!isMax) continue;
+    const at=attackStart(mono,rate,cen(t)); if(!onsets.length||at-onsets[onsets.length-1]>0.04) onsets.push(at);
+  }
+  const lagMin=Math.round(fps*60/200), lagMax=Math.round(fps*60/60); let bestLag=lagMin, bestV=-1;
+  for(let lag=lagMin;lag<=lagMax;lag++){
+    let s=0; for(let t=lag;t<nf;t++) s+=oe[t]*oe[t-lag]; s/=(nf-lag);
+    const wgt=Math.exp(-0.5*Math.pow(Math.log2(lag/(fps*0.5)),2)); if(s*wgt>bestV){bestV=s*wgt;bestLag=lag;}
+  }
+  const T=bestLag, alpha=100, score=new Float32Array(nf), back=new Int32Array(nf).fill(-1);
+  const pmin=Math.max(1,Math.round(T/2)), pmax=Math.round(2*T);
+  for(let t=0;t<nf;t++){
+    let best=-Infinity, bi=-1;
+    for(let p=pmin;p<=pmax;p++){ const s=t-p; if(s<0) break; const v=score[s]-alpha*Math.pow(Math.log(p/T),2); if(v>best){best=v;bi=s;} }
+    if(bi>=0&&best>0){ score[t]=oe[t]+best; back[t]=bi; } else score[t]=oe[t];
+  }
+  let end=0, es=-Infinity; for(let t=Math.max(0,nf-Math.round(1.5*T));t<nf;t++) if(score[t]>es){es=score[t];end=t;}
+  const bf=[]; for(let t=end;t>=0;t=back[t]){ bf.push(t); if(back[t]<0) break; } bf.reverse();
+  const beats=bf.map(cen);
+  progress(0.92,'Calculando similaridade…'); await yieldUI();
+  const mean=new Float64Array(NB), sdv=new Float64Array(NB);
+  for(let t=0;t<nf;t++) for(let b=0;b<NB;b++) mean[b]+=bandE[t*NB+b]/nf;
+  for(let t=0;t<nf;t++) for(let b=0;b<NB;b++){ const d=bandE[t*NB+b]-mean[b]; sdv[b]+=d*d/nf; }
+  for(let b=0;b<NB;b++) sdv[b]=Math.sqrt(sdv[b])||1;
+  const feat=[];
+  for(let k=0;k<beats.length-1;k++){
+    const a=Math.max(0,Math.round((beats[k]*rate-N/2)/hop)), b=Math.min(nf,Math.max(a+1,Math.round((beats[k+1]*rate-N/2)/hop)));
+    const f=new Float32Array(NB); for(let t=a;t<b;t++) for(let q=0;q<NB;q++) f[q]+=(bandE[t*NB+q]-mean[q])/sdv[q]/(b-a);
+    feat.push(f);
+  }
+  let tail=0; { const step=Math.round(rate*0.05); let peak=0; for(let i=0;i<len;i+=step){ let s=0; const e=Math.min(len,i+step); for(let q=i;q<e;q++) s+=mono[q]*mono[q]; peak=Math.max(peak,Math.sqrt(s/(e-i))); }
+    for(let i=len-step;i>=0;i-=step){ let s=0; for(let q=i;q<i+step;q++) s+=mono[q]*mono[q]; if(Math.sqrt(s/step)>0.02*Math.max(peak,0.05)) break; tail+=step/rate; } }
+  progress(1,'Pronto');
+  return { beats, onsets, feat, bpm:60*fps/T, fps, tail };
+}
+function attackStart(mono,rate,tc){
+  const blk=Math.max(1,Math.round(rate*0.001)), a=Math.max(0,Math.round((tc-0.06)*rate)), b=Math.min(mono.length,Math.round((tc+0.02)*rate));
+  const n=Math.floor((b-a)/blk); if(n<4) return tc; const e=new Float32Array(n); let mn=Infinity, mx=0;
+  for(let i=0;i<n;i++){ let s=0; for(let q=a+i*blk;q<a+(i+1)*blk;q++) s+=mono[q]*mono[q]; e[i]=Math.sqrt(s/blk); mn=Math.min(mn,e[i]); mx=Math.max(mx,e[i]); }
+  const thr=mn+0.2*(mx-mn); for(let i=0;i<n;i++) if(e[i]>=thr) return (a+i*blk)/rate; return tc;
+}
+
+// =====================================================================================
+// Modelo de edição: operações sobre a lista de trechos (clips), em tempo do RESULTADO
+// =====================================================================================
+const clipLen = c => c[1]-c[0];
+const totalLen = () => clips.reduce((s,c)=>s+clipLen(c),0);
+// garante que exista uma fronteira de trechos em t (tempo do resultado); devolve o índice do trecho que começa em t
+function splitAt(t){
+  let T=0;
+  for(let i=0;i<clips.length;i++){
+    const l=clipLen(clips[i]);
+    if(t<=T+1e-6) return i;
+    if(t<T+l-1e-6){ const x=clips[i][0]+(t-T); clips.splice(i,1,[clips[i][0],x],[x,clips[i][1]]); return i+1; }
+    T+=l;
+  }
+  return clips.length;
+}
+// trechos do original que correspondem ao intervalo [t1,t2] do resultado
+function rangeSegs(t1,t2){
+  const out=[]; let T=0;
+  for(const c of clips){
+    const l=clipLen(c), a=Math.max(t1,T), b=Math.min(t2,T+l);
+    if(b-a>0.001) out.push([c[0]+(a-T),c[0]+(b-T)]);
+    T+=l;
+  }
+  return out;
+}
+// junta trechos contíguos e remove trechos de comprimento ~0
+function normalize(){
+  const out=[];
+  for(const c of clips){
+    if(clipLen(c)<0.005) continue;
+    const last=out[out.length-1];
+    if(last&&Math.abs(last[1]-c[0])<0.0005) last[1]=c[1]; else out.push(c.slice());
+  }
+  clips=out.length?out:[[0,dur]];
+}
+function beatAndOffset(t){
+  const bi=nearestIdx(A.beats,t), b=bi>=0&&Math.abs(A.beats[bi]-t)<0.4 ? A.beats[bi] : t;
+  const oi=nearestIdx(A.onsets,b), c=oi>=0?A.onsets[oi]:b;
+  return [b, Math.abs(c-b)<0.07 ? c-b : 0];
+}
+// [2026-10-08] Alterado: cada ponta é cortada no ataque MAIS PRÓXIMO dela (menos a margem), de forma independente. Antes:
+//   "batida + deslocamento comum": o rastreador de batidas ficava deslocado de forma diferente nas duas pontas e a emenda
+//   saía ~40 ms fora do ritmo (audível como "quebra" em ~2:39 do arquivo gerado) — mesmo ajuste de extend_song.py
+function cutPair(leave,land,o){
+  if(o.mode==='exact') return [leave,land];
+  const at=t=>{ const i=nearestIdx(A.onsets,t); return (i>=0&&Math.abs(A.onsets[i]-t)<0.08)?A.onsets[i]:t; };
+  return [at(leave)-o.mg/1000, at(land)-o.mg/1000];
+}
+// [2026-10-08] Alterado: em edições do usuário o ajuste NÃO usa mais a grade de batidas (só o ataque mais próximo de cada
+//   ponta, e só se o tamanho do trecho removido/colado mudar pouco). Antes, apagar um trecho curto (ex.: 0.26 s) puxava as
+//   duas pontas para a MESMA batida e a emenda se anulava: o editor dizia "Apagado" e nada saía — relatado pelo Rafael.
+//   O ajuste por batida (cutPair) continua só nas sugestões automáticas (jumpsToClips).
+function nudgeOnset(t,margin){ const i=nearestIdx(A.onsets,t); if(i<0) return t; return Math.abs(A.onsets[i]-t)<0.07 ? A.onsets[i]-margin : t; }
+function adjustBoundary(i){
+  if(opts().mode==='exact'||i<0||i+1>=clips.length) return;
+  const x=clips[i], y=clips[i+1]; if(Math.abs(x[1]-y[0])<0.0005) return;
+  const m=opts().mg/1000, cl=nudgeOnset(x[1],m), cn=nudgeOnset(y[0],m), g0=y[0]-x[1], g1=cn-cl;
+  if(Math.abs(g1-g0)>Math.max(0.01,0.05*Math.abs(g0))) return;     // mudaria demais o que foi pedido (trecho curto): mantém EXATO
+  if(cl>x[0]+0.02&&cn<y[1]-0.02&&cn>=0&&cl<dur){ x[1]=cl; y[0]=cn; }
+}
+function deleteRange(t1,t2){
+  const i=splitAt(t1); const j=splitAt(t2);
+  clips.splice(i,j-i); adjustBoundary(i-1); normalize();
+}
+// substitui [t1,t2] por segs (t1==t2: apenas insere); devolve o tempo do fim do conteúdo colado
+function pasteSegs(t1,t2,segs){
+  const i=splitAt(t1); const j=t2>t1?splitAt(t2):i; const ins=segs.map(s=>s.slice());
+  clips.splice(i,j-i,...ins);
+  adjustBoundary(i+ins.length-1); adjustBoundary(i-1);
+  normalize();
+  return t1+segs.reduce((s,c)=>s+clipLen(c),0);
+}
+function jumpsToClips(js){ const o=opts(); const out=[]; let cur=0; for(const [lv,ld] of js){ const [cl,cn]=cutPair(lv,ld,o); out.push([cur,cl]); cur=cn; } out.push([cur,dur]); return out; }
+function clipsToJumps(){ // só é possível se o resultado começa no início e termina no fim do original
+  if(Math.abs(clips[0][0])>0.0005||Math.abs(clips[clips.length-1][1]-dur)>0.0005) return null;
+  const js=[]; for(let i=0;i+1<clips.length;i++) js.push([clips[i][1],clips[i+1][0]]); return js;
+}
+
+// =====================================================================================
+// Layout e renderização do resultado
+// =====================================================================================
+function computeLayout(){
+  const T=[], joins=[], beats=[], onsets=[]; let t=0;
+  clips.forEach((c,i)=>{
+    T.push(t); const l=clipLen(c);
+    for(const b of A.beats) if(b>=c[0]&&b<c[1]) beats.push(t+(b-c[0]));
+    for(const o of A.onsets) if(o>=c[0]&&o<c[1]) onsets.push(t+(o-c[0]));
+    if(i>0) joins.push({k:i-1,t,leave:clips[i-1][1],land:c[0]});
+    t+=l;
+  });
+  L2={T,total:t,joins,beats,onsets};
+}
+function render(L,R,rate,o){
+  const len=L.length, h=Math.max(1,Math.round(o.xf/1000*rate/2)), w2=2*h;
+  const fin=new Float32Array(w2), fout=new Float32Array(w2);
+  for(let n=0;n<w2;n++){ const t=n/(w2-1)*Math.PI/2; fin[n]=Math.sin(t); fout[n]=Math.cos(t); }
+  let total=0; for(const [a,b] of clips) total+=Math.round(b*rate)-Math.round(a*rate);
+  const oL=new Float32Array(total+4*h+16), oR=new Float32Array(total+4*h+16); let pos=0;
+  clips.forEach(([a,b],k)=>{
+    const i=Math.round(a*rate), j=Math.round(b*rate), s0=Math.max(i-h,0), s1=Math.min(j+h,len), n=s1-s0, start=k>0?pos-h:0;
+    for(let q=0;q<n;q++){
+      let w=1; if(k>0&&q<w2) w*=fin[q]; if(k<clips.length-1&&q>=n-w2) w*=fout[q-(n-w2)];
+      if(start+q>=0){ oL[start+q]+=L[s0+q]*w; oR[start+q]+=R[s0+q]*w; }
+    }
+    pos+=j-i;
+  });
+  return { L:oL.subarray(0,pos), R:oR.subarray(0,pos), total:pos/rate };
+}
+// versão final para exportar: corta no alvo e aplica fade-out
+function finalize(o){
+  const N=Math.min(Math.round(o.tg*sr),result.L.length), L=result.L.slice(0,N), R=result.R.slice(0,N);
+  const f=Math.min(Math.round(o.fo*sr),N); for(let q=0;q<f;q++){ const g=1-q/(f-1||1); L[N-f+q]*=g; R[N-f+q]*=g; }
+  return {L,R};
+}
+function rmsAt(a,b){ const i=Math.max(0,Math.round(a*sr)), j=Math.min(SL.length,Math.round(b*sr)); let s=0; for(let q=i;q<j;q++) s+=SL[q]*SL[q]; return Math.sqrt(s/Math.max(1,j-i)); }
+// [2026-10-08] Qualidade da saída pela energia: silêncio = segura; corte logo antes de ataque forte = audível
+function leaveQuality(t){
+  const pre=rmsAt(t-0.15,t), post=rmsAt(t,t+0.15);
+  if(pre<0.02&&post<0.02) return {cls:'ok',txt:'✓ trecho silencioso'};
+  if(post>0.05&&post>2.5*pre) return {cls:'bad',txt:'⚠ corta antes de ataque forte'};
+  if(pre>0.1) return {cls:'bad',txt:'⚠ corta em trecho alto'};
+  return {cls:'mut',txt:'ok'};
+}
+
+// =====================================================================================
+// Sugestão automática de extensão
+// [2026-10-08] Criado: candidatos (saída j → chegada i, mesma posição no compasso) por similaridade de bandas; escolhe a
+//   sequência de menor custo cuja soma de ganhos fecha na duração alvo (DP sobre ganho quantizado).
+//   Pousos na intro excluídos (opção) e penalidade quadrática no tamanho do salto: a 1ª versão sugeria voltar ao
+//   começo (= repetir a música), exatamente o que NÃO se quer.
+// =====================================================================================
+function buildEdges(){
+  const B=A.beats, F=A.feat, nb=F.length;
+  const dist=(a,b)=>{ let s=0; const fa=F[a], fb=F[b]; for(let q=0;q<fa.length;q++){ const d=fa[q]-fb[q]; s+=d*d; } return Math.sqrt(s/fa.length); };
+  const edges=[], minLand=$('noIntro').checked?0.12*dur:0;
+  for(let j=6;j<nb-3;j++){
+    const pre=rmsAt(B[j]-0.15,B[j]), post=rmsAt(B[j],B[j]+0.15);
+    const quiet=pre<0.02&&post<0.02, atk=post>0.05&&post>2.5*pre, loud=pre>0.1;
+    for(let i=2;i<j-4;i+=1){
+      if((j-i)%4) continue;
+      const gain=B[j]-B[i]; if(gain<3||B[i]<minLand) continue;
+      let c=dist(j-1,i-1)+dist(j,i)+0.5*(dist(j-2,i-2)+(j+1<nb?dist(j+1,i+1):0));
+      c/=3; c+=1.2*Math.pow(gain/dur,2);
+      if(quiet) c=Math.min(c,0.35); else { if(atk) c+=1.0; if(loud) c+=0.15; }
+      edges.push({leave:B[j],land:B[i],gain,cost:c});
+    }
+  }
+  edges.sort((a,b)=>a.cost-b.cost); return edges;
+}
+function suggestJumps(o){
+  const X=o.tg-dur;
+  if(X<=0) return {error:`O áudio (${dur.toFixed(1)} s) já é maior que o alvo (${o.tg} s); não há o que estender.`};
+  const edges=buildEdges();
+  if(!edges.length) return {error:'Não encontrei pontos de salto candidatos (batidas insuficientes ou compasso irregular).'};
+  const E=[]; for(const e of edges){ if(E.length>=90) break; if(E.every(x=>Math.abs(x.leave-e.leave)>1.0||Math.abs(x.land-e.land)>1.0)) E.push(e); }
+  const slack=A.tail+3.5, Q=0.5, nq=Math.ceil((X+slack)/Q)+1, minPlay=3, lam=0.15;
+  const best=E.map(()=>new Array(nq).fill(null)), qOf=x=>Math.min(nq-1,Math.round(x/Q));
+  E.forEach((e,i)=>{ const q=qOf(e.gain); if(q<nq&&e.gain<=X+slack) best[i][q]={cost:e.cost+lam,extra:e.gain,prev:null}; });
+  let found=null;
+  for(let q=0;q<nq;q++) for(let i=0;i<E.length;i++){
+    const s=best[i][q]; if(!s) continue;
+    if(s.extra>=X-1e-9&&s.extra<=X+slack){ if(!found||s.cost<found.cost) found={cost:s.cost,i,q}; }
+    for(let k=0;k<E.length;k++){
+      const e2=E[k]; if(e2.leave<E[i].land+minPlay) continue;
+      const ex=s.extra+e2.gain; if(ex>X+slack) continue;
+      const q2=qOf(ex); if(q2<=q) continue;
+      const c=s.cost+e2.cost+lam+(k===i?0.6:0)+(Math.abs(e2.land-E[i].land)<1?0.5:0);
+      if(!best[k][q2]||c<best[k][q2].cost) best[k][q2]={cost:c,extra:ex,prev:[i,q]};
+    }
+  }
+  if(!found) return {error:'Não achei uma combinação que feche na duração alvo. Tente alterar a duração alvo em poucos segundos ou edite à mão.'};
+  const path=[]; let st=[found.i,found.q];
+  while(st){ path.push(E[st[0]]); st=best[st[0]][st[1]].prev; } path.reverse();
+  return { jumps:path.map(e=>[+e.leave.toFixed(3),+e.land.toFixed(3)]) };
+}
+
+// =====================================================================================
+// Desenho
+// =====================================================================================
+function blockPeaks(L,R){
+  const n=Math.ceil(L.length/BLK), mn=new Float32Array(n), mx=new Float32Array(n);
+  for(let b=0;b<n;b++){ let lo=0,hi=0; const e=Math.min(L.length,(b+1)*BLK); for(let i=b*BLK;i<e;i++){ const v=(L[i]+R[i])*0.5; if(v<lo)lo=v; if(v>hi)hi=v; } mn[b]=lo; mx[b]=hi; }
+  return {mn,mx};
+}
+const clampPps = (pps,seconds) => Math.max(1, Math.min(pps, 30000/Math.max(seconds,1)));
+function drawWave(canvas,bp,rate,seconds,pps){
+  pps=clampPps(pps,seconds); const W=Math.max(1,Math.ceil(seconds*pps)), H=150;
+  canvas.width=W; canvas.height=H; canvas.style.width=W+'px'; canvas.parentElement.style.width=W+'px';
+  const g=canvas.getContext('2d'); g.clearRect(0,0,W,H); g.fillStyle=css('--wave'); const nbk=bp.mn.length;
+  for(let x=0;x<W;x++){
+    const a=Math.min(nbk-1,Math.floor(x/pps*rate/BLK)), b=Math.min(nbk,Math.max(a+1,Math.floor((x+1)/pps*rate/BLK)));
+    let lo=0,hi=0; for(let i=a;i<b;i++){ if(bp.mn[i]<lo)lo=bp.mn[i]; if(bp.mx[i]>hi)hi=bp.mx[i]; }
+    const y1=H/2-hi*H*0.74, y2=H/2-lo*H*0.74; g.fillRect(x,y1,1,Math.max(1,y2-y1));
+  }
+  return pps;
+}
+function drawRuler(canvas,pps,seconds){
+  const W=Math.max(1,Math.ceil(seconds*pps)), H=24; canvas.width=W; canvas.height=H; canvas.style.width=W+'px';
+  const g=canvas.getContext('2d'); g.clearRect(0,0,W,H);
+  const steps=[0.1,0.2,0.5,1,2,5,10,15,30,60,120,300], step=steps.find(x=>x*pps>=80)||600, minor=step/(step>=10?5:(step===1||step===0.1?5:4));
+  g.fillStyle=css('--muted'); g.strokeStyle=css('--muted'); g.font='11px system-ui'; g.textBaseline='middle'; g.textAlign='left'; g.lineWidth=1;
+  for(let t=0;t<=seconds+1e-6;t+=minor){ const x=Math.round(t*pps)+.5, major=Math.abs(t/step-Math.round(t/step))<1e-6;
+    g.globalAlpha=major?1:.45; g.beginPath(); g.moveTo(x,major?12:18); g.lineTo(x,H); g.stroke();
+    if(major){ g.globalAlpha=1; const m=Math.floor(t/60), sec=t-m*60; g.fillText(m+':'+(step<1?sec.toFixed(1).padStart(4,'0'):String(Math.round(sec)).padStart(2,'0')),x+3,8); } }
+  g.globalAlpha=1; g.strokeStyle=css('--line'); g.beginPath(); g.moveTo(0,H-.5); g.lineTo(W,H-.5); g.stroke();
+}
+function overlay(canvas,pps,seconds,draw){
+  const W=Math.max(1,Math.ceil(seconds*pps)); canvas.width=W; canvas.height=150; canvas.style.width=W+'px';
+  const g=canvas.getContext('2d'); g.clearRect(0,0,W,150); draw(g,t=>t*pps);
+}
+const chip=(g,x,col,label)=>{ g.fillStyle=col; g.beginPath(); g.arc(x,10,8,0,7); g.fill(); g.fillStyle='#fff'; g.font='bold 9px system-ui'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(label,x,10); };
+function drawSelection(g,X,S,label){
+  if(S.anchor!=null&&S.selA==null){ g.strokeStyle=css('--accent'); g.lineWidth=2; g.setLineDash([4,3]); g.beginPath(); g.moveTo(X(S.anchor)+.5,0); g.lineTo(X(S.anchor)+.5,150); g.stroke(); g.setLineDash([]); g.fillStyle=css('--accent'); g.font='bold 10px system-ui'; g.textAlign='left'; g.textBaseline='top'; g.fillText('início ▸ Shift+clique no fim',X(S.anchor)+5,4); }
+  if(S.selA!=null&&S.selB!=null){ const w=Math.max(1,X(S.selB)-X(S.selA)); g.fillStyle=css('--accent'); g.globalAlpha=.20; g.fillRect(X(S.selA),0,w,150); g.globalAlpha=1; g.strokeStyle=css('--accent'); g.lineWidth=1.5; g.strokeRect(X(S.selA)+.5,.5,w,149); }
+  g.strokeStyle=css('--cursor'); g.lineWidth=1.5; g.setLineDash([2,3]); g.beginPath(); g.moveTo(X(S.cursor)+.5,0); g.lineTo(X(S.cursor)+.5,150); g.stroke(); g.setLineDash([]);
+  if(label&&S.selA==null&&S.anchor==null){ g.fillStyle=css('--cursor'); g.font='bold 10px system-ui'; g.textAlign='left'; g.textBaseline='top'; g.fillText(label,X(S.cursor)+4,4); }
+}
+function drawPlayhead(g,X,which){
+  if(!play||play.which!==which) return;
+  const t=play.offset+(ctx.currentTime-play.t0); g.strokeStyle=css('--play'); g.lineWidth=2; g.beginPath(); g.moveTo(X(t)+.5,0); g.lineTo(X(t)+.5,150); g.stroke();
+  const sc=which==='src'?$('scrSrc'):$('scrOut'), x=X(t); if(x<sc.scrollLeft||x>sc.scrollLeft+sc.clientWidth-40) sc.scrollLeft=Math.max(0,x-60);
+}
+function drawSrcOverlay(){
+  if(!A||!L2) return; $('curSrc').textContent=fmt(P.src.cursor);
+  overlay($('oSrc'),ppsS,dur,(g,X)=>{
+    g.lineWidth=1; g.strokeStyle=css('--beat');
+    if(ppsS>=14) for(const b of A.beats){ g.beginPath(); g.moveTo(X(b)+.5,0); g.lineTo(X(b)+.5,150); g.stroke(); }
+    if(ppsS>=40){ g.fillStyle=css('--onset'); for(const o of A.onsets) g.fillRect(X(o)-1,142,2,6); }
+    // marcadores das emendas do resultado: S = onde sai, C = onde continua
+    L2.joins.forEach((j,n)=>{
+      [[j.leave,'--leave','S'],[j.land,'--land','C']].forEach(([t,col,lab])=>{
+        const c=css(col), x=X(t); g.strokeStyle=c; g.lineWidth=n===selJoin?3:1.5; g.beginPath(); g.moveTo(x+.5,18); g.lineTo(x+.5,150); g.stroke(); chip(g,x,c,lab+(n+1));
+      });
+    });
+    drawSelection(g,X,P.src,'');
+    drawPlayhead(g,X,'src');
+  });
+}
+function drawOutOverlay(){
+  if(!result||!L2) return; $('curOut').textContent=fmt(P.out.cursor);
+  overlay($('oOut'),ppsO,L2.total,(g,X)=>{
+    g.lineWidth=1; g.strokeStyle=css('--beat'); if(ppsO>=14) for(const b of L2.beats){ g.beginPath(); g.moveTo(X(b)+.5,0); g.lineTo(X(b)+.5,150); g.stroke(); }
+    const tg=opts().tg;
+    if(L2.total>tg+0.001){ g.fillStyle=css('--warn'); g.globalAlpha=.13; g.fillRect(X(tg),0,X(L2.total)-X(tg),150); g.globalAlpha=1; g.strokeStyle=css('--warn'); g.lineWidth=2; g.beginPath(); g.moveTo(X(tg)+.5,0); g.lineTo(X(tg)+.5,150); g.stroke(); g.fillStyle=css('--warn'); g.font='bold 10px system-ui'; g.textAlign='left'; g.textBaseline='top'; g.fillText('alvo ▸ cortado',X(tg)+4,22); }
+    L2.joins.forEach((j,n)=>{ const x=X(j.t); g.strokeStyle=css('--leave'); g.lineWidth=n===selJoin?2.5:1.5; g.setLineDash([5,4]); g.beginPath(); g.moveTo(x+.5,18); g.lineTo(x+.5,150); g.stroke(); g.setLineDash([]); chip(g,x,css('--leave'),String(n+1)); });
+    drawSelection(g,X,P.out,'▼ inserir aqui');
+    drawPlayhead(g,X,'out');
+  });
+}
+function redrawSrcWave(){ ppsS=drawWave($('wSrc'),srcPeaks,sr,dur,+$('zoomSrc').value); drawRuler($('rSrc'),ppsS,dur); drawSrcOverlay(); }
+function redrawOutWave(){ if(result&&outPeaks){ ppsO=drawWave($('wOut'),outPeaks,sr,L2.total,+$('zoomOut').value); drawRuler($('rOut'),ppsO,L2.total); drawOutOverlay(); } }
+
+// =====================================================================================
+// Reprodução
+// =====================================================================================
+function updPlayButtons(){
+  const ps=play&&play.which==='src', po=play&&play.which==='out', kb=w=>active===w?' <kbd>Espaço</kbd>':'';
+  $('playSrc').innerHTML=(ps?'⏸ Pausar':'▶ Original')+kb('src'); $('playOut').innerHTML=(po?'⏸ Pausar':'▶ Resultado')+kb('out');
+}
+function stop(){ if(play){ try{play.node.onended=null;play.node.stop();}catch(e){} play=null; } cancelAnimationFrame(raf); updPlayButtons(); drawSrcOverlay(); drawOutOverlay(); }
+function playBuffer(which,L,R,rate,offset,len){
+  stop(); ctx.resume();
+  const b=ctx.createBuffer(2,L.length,rate); b.copyToChannel(L,0); b.copyToChannel(R,1);
+  const n=ctx.createBufferSource(); n.buffer=b; n.connect(ctx.destination);
+  n.start(0,Math.max(0,offset),len?Math.min(len,L.length/rate-offset):undefined); n.onended=()=>{ if(play&&play.node===n) stop(); };
+  play={which,node:n,t0:ctx.currentTime,offset:Math.max(0,offset)}; active=which; updPlayButtons();
+  const tick=()=>{ if(!play) return; (which==='src'?drawSrcOverlay:drawOutOverlay)(); raf=requestAnimationFrame(tick); }; tick();
+}
+const playSrcFrom = (t,len) => playBuffer('src',SL,SR,sr,t,len);
+const playOutFrom = (t,len) => { if(result) playBuffer('out',result.L,result.R,sr,t,len); };
+// pausa: guarda a posição atual no cursor do painel; retomar = tocar do cursor (não reinicia)
+function pause(){
+  if(!play) return; const t=play.offset+(ctx.currentTime-play.t0), w=play.which;
+  P[w].cursor=clamp(t,0,w==='src'?dur:L2.total); stop();
+}
+const resume = () => active==='src' ? playSrcFrom(P.src.cursor) : playOutFrom(P.out.cursor);
+
+// =====================================================================================
+// Edição: desfazer, recomputar, operações do usuário
+// =====================================================================================
+function snapshot(){ undoStack.push(cloneC(clips)); if(undoStack.length>100) undoStack.shift(); redoStack=[]; updUndo(); }
+function updUndo(){ $('undo').disabled=!undoStack.length; $('redo').disabled=!redoStack.length; }
+function undo(){ if(!undoStack.length) return; redoStack.push(cloneC(clips)); clips=undoStack.pop(); afterEdit(); }
+function redo(){ if(!redoStack.length) return; undoStack.push(cloneC(clips)); clips=redoStack.pop(); afterEdit(); }
+function afterEdit(){ P.out.selA=P.out.selB=null; P.out.anchor=null; P.out.cursor=clamp(P.out.cursor,0,totalLen()); updUndo(); recompute(); }
+function edit(fn){ snapshot(); fn(); normalize(); afterEdit(); }
+
+function selOf(w){ const S=P[w]; return (S.selA!=null&&S.selB!=null&&S.selB-S.selA>=MIN_SEL)?[S.selA,S.selB]:null; }
+// copia a seleção do painel ativo (ou, se vazia, a do outro painel)
+function doCopy(cut){
+  let w=active, s=selOf(w); if(!s){ w=w==='src'?'out':'src'; s=selOf(w); }
+  if(!s) return toast('Selecione um trecho primeiro (arraste na onda, ou Shift+clique no início e no fim).');
+  clipboard = w==='src' ? [[s[0],s[1]]] : rangeSegs(s[0],s[1]);
+  const len=clipboard.reduce((a,c)=>a+clipLen(c),0);
+  if(cut){ if(w==='src'){ updSel(); return toast('O Original é somente leitura: copiei o trecho, mas recorte/apague só no Resultado.',4500); } doDelete(true); }
+  else toast(`Copiado (${len.toFixed(2)} s). Selecione um trecho no Resultado para substituir, ou clique num ponto para inserir, e use Ctrl+V.`,4500);
+  updSel();
+}
+function doDelete(silent){
+  const s=selOf('out');
+  if(!s) return toast(active==='src'?'O Original é somente leitura. Selecione o trecho no Resultado para apagar.':'Selecione um trecho no Resultado para apagar.');
+  edit(()=>{ deleteRange(s[0],s[1]); P.out.cursor=Math.min(s[0],totalLen()); });
+  toast(`${silent?'Recortado':'Apagado'} ${fmt(s[0])}–${fmt(s[1])} (−${(s[1]-s[0]).toFixed(2)} s). Ctrl+Z desfaz.`,3800);
+}
+// [2026-10-08] Colar com trecho SELECIONADO no Resultado SUBSTITUI; sem seleção, INSERE no cursor — pedido do Rafael
+function doPaste(){
+  if(!clipboard) return toast('Copie um trecho primeiro (selecione e use Ctrl+C).');
+  const s=selOf('out'), t1=s?s[0]:P.out.cursor, t2=s?s[1]:t1, len=clipboard.reduce((a,c)=>a+clipLen(c),0);
+  let end=0; edit(()=>{ end=pasteSegs(t1,t2,clipboard); });
+  P.out.cursor=Math.min(end,totalLen()); drawOutOverlay();
+  toast((s?`Substituído ${fmt(t1)}–${fmt(t2)} por ${len.toFixed(2)} s`:`Inserido ${len.toFixed(2)} s em ${fmt(t1)}`)+` (${len-(t2-t1)>=0?'+':''}${(len-(t2-t1)).toFixed(2)} s no total). Ctrl+Z desfaz.`,4500);
+}
+function updSel(){
+  const so=selOf('out'), ss=selOf('src');
+  $('selInfoSrc').innerHTML=ss?`seleção <b>${fmt(ss[0])}–${fmt(ss[1])}</b> (${(ss[1]-ss[0]).toFixed(2)} s)`:'';
+  $('selInfoOut').innerHTML=so?`seleção <b>${fmt(so[0])}–${fmt(so[1])}</b> (${(so[1]-so[0]).toFixed(2)} s)`:'';
+  $('cpSrc').disabled=!ss; $('playSelSrc').disabled=!ss;
+  $('cpOut').disabled=!so; $('cutOut').disabled=!so; $('delOut').disabled=!so; $('playSelOut').disabled=!so;
+  const len=clipboard?clipboard.reduce((a,c)=>a+clipLen(c),0):0;
+  $('pasteOut').disabled=!clipboard;
+  $('pasteOut').innerHTML=(so&&clipboard?'📋 Substituir seleção':'📋 Colar')+' <kbd>Ctrl+V</kbd>';
+  $('pasteOut').title=clipboard?`Cola ${len.toFixed(2)} s: ${so?'SUBSTITUI o trecho selecionado':'INSERE no cursor roxo'} (Ctrl+V)`:'Copie um trecho primeiro';
+}
+
+// =====================================================================================
+// Tabela de emendas e recomputação
+// =====================================================================================
+function renderRows(){
+  const tb=$('rows'); tb.innerHTML=''; $('noJumps').classList.toggle('hidden',L2.joins.length>0);
+  L2.joins.forEach((j,n)=>{
+    const q=leaveQuality(j.leave), tr=document.createElement('tr'); tr.className='jr'+(n===selJoin?' sel':'');
+    tr.innerHTML=`<td>${n+1}</td>
+      <td><input type="number" step="0.001" value="${+j.leave.toFixed(3)}" data-k="${j.k}" data-w="0"></td>
+      <td><input type="number" step="0.001" value="${+j.land.toFixed(3)}" data-k="${j.k}" data-w="1"></td>
+      <td class="stat">${fmt(j.t)}</td>
+      <td class="${q.cls}">${q.txt}</td>
+      <td class="nowrap">
+        <button class="icon" data-act="listen" data-n="${n}" title="Ouvir a emenda (antes → depois)">▶ emenda</button>
+        <button class="icon" data-act="nudgeS" data-k="${j.k}" title="Saída −1 batida">S◀</button><button class="icon" data-act="nudgeSf" data-k="${j.k}" title="Saída +1 batida">▶S</button>
+        <button class="icon" data-act="nudgeC" data-k="${j.k}" title="Chegada −1 batida">C◀</button><button class="icon" data-act="nudgeCf" data-k="${j.k}" title="Chegada +1 batida">▶C</button>
+        <button class="icon" data-act="straight" data-k="${j.k}" title="Remover a emenda: a música segue contínua a partir da saída">✖</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function outText(){
+  const o=opts(), base=(fileName||'musica').replace(/\.[^.]+$/,'')+'_estendida', js=clipsToJumps();
+  const py=js?`# scripts/audio/extend_song.py — substitua a lista JUMPS e as constantes\nJUMPS = [\n${js.map(([a,b])=>`    (${a.toFixed(3)}, ${b.toFixed(3)}),`).join('\n')}\n]\nCROSSFADE = ${(o.xf/1000).toFixed(3)}\nMARGIN = ${(o.mg/1000).toFixed(3)}\nFADE_OUT = ${o.fo}\nTARGET = ${o.tg}\n# Obs.: o script reaplica o ajuste de corte; para resultado idêntico ao do editor, use o WAV exportado.\n`
+    :`# O resultado atual não começa no início ou não termina no fim do original, então o extend_song.py não o reproduz.\n# Use o WAV exportado.\n`;
+  const vid=videoName||'video.mp4';
+  const ff=`# 1) WAV -> MP3\nffmpeg -i ${base}.wav -c:a libmp3lame -q:a 2 ${base}.mp3\n# 2) mixar no vídeo (música a 25% sobre o áudio original; imagem sem recodificar)\nffmpeg -i ${vid} -i ${base}.mp3 -filter_complex "[1:a]volume=0.25[m];[0:a][m]amix=inputs=2:duration=first:normalize=0[a]" -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k saida_com_musica.mp4\n# (se o vídeo não tiver áudio, troque o filtro por: -map 0:v -map 1:a -c:v copy -c:a aac -shortest)\n`;
+  return {py,ff};
+}
+function recompute(){
+  if(!A) return; const o=opts(); stop();
+  computeLayout(); selJoin=Math.min(selJoin,Math.max(0,L2.joins.length-1));
+  result=render(SL,SR,sr,o); outPeaks=blockPeaks(result.L,result.R);
+  const st=$('status'), tot=L2.total, m=[`Duração ${tot.toFixed(3)} s (alvo ${o.tg})`]; let cls='ok';
+  if(tot<o.tg-0.0005){ cls='bad'; m.push(`CURTO por ${(o.tg-tot).toFixed(2)} s`); }
+  else if(tot>o.tg+0.0005){
+    let s2=0,n=0; for(let q=Math.round(o.tg*sr);q<result.L.length;q++){ s2+=result.L[q]*result.L[q]; n++; } const rms=Math.sqrt(s2/Math.max(1,n));
+    m.push(`${(tot-o.tg).toFixed(2)} s além do alvo serão cortados do final`+(rms>0.01?' ⚠ há música audível nesse trecho':' (cauda silenciosa)')); if(rms>0.01) cls='bad';
+  }
+  st.className='stat '+cls; st.textContent=m.join(' · ');
+  redrawOutWave(); renderRows(); drawSrcOverlay(); updSel();
+  const t=outText(); $('outTxt').value=t.py+'\n'+t.ff; saveState();
+}
+let pend=0; const schedule=()=>{ cancelAnimationFrame(pend); pend=requestAnimationFrame(recompute); };
+
+// =====================================================================================
+// Persistência por arquivo (try/catch: pode estar bloqueada) e projeto .json
+// =====================================================================================
+function stateObj(){ return { v:2, file:fileName, clips, o:opts(), video:videoName }; }
+function saveState(){ try{ localStorage.setItem('ancoro-audio-editor2:'+fileKey, JSON.stringify(stateObj())); localStorage.setItem('ancoro-audio-editor2:target', $('tg').value); }catch(e){} }
+function applyState(s){
+  if(!s) return;
+  const o=s.o||{}; if(o.xf) $('xf').value=o.xf; if(o.mg!=null) $('mg').value=o.mg; if(o.fo!=null) $('fo').value=o.fo; if(o.tg) $('tg').value=o.tg; if(o.mode) $('cutMode').value=o.mode;
+  if(s.video) videoName=s.video;
+  const ok=c=>Array.isArray(c)&&c.length&&c.every(x=>Array.isArray(x)&&x.length===2&&isFinite(x[0])&&isFinite(x[1])&&x[1]>x[0]&&x[0]>=0&&x[1]<=dur+0.01);
+  if(ok(s.clips)) clips=s.clips.map(x=>[+x[0],+x[1]]);
+  else if(Array.isArray(s.jumps)){ const js=s.jumps.filter(j=>Array.isArray(j)&&j.length===2&&isFinite(j[0])&&isFinite(j[1])); if(js.length){ const m=$('cutMode').value; $('cutMode').value='exact'; clips=jumpsToClips(js); $('cutMode').value=m; } } // projeto v1 (saltos)
+}
+function loadSaved(){ try{ const s=JSON.parse(localStorage.getItem('ancoro-audio-editor2:'+fileKey)||'null'); if(s){ applyState(s); return true; } const tg=localStorage.getItem('ancoro-audio-editor2:target'); if(tg) $('tg').value=tg; }catch(e){} return false; }
+
+// =====================================================================================
+// Carregamento de arquivo
+// =====================================================================================
+function overlayShow(msg){ $('overlay').style.display='flex'; $('ovTxt').textContent=msg; $('ovBar').value=0; }
+const overlayHide = () => { $('overlay').style.display='none'; };
+async function loadAudioFile(file){
+  if(!file) return; stop();
+  overlayShow('Decodificando '+file.name+'…');
+  try{
+    if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const ab=await ctx.decodeAudioData(await file.arrayBuffer());
+    if(ab.duration<4) throw new Error('Áudio muito curto (<4 s).');
+    sr=ab.sampleRate; dur=ab.duration; SL=ab.getChannelData(0); SR=ab.numberOfChannels>1?ab.getChannelData(1):SL;
+    A=await analyze(SL,SR,sr,(p,m)=>{ $('ovBar').value=p; $('ovTxt').textContent=m; });
+    fileName=file.name; fileKey=`${file.name}|${file.size}`; undoStack=[]; redoStack=[]; clips=[[0,dur]]; selJoin=0; clipboard=null; videoName='';
+    P.src=mkP(); P.out=mkP(); active='src';
+    const had=loadSaved(); normalize(); updUndo();
+    $('fileInfo').textContent=`${fileName} · ${fmt(dur)} · ~${A.bpm.toFixed(0)} BPM · ${A.beats.length} batidas · ${A.onsets.length} ataques`;
+    $('drop').classList.add('hidden'); $('app').style.display='block'; $('hdrCtl').classList.remove('hidden');
+    srcPeaks=blockPeaks(SL,SR); computeLayout(); fitZoom('Src'); redrawSrcWave(); recompute(); fitZoom('Out'); redrawOutWave(); updPlayButtons();
+    toast(had?'Projeto anterior deste arquivo restaurado.':'Arquivo analisado. Edite o Resultado ou use ✨ Sugerir extensão.');
+  }catch(err){ console.error(err); toast('Falha ao abrir: '+err.message,5000); }
+  finally{ overlayHide(); }
+}
+function fitZoom(which){
+  const sec=which==='Src'?dur:(L2?L2.total:dur), w=$(which==='Src'?'scrSrc':'scrOut').clientWidth-4, z=$(which==='Src'?'zoomSrc':'zoomOut');
+  z.value=Math.max(+z.min,Math.min(+z.max,Math.floor(w/Math.max(sec,1))||+z.min));
+}
+async function readVideoDuration(file){
+  return new Promise((res,rej)=>{ const v=document.createElement('video'); v.preload='metadata'; v.onloadedmetadata=()=>{ const d=v.duration; URL.revokeObjectURL(v.src); isFinite(d)?res(d):rej(new Error('Duração não disponível.')); }; v.onerror=()=>rej(new Error('Não consegui ler esse arquivo.')); v.src=URL.createObjectURL(file); });
+}
+
+// =====================================================================================
+// Seleção com o mouse (genérica para os dois painéis)
+//   arrastar em área vazia = seleciona · clique = cursor (e desfaz seleção) ·
+//   Shift+clique: 1º define o início, os seguintes definem o novo término (como editor de texto)
+//   Ímã: puxa para batida/ataque só a <= MAGNET_PX; fora disso a posição é livre (Alt desliga o ímã)
+// =====================================================================================
+const panelPps = w => w==='src'?ppsS:ppsO, panelLen = w => w==='src'?dur:L2.total;
+function snapT(w,t,free){
+  const m=$('snap').value; if(free||m==='free'||!A) return +t.toFixed(3);
+  const arr=w==='src'?(m==='beat'?A.beats:A.onsets):(m==='beat'?L2.beats:L2.onsets), i=nearestIdx(arr,t);
+  return (i>=0&&Math.abs(arr[i]-t)*panelPps(w)<=MAGNET_PX)?+arr[i].toFixed(3):+t.toFixed(3);
+}
+function snapPair(w,r1,r2,free){
+  const s1=snapT(w,r1,free), s2=snapT(w,r2,free);
+  return (Math.abs(s1-s2)<MIN_SEL&&Math.abs(r1-r2)>=MIN_SEL)?[+r1.toFixed(3),+r2.toFixed(3)]:[s1,s2];
+}
+const beatStep=(t,dir)=>{ const i=nearestIdx(A.beats,t), j=clamp(i+dir,0,A.beats.length-1); return +A.beats[j].toFixed(3); };
+function redrawPanel(w){ w==='src'?drawSrcOverlay():drawOutOverlay(); }
+let drag=null;
+function wirePanel(w){
+  const cv=$(w==='src'?'oSrc':'oOut');
+  const tOf=e=>clamp((e.clientX-cv.getBoundingClientRect().left)/panelPps(w),0,panelLen(w));
+  // marcadores S/C arrastáveis (só no Original)
+  const hit=e=>{ if(w!=='src') return null; const t=tOf(e), tol=8/ppsS; let best=null,d=tol;
+    L2.joins.forEach((j,n)=>[[j.leave,0],[j.land,1]].forEach(([x,which])=>{ const dx=Math.abs(x-t); if(dx<d){d=dx;best={n,k:j.k,which};} })); return best; };
+  cv.addEventListener('mousedown',e=>{
+    active=w; updPlayButtons();
+    const h=hit(e); if(h){ drag={w,marker:h,moved:false,pre:cloneC(clips)}; selJoin=h.n; renderRows(); drawSrcOverlay(); return; }
+    drag={w,t:tOf(e),moved:false,sx:e.clientX};
+  });
+  window.addEventListener('mousemove',e=>{
+    const S2=P[w];
+    if(!drag){
+      if(!A||!L2) return;
+      const r=cv.getBoundingClientRect(), inside=e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top-24&&e.clientY<=r.bottom;
+      $(w==='src'?'hovSrc':'hovOut').textContent=inside?fmt(tOf(e)):'—';
+      if(inside) cv.style.cursor=hit(e)?'ew-resize':'crosshair';
+      return;
+    }
+    if(drag.w!==w) return;
+    if(drag.marker){ // arrastar S/C: ajusta as bordas dos trechos vizinhos
+      drag.moved=true; const t=snapT('src',tOf(e),e.altKey), m=drag.marker;
+      if(m.which===0){ if(t>clips[m.k][0]+0.05) clips[m.k][1]=t; } else if(t<clips[m.k+1][1]-0.05) clips[m.k+1][0]=t;
+      schedule(); return;
+    }
+    if(!drag.moved&&Math.abs(e.clientX-drag.sx)<4) return; drag.moved=true;
+    const [t1,t2]=snapPair(w,drag.t,tOf(e),e.altKey); S2.anchor=t1; S2.selA=Math.min(t1,t2); S2.selB=Math.max(t1,t2);
+    updSel(); redrawPanel(w);
+  });
+  window.addEventListener('mouseup',e=>{
+    if(!drag||drag.w!==w) return; const d=drag; drag=null; const S2=P[w];
+    if(d.marker){ if(d.moved){ undoStack.push(d.pre); redoStack=[]; updUndo(); normalize(); recompute(); } return; }
+    if(d.moved){ if(S2.selB-S2.selA<MIN_SEL){ S2.anchor=null; S2.selA=S2.selB=null; } updSel(); redrawPanel(w); return; }
+    if(e.shiftKey){   // Shift+clique: 1º = início (âncora); seguintes = novo término
+      let t=snapT(w,d.t,e.altKey); if(S2.anchor!=null&&Math.abs(t-S2.anchor)<MIN_SEL&&Math.abs(d.t-S2.anchor)>=MIN_SEL) t=+d.t.toFixed(3);
+      S2.cursor=t;
+      if(S2.anchor==null){ S2.anchor=t; S2.selA=S2.selB=null; }
+      else { S2.selA=Math.min(S2.anchor,t); S2.selB=Math.max(S2.anchor,t); if(S2.selB-S2.selA<MIN_SEL) S2.selA=S2.selB=null; }
+      updSel(); redrawPanel(w); return;
+    }
+    // clique simples: posiciona o cursor, desfaz a seleção; se já estiver tocando este painel, continua dali
+    S2.anchor=null; S2.selA=S2.selB=null; S2.cursor=snapT(w,d.t,true); updSel();
+    if(play&&play.which===w) (w==='src'?playSrcFrom:playOutFrom)(S2.cursor); else redrawPanel(w);
+  });
+}
+
+// =====================================================================================
+// Eventos
+// =====================================================================================
+function wav(L,R,rate){
+  const n=L.length, buf=new ArrayBuffer(44+n*4), v=new DataView(buf), s=(o,t)=>{ for(let i=0;i<t.length;i++) v.setUint8(o+i,t.charCodeAt(i)); };
+  s(0,'RIFF'); v.setUint32(4,36+n*4,true); s(8,'WAVEfmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,2,true);
+  v.setUint32(24,rate,true); v.setUint32(28,rate*4,true); v.setUint16(32,4,true); v.setUint16(34,16,true); s(36,'data'); v.setUint32(40,n*4,true);
+  let p=44; const c=x=>Math.max(-1,Math.min(1,x))*0x7fff; for(let i=0;i<n;i++){ v.setInt16(p,c(L[i]),true); v.setInt16(p+2,c(R[i]),true); p+=4; }
+  return new Blob([buf],{type:'audio/wav'});
+}
+function download(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000); }
+
+function wire(){
+  $('fileIn').addEventListener('change',e=>{ loadAudioFile(e.target.files[0]); e.target.value=''; });
+  const drop=$('drop');
+  ['dragenter','dragover'].forEach(ev=>window.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave','drop'].forEach(ev=>window.addEventListener(ev,e=>{ e.preventDefault(); drop.classList.remove('over'); }));
+  window.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) loadAudioFile(f); });
+  $('vidIn').addEventListener('change',async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+    try{ const d=await readVideoDuration(f); $('tg').value=d.toFixed(3); videoName=f.name; toast(`Duração alvo = ${d.toFixed(3)} s (${f.name})`); recompute(); }catch(err){ toast(err.message,4000); } });
+  ['tg','xf','mg','fo'].forEach(id=>$(id).addEventListener('input',()=>{ if(A) schedule(); }));
+
+  $('suggest').onclick=async()=>{ overlayShow('Procurando a melhor extensão…'); await yieldUI();
+    try{ const r=suggestJumps(opts()); if(r.error){ toast(r.error,6000); return; }
+      snapshot(); clips=jumpsToClips(r.jumps); normalize(); selJoin=0; afterEdit();
+      toast(`Extensão sugerida com ${L2.joins.length} emenda(s). Ouça cada uma em "Emendas" e ajuste editando o Resultado (Ctrl+Z desfaz).`,5500);
+    }catch(err){ console.error(err); toast('Erro ao sugerir: '+err.message,5000); } finally{ overlayHide(); } };
+  $('reset').onclick=()=>{ if(clips.length===1&&clips[0][0]===0&&Math.abs(clips[0][1]-dur)<0.001) return toast('O resultado já é o original.'); snapshot(); clips=[[0,dur]]; afterEdit(); toast('Resultado restaurado para o original. Ctrl+Z desfaz.'); };
+  $('undo').onclick=undo; $('redo').onclick=redo;
+
+  // tabela de emendas
+  let pre=null;
+  $('rows').addEventListener('focusin',e=>{ if(e.target.tagName==='INPUT') pre=cloneC(clips); });
+  $('rows').addEventListener('input',e=>{ const t=e.target; if(t.tagName!=='INPUT') return; const v=parseFloat(t.value), k=+t.dataset.k;
+    if(!isFinite(v)) return; if(t.dataset.w==='0'){ if(v>clips[k][0]+0.05&&v<=dur) clips[k][1]=v; else return; } else { if(v<clips[k+1][1]-0.05&&v>=0) clips[k+1][0]=v; else return; } schedule(); });
+  $('rows').addEventListener('change',e=>{ if(e.target.tagName==='INPUT'&&pre){ undoStack.push(pre); redoStack=[]; pre=null; updUndo(); } });
+  $('rows').addEventListener('click',e=>{
+    const tr=e.target.closest('tr.jr'), b=e.target.closest('button');
+    if(!b){ if(tr&&e.target.tagName!=='INPUT'){ selJoin=[...$('rows').children].indexOf(tr); renderRows(); drawSrcOverlay(); drawOutOverlay(); } return; }
+    const act=b.dataset.act, k=+b.dataset.k;
+    if(act==='listen'){ const n=+b.dataset.n, Lc=+$('ctxLen').value; selJoin=n; renderRows(); drawOutOverlay(); playOutFrom(Math.max(0,L2.joins[n].t-Lc),2*Lc); return; }
+    edit(()=>{
+      if(act==='nudgeS'){ const v=beatStep(clips[k][1],-1); if(v>clips[k][0]+0.05) clips[k][1]=v; }
+      if(act==='nudgeSf') clips[k][1]=Math.min(dur,beatStep(clips[k][1],1));
+      if(act==='nudgeC') clips[k+1][0]=Math.max(0,beatStep(clips[k+1][0],-1));
+      if(act==='nudgeCf'){ const v=beatStep(clips[k+1][0],1); if(v<clips[k+1][1]-0.05) clips[k+1][0]=v; }
+      if(act==='straight') clips[k+1][0]=clips[k][1];   // contínuo: junta os dois trechos (normalize)
+    });
+  });
+
+  // botões de edição
+  $('cpSrc').onclick=()=>{ active='src'; doCopy(false); }; $('cpOut').onclick=()=>{ active='out'; doCopy(false); };
+  $('cutOut').onclick=()=>{ active='out'; doCopy(true); }; $('pasteOut').onclick=doPaste; $('delOut').onclick=()=>{ active='out'; doDelete(); };
+  const playSel=w=>{ const s=selOf(w); if(s) (w==='src'?playSrcFrom:playOutFrom)(s[0],s[1]-s[0]); };
+  $('playSelSrc').onclick=()=>playSel('src'); $('playSelOut').onclick=()=>playSel('out');
+
+  // zoom / reprodução
+  $('zoomSrc').oninput=()=>redrawSrcWave(); $('zoomOut').oninput=()=>redrawOutWave();
+  $('fitSrc').onclick=()=>{ fitZoom('Src'); redrawSrcWave(); }; $('fitOut').onclick=()=>{ fitZoom('Out'); redrawOutWave(); };
+  const wheelZoom=(sc,zoom,redraw,getPps)=>sc.addEventListener('wheel',e=>{ if(!e.ctrlKey) return; e.preventDefault();
+    const rect=sc.getBoundingClientRect(), x=e.clientX-rect.left, tAt=(sc.scrollLeft+x)/getPps(), z=$(zoom);
+    z.value=clamp(Math.round(+z.value*(e.deltaY<0?1.25:0.8)),+z.min,+z.max); redraw(); sc.scrollLeft=tAt*getPps()-x; },{passive:false});
+  wheelZoom($('scrSrc'),'zoomSrc',redrawSrcWave,()=>ppsS); wheelZoom($('scrOut'),'zoomOut',redrawOutWave,()=>ppsO);
+  $('playSrc').onclick=()=>{ active='src'; play&&play.which==='src'?pause():playSrcFrom(P.src.cursor); };
+  $('playOut').onclick=()=>{ active='out'; play&&play.which==='out'?pause():playOutFrom(P.out.cursor); };
+  $('stop').onclick=stop;
+
+  document.addEventListener('keydown',e=>{
+    if(!A) return;
+    if(/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)){ if(e.key==='Escape') document.activeElement.blur(); return; }
+    const k=e.key.toLowerCase(), mod=e.ctrlKey||e.metaKey;
+    if(e.code==='Space'){ e.preventDefault(); play?pause():resume(); }
+    else if(k==='escape'){ stop(); for(const w of ['src','out']){ P[w].anchor=null; P[w].selA=P[w].selB=null; } updSel(); drawSrcOverlay(); drawOutOverlay(); }
+    else if(mod&&k==='c'){ e.preventDefault(); doCopy(false); }
+    else if(mod&&k==='x'){ e.preventDefault(); doCopy(true); }
+    else if(mod&&k==='v'){ e.preventDefault(); doPaste(); }
+    else if(mod&&k==='z'){ e.preventDefault(); e.shiftKey?redo():undo(); }
+    else if(mod&&k==='y'){ e.preventDefault(); redo(); }
+    else if(k==='delete'||k==='backspace'){ e.preventDefault(); doDelete(); }
+  });
+  wirePanel('src'); wirePanel('out');
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ if(A){ redrawSrcWave(); redrawOutWave(); } });
+
+  // exportação
+  $('dlWav').onclick=()=>{ if(!result) return; const f=finalize(opts()); if(f.L.length<Math.round(opts().tg*sr)-10) toast('Atenção: o resultado é mais curto que o alvo.',4000);
+    download(wav(f.L,f.R,sr),(fileName.replace(/\.[^.]+$/,'')||'musica')+'_estendida.wav'); };
+  $('dlProj').onclick=()=>download(new Blob([JSON.stringify(stateObj(),null,2)],{type:'application/json'}),(fileName.replace(/\.[^.]+$/,'')||'musica')+'.edicao.json');
+  $('projIn').addEventListener('change',async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+    try{ const s=JSON.parse(await f.text()); snapshot(); applyState(s); normalize(); afterEdit(); toast('Projeto carregado (o áudio deve ser o mesmo arquivo).'); }catch(err){ toast('Projeto inválido.',3500); } });
+  const copy=async(txt,btn,orig)=>{ try{ await navigator.clipboard.writeText(txt); btn.textContent='Copiado ✓'; }catch(e){ $('outTxt').select(); document.execCommand('copy'); } setTimeout(()=>btn.textContent=orig,1500); };
+  $('cpPy').onclick=()=>copy(outText().py,$('cpPy'),'Copiar JUMPS (extend_song.py)'); $('cpFf').onclick=()=>copy(outText().ff,$('cpFf'),'Copiar comandos ffmpeg');
+}
+
+wire(); updUndo(); updSel(); updPlayButtons();
+</script>
+</body>
+</html>

@@ -6,11 +6,12 @@
   },
   "hero": {
     "pill": "Requirements governance for projects where poorly defined scope turns into loss",
-    "headline": "Poorly defined scope costs 45% of your budget.",
+    "headline": "Large IT projects run 45% over budget, on average.",
     "subtitle": "Ancoro brings governance to the requirement lifecycle: every decision structured, every dependency mapped, every validation traceable — before it becomes an expensive surprise at delivery.",
     "ctaAuthenticated": "Open Dashboard",
     "ctaGuest": "Access Platform",
     "ctaDemo": "See demo",
+    "ctaPlans": "See plans",
     "highlights": [
       "Fewer meetings to decide what was already decided",
       "Each area knows what impacts its own work",
@@ -38,7 +39,7 @@
   "problem": {
     "eyebrow": "The problem is expensive",
     "title": "A poorly governed requirement is the invoice that arrives later.",
-    "subtitle": "It's not opinion. It's what the industry has measured for decades in IT and ERP projects.",
+    "subtitle": "It's not opinion. It's what research measured across more than 5,400 IT projects.",
     "stats": [
       {
         "value": "45%",
@@ -51,17 +52,17 @@
         "source": "McKinsey + Oxford"
       },
       {
-        "value": "70–85%",
-        "label": "of rework originates in requirements",
-        "source": "Research on the cost of requirement errors"
+        "value": "17%",
+        "label": "of large IT projects go so badly they threaten the company's existence",
+        "source": "McKinsey + Oxford"
       },
       {
-        "value": "up to 100x",
-        "label": "the cost to fix in production what's solved in the requirements phase",
-        "source": "IBM / Boehm / NIST"
+        "value": "+15%",
+        "label": "cost overrun for every additional year of the project",
+        "source": "McKinsey + Oxford"
       }
     ],
-    "closing": "1 in 4 projects fails due to bad requirements. Ancoro attacks exactly that root cause."
+    "closing": "Large IT projects cost more and deliver less than promised. Ancoro brings governance to the phase where scope is defined."
   },
   "roi": {
     "eyebrow": "How much you recover",
@@ -202,6 +203,7 @@
   "footer": {
     "tagline": "For projects where a poorly documented decision costs dearly.",
     "ctaAuthenticated": "Go to the environment",
-    "ctaGuest": "Get started"
+    "ctaGuest": "Get started",
+    "ctaPlans": "Plans and contact"
   }
 }

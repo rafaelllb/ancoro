@@ -1,0 +1,46 @@
+/**
+ * Estilo COMPARTILHADO do diagrama BPMN: tokens de tema + classes dos shapes SVG.
+ * [2026-10-14] Criado: extraído do editor para o portal publicado usar EXATAMENTE o mesmo visual — Rafael Brito
+ * Tema/marca = estes tokens (o portal sobrescreve alguns a partir do brand.json). Escuro via prefers-color-scheme.
+ */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --ink: #1c2430; --muted: #66707e; --line: #d9dde3; --flow: #4a5568;
+  --lane-0: #f2f6fc; --lane-1: #f4faf7; --lane-2: #fbf7f1; --head: #e9edf3;
+  --task: #5b6b82; --task-bg: #f1f4f8;
+  --user: #2f6fe4; --user-bg: #eaf1fd; --service: #0f8f7f; --service-bg: #e5f5f2; --manual: #7b5cd6; --manual-bg: #f0ecfb;
+  --gateway: #d98a0b; --gateway-bg: #fdf3df; --start: #2e9d57; --start-bg: #e6f6ec; --inter: #d98a0b;
+  --end: #d6453d; --end-bg: #fdecea; --sub: #3b4a63; --sub-bg: #eef1f6; --data: #66707e; --store-bg: #eef0f3;
+  --accent: #2f6fe4; --err: #d6453d; --warn: #d98a0b; --info: #66707e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12161c; --surface: #1a2029; --ink: #e8ecf2; --muted: #97a1b0; --line: #2c3541; --flow: #a3adbc;
+    --lane-0: #172030; --lane-1: #16231f; --lane-2: #231e18; --head: #222b38;
+    --task: #8fa0b8; --task-bg: #222a36;
+    --user: #6f9dff; --user-bg: #1d2a45; --service: #3ec5b2; --service-bg: #15332f; --manual: #a68cff; --manual-bg: #2a2445;
+    --gateway: #f0a93a; --gateway-bg: #3a2c12; --start: #55c27f; --start-bg: #173324; --inter: #f0a93a;
+    --end: #ff7a70; --end-bg: #3a1c1a; --sub: #9fb0cc; --sub-bg: #232c3a; --data: #97a1b0; --store-bg: #232a34;
+    --accent: #6f9dff; --err: #ff7a70; --warn: #f0a93a; --info: #97a1b0;
+  }
+}
+
+/* SVG */
+.pool-box { fill: none; stroke: var(--line); stroke-width: 1.5; } .pool-box.ext { fill: var(--bg); stroke-dasharray: 5 4; }
+.head { fill: var(--head); }
+.pool-label, .lane-label { fill: var(--muted); font-size: 12px; font-weight: 650; }
+.lane-box { stroke: var(--line); }
+.lane-0 .lane-box { fill: var(--lane-0); } .lane-1 .lane-box { fill: var(--lane-1); } .lane-2 .lane-box { fill: var(--lane-2); }
+.lbl { fill: var(--ink); pointer-events: none; } .tx { font: 10px ui-monospace, Consolas, monospace; pointer-events: none; }
+.node { cursor: pointer; } .node:hover .shape { filter: drop-shadow(0 2px 5px rgba(47, 111, 228, .4)); }
+.node.sel .shape { filter: drop-shadow(0 0 4px var(--accent)); }
+.flow { fill: none; stroke: var(--flow); stroke-width: 1.6; } .flow.association { stroke-dasharray: 3 3; stroke-width: 1.2; stroke: var(--data); }
+.flow.message { stroke-dasharray: 6 4; } .flow.sel { stroke: var(--accent); stroke-width: 2.6; }
+.edge .hit { fill: none; stroke: transparent; stroke-width: 12; cursor: pointer; }
+.flow-label { fill: var(--muted); font-size: 11px; font-weight: 600; pointer-events: none; }
+
+/* ---- rótulos como elementos (arrastáveis) ---- */
+.label-hit { fill: transparent; pointer-events: all; cursor: move; }
+.label:hover .label-hit { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 2; }
+.node.sel .label-hit, .edge .flow.sel ~ .label .label-hit { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 2; }
+.flow-label .lbl { font-weight: 600; fill: var(--muted); }
+

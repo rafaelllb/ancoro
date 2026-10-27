@@ -24,6 +24,8 @@ import ptMetrics from './locales/pt/metrics.json'
 import ptMatrix from './locales/pt/matrix.json'
 import ptGraph from './locales/pt/graph.json'
 import ptDashboard from './locales/pt/dashboard.json'
+import ptProcesses from './locales/pt/processes.json'
+import ptPlans from './locales/pt/plans.json'
 
 import enCommon from './locales/en/common.json'
 import enNav from './locales/en/nav.json'
@@ -35,6 +37,8 @@ import enMetrics from './locales/en/metrics.json'
 import enMatrix from './locales/en/matrix.json'
 import enGraph from './locales/en/graph.json'
 import enDashboard from './locales/en/dashboard.json'
+import enProcesses from './locales/en/processes.json'
+import enPlans from './locales/en/plans.json'
 
 export const LANGUAGE_STORAGE_KEY = 'ancoro_lang'
 export const SUPPORTED_LANGUAGES = ['pt', 'en'] as const
@@ -53,6 +57,8 @@ export const NAMESPACES = [
   'matrix',
   'graph',
   'dashboard',
+  'processes',
+  'plans',
 ] as const
 
 const resources = {
@@ -67,6 +73,8 @@ const resources = {
     matrix: ptMatrix,
     graph: ptGraph,
     dashboard: ptDashboard,
+    processes: ptProcesses,
+    plans: ptPlans,
   },
   en: {
     common: enCommon,
@@ -79,6 +87,8 @@ const resources = {
     matrix: enMatrix,
     graph: enGraph,
     dashboard: enDashboard,
+    processes: enProcesses,
+    plans: enPlans,
   },
 } as const
 

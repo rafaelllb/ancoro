@@ -1,0 +1,86 @@
+{
+  "nav": { "back": "← Back", "login": "Sign in" },
+  "hero": {
+    "eyebrow": "Plans",
+    "title": "Requirements governance the way your team works.",
+    "subtitle": "For people who run projects on their own, for small teams, and for organizations that demand control over where their data lives."
+  },
+  "audiences": {
+    "self": {
+      "eyebrow": "Consultants and small teams",
+      "title": "Self-service subscription",
+      "text": "Create your account, open your first project and pay monthly without talking to anyone. Every feature in a single plan.",
+      "badge": "Coming soon",
+      "cta": "Join the waitlist"
+    },
+    "enterprise": {
+      "eyebrow": "Mid-size and large organizations",
+      "title": "Tailored deployment",
+      "text": "Choose where the platform runs, how people sign in and how the contract is shaped. Our team walks the evaluation with you.",
+      "cta": "Talk to our team"
+    }
+  },
+  "deployment": {
+    "title": "Where the platform can run",
+    "subtitle": "The same product, three deployment models.",
+    "items": [
+      { "code": "SAAS", "title": "Managed SaaS", "text": "We operate the platform for you. Fast start, no infrastructure on your side." },
+      { "code": "DEDICATED", "title": "Dedicated instance", "text": "Application and database isolated for your organization, operated by us under contract." },
+      { "code": "ONPREMISE", "title": "On-premise", "text": "Everything in your environment — application, database and access — under an annual license. No data leaves your network." }
+    ]
+  },
+  "capabilities": {
+    "title": "What your organization gets",
+    "items": [
+      { "title": "Role-based access", "text": "Admin, manager, consultant and client, with distinct permissions per project." },
+      { "title": "Audit trail", "text": "Field-by-field history of every requirement, with the ability to roll changes back." },
+      { "title": "Validation before advancing", "text": "Circular dependencies, conflicting requirements, orphan requirements and evidence are checked in the flow." },
+      { "title": "Process maps (BPMN)", "text": "Processes linked to requirements and publishable as a portal for people who do not use the tool." },
+      { "title": "Export", "text": "Documents and spreadsheets in the format your sponsor and client expect to read." },
+      { "title": "Portuguese and English", "text": "Full interface in both languages." }
+    ]
+  },
+  "sap": {
+    "eyebrow": "For any project. SAP compatible.",
+    "title": "Built for complex integration projects — including SAP.",
+    "text": "The method does not depend on a technology, but the tool ships with features ready for SAP implementations, where one requirement almost always touches more than one module.",
+    "items": [
+      "Cross-module matrix (ISU, CRM, FICA, Device Management, SD, MM, PM)",
+      "Business process document (BPD) for S/4HANA Utilities projects",
+      "Configurable integration types and timing (BAPI, IDoc, file, API, batch)",
+      "Lists and terminology adjustable per project"
+    ],
+    "disclaimer": "SAP, S/4HANA and other brands mentioned belong to their respective owners. Ancoro is an independent product and is not affiliated with SAP SE."
+  },
+  "form": {
+    "title": "Talk to our team",
+    "titleWaitlist": "Self-service waitlist",
+    "subtitle": "We reply to the email you provide. If you prefer, use the direct contacts next to the form.",
+    "subtitleWaitlist": "We will let you know as soon as self-service subscriptions open.",
+    "interestLabel": "My interest",
+    "interestEnterprise": "Mid-size / large organization",
+    "interestWaitlist": "Self-service (waitlist)",
+    "name": "Name",
+    "email": "Work email",
+    "company": "Company",
+    "phone": "Phone (optional)",
+    "teamSize": "Team size",
+    "teamSizeOptions": { "1": "Just me", "2-5": "2 to 5 people", "6-20": "6 to 20 people", "21-100": "21 to 100 people", "100+": "Over 100" },
+    "deployment": "Deployment model",
+    "deploymentOptions": { "SAAS": "Managed SaaS", "DEDICATED": "Dedicated instance", "ONPREMISE": "On-premise", "UNSURE": "Not sure yet" },
+    "select": "Select",
+    "message": "Project context (optional)",
+    "messagePlaceholder": "Type of project, timeline, security requirements or anything else relevant.",
+    "consent": "I agree to be contacted about Ancoro using the details provided.",
+    "submit": "Send",
+    "sending": "Sending…",
+    "successTitle": "Received.",
+    "successText": "We will get back to you shortly at the email provided.",
+    "error": "We could not send this right now. Please try again or use the direct contacts."
+  },
+  "contact": {
+    "title": "Direct contact",
+    "email": "Email",
+    "phone": "Phone"
+  }
+}

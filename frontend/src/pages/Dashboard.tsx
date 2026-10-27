@@ -22,11 +22,13 @@ import { NotificationBell } from '../components/NotificationBell'
 import { MobileNav, NavIcons } from '../components/MobileNav'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import { Requirement } from '../services/api'
+import { useEntitlements } from '../hooks/useEntitlements'
 import { patternFromProject } from '../utils/reqIdPattern'
 
 export default function Dashboard() {
   const { user, logout } = useAuth()
   const { t } = useTranslation(['dashboard', 'nav', 'common'])
+  const { processStudio } = useEntitlements() // [2026-10-16] só assinantes veem o Process Studio
 
   // Itens de navegação com labels traduzidos (recriados a cada render para refletir troca de idioma)
   const navItems = [
@@ -34,6 +36,8 @@ export default function Dashboard() {
     { label: t('nav:dependencyGraph'), path: '/dependency-graph', icon: NavIcons.graph },
     { label: t('nav:crossMatrix'), path: '/cross-matrix', icon: NavIcons.matrix },
     { label: t('nav:metrics'), path: '/metrics', icon: NavIcons.metrics },
+    // [2026-10-15] Process Studio — visível a todos os papéis (CLIENT só lê); [2026-10-16] somente com assinatura
+    ...(processStudio ? [{ label: t('nav:processes'), path: '/processes', icon: NavIcons.graph }] : []),
   ]
   const { currentProject, projects, setCurrentProject } = useCurrentProject()
   const projectId = currentProject?.id || ''
@@ -141,6 +145,14 @@ export default function Dashboard() {
                   className="rounded-xl bg-ancoro-teal-500 px-4 py-2.5 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-ancoro-teal-600"
                 >
                   {t('nav:matrixShort')}
+                </Link>
+              )}
+              {processStudio && (
+                <Link
+                  to="/processes"
+                  className="rounded-xl border border-ancoro-navy-200 bg-white/80 px-4 py-2.5 text-sm font-medium text-ancoro-navy-700 transition hover:-translate-y-0.5 hover:bg-ancoro-navy-50"
+                >
+                  {t('nav:processes')}
                 </Link>
               )}
               {canViewMetrics && (

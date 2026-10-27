@@ -85,6 +85,14 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      # [2026-10-16] Criado: o backend importa backend/vendor/processkit.cjs (gitignored),
+      # gerado a partir de process-core + process-publisher. Sem isto, processes.test.ts falha — Rafael Brito
+      - name: Install Process Studio packages
+        run: npm run install:process-studio
+
+      - name: Build processkit (backend/vendor)
+        run: npm run build:processkit
+
       - name: Generate Prisma Client
         working-directory: backend
         run: npx prisma generate --schema prisma/schema.prisma
@@ -143,3 +151,49 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         run: npm run build
+
+  # [2026-10-16] Criado: testes unitários dos pacotes standalone do Process Studio
+  # (process-core: modelo/BPMN/validação/edição; process-publisher: portal, 16 testes em Chrome
+  # real ficam fora do CI por ora). Ver docs/process-studio/README.md §6.4 — Rafael Brito
+  process-studio:
+    name: Process Studio (packages)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            packages/process-core/package-lock.json
+            packages/process-render/package-lock.json
+            packages/process-editor/package-lock.json
+            packages/process-publisher/package-lock.json
+            apps/standalone/package-lock.json
+
+      - name: Install packages
+        run: npm run install:process-studio
+
+      - name: Test process-core
+        working-directory: packages/process-core
+        run: npm test
+
+      # Testes em Chrome real são pulados sozinhos quando não há Chrome (HAS_CHROME)
+      - name: Test process-publisher
+        working-directory: packages/process-publisher
+        run: npm test
+
+      - name: Typecheck + build editor (modo Ancoro)
+        run: npm run build:process-studio
+
+      # [2026-10-16] Criado: adaptador standalone (Fase 6). O E2E em Chrome (npm run e2e) fica fora do CI por ora — Rafael Brito
+      - name: Standalone — instalar, compilar, typecheck e testar
+        working-directory: apps/standalone
+        run: |
+          npm ci
+          npm run build
+          npm run typecheck
+          npm test

@@ -62,3 +62,17 @@ prisma/migrations/**/migration.sql.bak
 *.sqlite
 *.sqlite3
 nul
+
+# Process Studio (Fase 4): artefatos gerados — rode `npm run build:processkit` / `npm run build:process-studio`
+backend/vendor/
+frontend/public/process-studio/
+packages/*/dist/
+packages/*/out/
+packages/*/e2e/out/
+
+# Process Studio standalone (Fase 6): artefatos gerados e dados locais
+apps/standalone/vendor/
+apps/standalone/public/editor/
+apps/standalone/dist/
+apps/standalone/data/
+apps/standalone/e2e/out/

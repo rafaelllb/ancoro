@@ -11,13 +11,20 @@ declare global {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_in_production'
+// [2026-10-24] Alterado: removido o fallback 'dev_secret_change_in_production' — um segredo público conhecido permitiria forjar
+// tokens ADMIN se a variável sumisse. Resolvido sob demanda (não no import) para não quebrar testes que só geram token;
+// o config/index.ts já valida JWT_SECRET no boot do servidor (fail-fast, >= 32 chars em produção).
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret) throw new Error('JWT_SECRET não configurado')
+  return secret
+}
 
 /**
  * Gera JWT token para usuário
  */
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, {
+  return jwt.sign(payload, getJwtSecret(), {
     expiresIn: '7d', // Token válido por 7 dias
   })
 }
@@ -27,7 +34,7 @@ export function generateToken(payload: JWTPayload): string {
  */
 export function verifyToken(token: string): JWTPayload {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload
+    const decoded = jwt.verify(token, getJwtSecret()) as JWTPayload
     return decoded
   } catch (error) {
     throw new Error('Token inválido ou expirado')

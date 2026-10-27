@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "lib": ["ES2022", "DOM", "DOM.Iterable"], "module": "ESNext", "moduleResolution": "Bundler",
+    "jsx": "react-jsx", "strict": true, "noUncheckedIndexedAccess": true, "skipLibCheck": true, "noEmit": true,
+    "esModuleInterop": true, "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@ancoro/process-core": ["../process-core/src/index.ts"],
+      "@ancoro/process-render": ["../process-render/src/index.ts"],
+      "react": ["./node_modules/@types/react"],
+      "react/jsx-runtime": ["./node_modules/@types/react/jsx-runtime"],
+      "react-dom/server": ["./node_modules/@types/react-dom/server"]
+    }
+  },
+  "include": ["src", "viewer", "test", "../process-core/src/**/*.d.ts", "../process-render/src/**/*"]
+}

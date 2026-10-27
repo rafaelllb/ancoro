@@ -38,6 +38,8 @@ model Project {
   objectives   ProjectObjective[]
   pendingMemberships PendingProjectMembership[]
   graphLayout  GraphLayout?
+  businessProcesses BusinessProcess[]
+  processPortal    ProcessPortal?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -163,6 +165,7 @@ model Requirement {
   updatedAt       DateTime @updatedAt
 
   @@unique([projectId, reqId])
+  processLinks ProcessRequirementLink[]
   @@map("requirements")
 }
 
@@ -442,6 +445,86 @@ model GraphLayout {
   @@map("graph_layouts")
 }
 
+// ===== PROCESS STUDIO (Fase 4) =====
+// [2026-10-15] Criado: modelagem de processos BPMN dentro do projeto (ver docs/process-studio/README.md §6.4) — Rafael Brito
+// Fonte da verdade = `model` (JSON do ProcessModel do @ancoro/process-core). ProcessRequirementLink é uma PROJEÇÃO
+// reconstruída a cada save (consulta "em quais processos este requisito aparece?" + análise de lacunas): nunca editar à mão.
+
+model BusinessProcess {
+  id          String   @id @default(cuid())
+  projectId   String
+  /// id do processo DENTRO do modelo (ProcessModel.id): é o que `calledProcessId` (drill-down) referencia; único por projeto
+  key         String
+  name        String
+  /// Revisão otimista: o save só vale com baseRev == rev (senão 409). Incrementa a cada save.
+  rev         Int      @default(1)
+  /// JSON do ProcessModel (texto: compatível com SQLite e PostgreSQL)
+  model       String
+  createdById String?
+  updatedById String?
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versions    ProcessVersion[]
+  links       ProcessRequirementLink[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, key])
+  @@index([projectId])
+  @@map("business_processes")
+}
+
+// Snapshot imutável (rótulo opcional). Restaurar = novo save com este conteúdo; o histórico nunca é reescrito.
+model ProcessVersion {
+  id          String   @id @default(cuid())
+  processId   String
+  version     Int
+  label       String?
+  // [2026-10-27] Criado: revisão (r) do processo salvo no momento em que a versão foi tirada — versão é manual, r é o salvamento — Rafael Brito
+  rev         Int?
+  model       String
+  createdById String?
+
+  process     BusinessProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([processId, version])
+  @@map("process_versions")
+}
+
+// Elemento BPMN <-> Requisito (N:N). `elementName` é cópia do nome do elemento no último save (evita abrir o JSON para listar).
+model ProcessRequirementLink {
+  id            String   @id @default(cuid())
+  processId     String
+  elementId     String
+  elementName   String   @default("")
+  requirementId String
+
+  process       BusinessProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+  requirement   Requirement     @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@unique([processId, elementId, requirementId])
+  @@index([requirementId])
+  @@map("process_requirement_links")
+}
+
+// Estado da publicação do portal do projeto: o versions.json da última publicação continua o histórico ("O que mudou").
+model ProcessPortal {
+  id                String    @id @default(cuid())
+  projectId         String    @unique
+  versionsJson      String    @default("")
+  publishCount      Int       @default(0)
+  lastLabel         String?
+  lastPublishedAt   DateTime?
+  lastPublishedById String?
+
+  project           Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("process_portals")
+}
+
 // ===== MULTI-TENANCY MODELS =====
 // Modelos para suporte a multi-tenant (database-per-client)
 // Ver: docs/INFRASTRUCTURE_GUIDE.md seção 3.4
@@ -454,8 +537,8 @@ model GraphLayout {
 
 model Tenant {
   id                    String   @id @default(cuid())
-  slug                  String   @unique  // URL-safe identifier: "seidor", "energia-vitalis"
-  name                  String            // Nome legível: "Seidor Brasil"
+  slug                  String   @unique  // URL-safe identifier: "cliente-exemplo", "energia-vitalis"
+  name                  String            // Nome legível: "Cliente Exemplo"
   databaseUrlEncrypted  String   @map("database_url_encrypted")  // AES-256-GCM encrypted
 
   // Plano e status
@@ -498,3 +581,28 @@ model TenantUser {
 // IntegrationTiming: SYNC | ASYNC | BATCH | EVENT
 // IntegrationStatus: OK | PENDING | CONFLICT | CIRCULAR
 // ChangeType: CREATE | UPDATE | DELETE | STATUS_CHANGE | COMMENT_ADDED
+
+// ===== LEADS COMERCIAIS =====
+// [2026-10-24] Criado: captura de interesse comercial da página /planos (médio/grande porte e lista de espera do self-service) — Rafael Brito
+// Vive no banco do SaaS do fornecedor (não em banco de tenant). Em instalação on-premise a rota fica desligada (ver routes/leads.ts).
+model Lead {
+  id          String   @id @default(cuid())
+  interest    String                       // ENTERPRISE | SELF_SERVICE_WAITLIST
+  name        String
+  email       String
+  company     String?
+  phone       String?
+  teamSize    String?                      // faixa livre: "1", "2-5", "6-20", "21-100", "100+"
+  deployment  String?                      // SAAS | DEDICATED | ONPREMISE | UNSURE (preferência declarada)
+  message     String?
+  locale      String   @default("pt")
+  status      String   @default("NEW")     // NEW | CONTACTED | QUALIFIED | WON | LOST
+  consentAt   DateTime @map("consent_at")  // LGPD: momento em que o titular aceitou ser contatado
+  notifiedAt  DateTime? @map("notified_at") // preenchido quando o aviso (e-mail/webhook) saiu; null = falhou/pendente
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@index([email])
+  @@map("leads")
+}

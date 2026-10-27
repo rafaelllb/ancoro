@@ -1,0 +1,43 @@
+{
+  "name": "@ancoro/process-studio-standalone",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "nodemailer": "^10.1.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "@types/nodemailer": "^8.0.2",
+    "@types/supertest": "^7.2.1",
+    "esbuild": "^0.28.2",
+    "puppeteer-core": "^25.14.0",
+    "supertest": "^7.3.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  },
+  "description": "Process Studio standalone: editor BPMN + portal, roda sem o Ancoro (Fase 6). Login por codigo/link por e-mail, SQLite.",
+  "author": "Rafael Brito",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.mjs",
+    "build": "npm run build:kit && npm run build:editor && npm run build:server",
+    "build:kit": "cd ../../packages/process-publisher && node build-viewer.mjs && node build-kit.mjs --out ../../apps/standalone/vendor/processkit.cjs",
+    "build:editor": "cd ../../packages/process-editor && vite build --outDir ../../apps/standalone/public/editor --emptyOutDir",
+    "build:server": "esbuild src/server.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/server.mjs --packages=external",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "node e2e/standalone.mjs"
+  }
+}

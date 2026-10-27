@@ -1,0 +1,17 @@
+{
+  "name": "@ancoro/process-render",
+  "version": "0.1.0",
+  "description": "Renderer SVG do Process Studio (React puro). Compartilhado pelo editor e pelo publisher do portal. Não depende do Ancoro.",
+  "author": "Rafael Brito",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.9.3"
+  }
+}

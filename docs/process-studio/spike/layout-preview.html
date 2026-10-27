@@ -1,0 +1,67 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Layout Preview</title></head>
+<body style="margin:0;background:#fff;font-family:system-ui,sans-serif">
+<h3 style="margin:12px 16px">Auto-layout (modelo sem geometria → layoutModel) — Ciclo de faturamento de consumo</h3>
+<svg viewBox="-20 -10 1844 610" style="width:100%;max-width:1844px">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#444"/></marker></defs>
+<rect x="36" y="0" width="1768" height="140" fill="none" stroke="#bbb"/>
+<text transform="translate(24,70) rotate(-90)" text-anchor="middle" font-size="12" fill="#666">Medição</text>
+<rect x="36" y="140" width="1768" height="190" fill="none" stroke="#bbb"/>
+<text transform="translate(24,235) rotate(-90)" text-anchor="middle" font-size="12" fill="#666">Faturamento (ISU)</text>
+<rect x="36" y="330" width="1768" height="240" fill="none" stroke="#bbb"/>
+<text transform="translate(24,450) rotate(-90)" text-anchor="middle" font-size="12" fill="#666">Contas a Receber</text>
+<path d="M132 70 L202 70" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<path d="M322 70 L392 70" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<path d="M442 70 L512 70" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<text x="516" y="65" font-size="11" fill="#666">Não</text>
+<path d="M442 70 L467 70 L467 235 L702 235" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<text x="471" y="65" font-size="11" fill="#666">Sim</text>
+<path d="M632 70 L677 70 L677 235 L702 235" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<path d="M822 235 L892 235" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<path d="M942 235 L1308 235" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<path d="M1428 235 L1498 235" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<path d="M1638 235 L1708 235" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<path d="M942 235 L967 235 L967 450 L1012 450" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<path d="M1132 450 L1202 450" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<path d="M1238 450 L1308 450" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<path d="M1428 450 L1543 450" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<path d="M1593 450 L1618 450 L1618 500 L1708 500" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<text x="1622" y="445" font-size="11" fill="#666">Sim</text>
+<path d="M1593 450 L1618 450 L1618 400 L1708 400" stroke="#444" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+<text x="1622" y="445" font-size="11" fill="#666">Não</text>
+<path d="M1568 173 L1568 195" stroke="#888" stroke-dasharray="3 3" fill="none"/>
+<path d="M710 297 L710 270" stroke="#888" stroke-dasharray="3 3" fill="none"/>
+<circle cx="114" cy="70" r="18" fill="#fff" stroke="#2e9d57" stroke-width="1.8"/>
+<text x="114" y="104" text-anchor="middle" font-size="11">Ciclo de leitura encerrado</text>
+<rect x="202" y="35" width="120" height="70" rx="10" fill="#eef3fd" stroke="#2f6fe4" stroke-width="1.6"/>
+<text x="262" y="74" text-anchor="middle" font-size="11">Importar leituras</text>
+<path d="M417 45L442 70L417 95L392 70Z" fill="#fdf3df" stroke="#d98a0b" stroke-width="1.6"/>
+<text x="417" y="38" text-anchor="middle" font-size="11">Leitura plausível?</text>
+<rect x="512" y="35" width="120" height="70" rx="10" fill="#eef3fd" stroke="#2f6fe4" stroke-width="1.6"/>
+<text x="572" y="74" text-anchor="middle" font-size="11">Corrigir leitura manualmente</text>
+<rect x="1483" y="127" width="170" height="46" fill="none" stroke="#888" stroke-dasharray="3 3"/>
+<text x="1568" y="154" text-anchor="middle" font-size="11">Tarifas vigentes por classe de consumo</text>
+<rect x="678" y="297" width="28" height="36" fill="#fff" stroke="#888"/>
+<text x="692" y="345" text-anchor="middle" font-size="11">Pré-faturamento</text>
+<rect x="702" y="200" width="120" height="70" rx="10" fill="#eef3fd" stroke="#2f6fe4" stroke-width="1.6"/>
+<text x="762" y="239" text-anchor="middle" font-size="11">Gerar pré-faturamento</text>
+<path d="M917 210L942 235L917 260L892 235Z" fill="#fdf3df" stroke="#d98a0b" stroke-width="1.6"/>
+<text x="917" y="203" text-anchor="middle" font-size="11"></text>
+<rect x="1308" y="200" width="120" height="70" rx="10" fill="#eef3fd" stroke="#2f6fe4" stroke-width="1.6"/>
+<text x="1368" y="239" text-anchor="middle" font-size="11">Executar faturamento</text>
+<rect x="1498" y="195" width="140" height="80" rx="10" fill="#eef3fd" stroke="#2f6fe4" stroke-width="1.6"/>
+<text x="1568" y="239" text-anchor="middle" font-size="11">Cálculo de tarifa e impostos</text>
+<circle cx="1726" cy="235" r="18" fill="#fff" stroke="#d6453d" stroke-width="4"/>
+<text x="1726" y="269" text-anchor="middle" font-size="11">Fatura emitida</text>
+<rect x="1012" y="415" width="120" height="70" rx="10" fill="#eef3fd" stroke="#2f6fe4" stroke-width="1.6"/>
+<text x="1072" y="454" text-anchor="middle" font-size="11">Notificar cliente</text>
+<circle cx="1220" cy="450" r="18" fill="#fff" stroke="#d98a0b" stroke-width="1.8"/>
+<text x="1220" y="484" text-anchor="middle" font-size="11">Aguardar vencimento</text>
+<rect x="1308" y="415" width="120" height="70" rx="10" fill="#eef3fd" stroke="#2f6fe4" stroke-width="1.6"/>
+<text x="1368" y="454" text-anchor="middle" font-size="11">Acompanhar pagamento</text>
+<path d="M1568 425L1593 450L1568 475L1543 450Z" fill="#fdf3df" stroke="#d98a0b" stroke-width="1.6"/>
+<text x="1568" y="418" text-anchor="middle" font-size="11">Pago?</text>
+<circle cx="1726" cy="500" r="18" fill="#fff" stroke="#d6453d" stroke-width="4"/>
+<text x="1726" y="534" text-anchor="middle" font-size="11">Ciclo encerrado</text>
+<circle cx="1726" cy="400" r="18" fill="#fff" stroke="#d6453d" stroke-width="4"/>
+<text x="1726" y="434" text-anchor="middle" font-size="11">Escalar para cobrança</text>
+</svg></body></html>

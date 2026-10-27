@@ -20,7 +20,7 @@ Backend rodando em: `http://localhost:3000`
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "joao.silva@seidor.com",
+    "email": "joao.silva@example.com",
     "password": "demo123"
   }'
 ```
@@ -31,7 +31,7 @@ curl -X POST http://localhost:3000/api/auth/login \
   "user": {
     "id": "clxxxx...",
     "name": "João Silva",
-    "email": "joao.silva@seidor.com",
+    "email": "joao.silva@example.com",
     "role": "CONSULTANT",
     "createdAt": "2026-03-17T...",
     "updatedAt": "2026-03-17T..."
@@ -156,12 +156,12 @@ O seed criou os seguintes dados:
 ### Usuários (todos com senha: `demo123`)
 
 **Consultores:**
-- joao.silva@seidor.com (ISU)
-- maria.santos@seidor.com (CRM)
-- pedro.oliveira@seidor.com (FI-CA)
+- joao.silva@example.com (ISU)
+- maria.santos@example.com (CRM)
+- pedro.oliveira@example.com (FI-CA)
 
 **Manager:**
-- rafael.brito@seidor.com
+- rafael.brito@example.com
 
 **Cliente:**
 - ana.costa@cliente.com
@@ -184,7 +184,7 @@ O seed criou os seguintes dados:
 ```bash
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "joao.silva@seidor.com", "password": "demo123"}'
+  -d '{"email": "joao.silva@example.com", "password": "demo123"}'
 ```
 
 2. Atualizar REQ-002 (instalação de medidor):
@@ -219,7 +219,7 @@ curl -X PATCH "http://localhost:3000/api/requirements/{REQ_001_ID}" \
 ```bash
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email": "rafael.brito@seidor.com", "password": "demo123"}'
+  -d '{"email": "rafael.brito@example.com", "password": "demo123"}'
 ```
 
 2. Atualizar qualquer requisito:

@@ -6,11 +6,12 @@
   },
   "hero": {
     "pill": "Governança de requisitos para projetos onde escopo mal definido vira prejuízo",
-    "headline": "Escopo mal definido custa 45% do orçamento.",
+    "headline": "Grandes projetos de TI estouram o orçamento em 45%, em média.",
     "subtitle": "Ancoro põe governança no ciclo de vida do requisito: cada decisão estruturada, cada dependência mapeada, cada validação rastreável — antes de virar surpresa cara na entrega.",
     "ctaAuthenticated": "Abrir Dashboard",
     "ctaGuest": "Acessar Plataforma",
     "ctaDemo": "Ver demonstração",
+    "ctaPlans": "Ver planos",
     "highlights": [
       "Menos reunião para decidir o que já foi decidido",
       "Cada área sabe o que impacta o trabalho dela",
@@ -38,7 +39,7 @@
   "problem": {
     "eyebrow": "O problema custa caro",
     "title": "Requisito mal governado é a fatura que chega depois.",
-    "subtitle": "Não é opinião. É o que a indústria mede há décadas em projetos de TI e ERP.",
+    "subtitle": "Não é opinião. É o que a pesquisa mediu em mais de 5.400 projetos de TI.",
     "stats": [
       {
         "value": "45%",
@@ -51,17 +52,17 @@
         "source": "McKinsey + Oxford"
       },
       {
-        "value": "70–85%",
-        "label": "do retrabalho tem origem em requisitos",
-        "source": "Pesquisa sobre custo de erros de requisito"
+        "value": "17%",
+        "label": "dos grandes projetos de TI dão tão errado que ameaçam a existência da empresa",
+        "source": "McKinsey + Oxford"
       },
       {
-        "value": "até 100x",
-        "label": "o custo de corrigir em produção o que se resolve na fase de requisitos",
-        "source": "IBM / Boehm / NIST"
+        "value": "+15%",
+        "label": "de estouro de custo a cada ano adicional de projeto",
+        "source": "McKinsey + Oxford"
       }
     ],
-    "closing": "1 em cada 4 projetos falha por requisitos ruins. Ancoro ataca exatamente essa causa raiz."
+    "closing": "Grandes projetos de TI custam mais e entregam menos do que prometem. Ancoro põe governança na fase em que o escopo é definido."
   },
   "roi": {
     "eyebrow": "Quanto você recupera",
@@ -202,6 +203,7 @@
   "footer": {
     "tagline": "Para projetos onde uma decisão mal documentada custa caro.",
     "ctaAuthenticated": "Ir para o ambiente",
-    "ctaGuest": "Começar agora"
+    "ctaGuest": "Começar agora",
+    "ctaPlans": "Planos e contato"
   }
 }

@@ -83,6 +83,8 @@ const authLimiter = rateLimit({
 app.use('/api/auth/login', authLimiter)
 
 // ===== STANDARD MIDDLEWARES =====
+// [2026-10-15] Alterado: modelos BPMN e importação (.bpm em base64) passam de 100kb — limite maior SÓ nas rotas de processos (Process Studio)
+app.use('/api/projects/:projectId/processes', express.json({ limit: '25mb' }))
 app.use(express.json())
 
 // Structured logging com Pino (substitui console.log manual)
@@ -93,6 +95,7 @@ app.use(attachLicenseInfo)
 
 // ===== IMPORT ROUTES =====
 import authRoutes from './routes/auth'
+import { authenticate } from './middleware/auth'
 import requirementsRoutes from './routes/requirements'
 import crossMatrixRoutes from './routes/crossMatrix'
 import commentsRoutes from './routes/comments'
@@ -106,7 +109,10 @@ import configRoutes from './routes/config'
 import demoRoutes from './routes/demo'
 import evidencesRoutes from './routes/evidences'
 import graphLayoutRoutes from './routes/graphLayout'
+import processesRoutes from './routes/processes'
+import { getEntitlements } from './config/entitlements'
 import usersRoutes from './routes/users'
+import leadsRoutes from './routes/leads'
 
 // ===== ROUTES =====
 
@@ -125,6 +131,11 @@ app.get('/health', (_req: Request, res: Response) => {
 // License status endpoint (disponível em qualquer modo)
 app.get('/api/license/status', licenseStatusHandler)
 
+// [2026-10-16] Criado: o frontend consulta o que a assinatura libera (hoje só o Process Studio) — Rafael Brito
+app.get('/api/entitlements', authenticate, (_req: Request, res: Response) => {
+  res.json(getEntitlements())
+})
+
 // Test database connection
 app.get('/api/test-db', async (_req: Request, res: Response) => {
   try {
@@ -138,7 +149,8 @@ app.get('/api/test-db', async (_req: Request, res: Response) => {
     res.status(500).json({
       status: 'error',
       message: 'Database connection failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      // [2026-10-24] Alterado: detalhe do erro só fora de produção — rota pública não pode vazar host/driver do banco
+      ...(config.features.showDebugInfo && { error: error instanceof Error ? error.message : 'Unknown error' }),
     })
   }
 })
@@ -149,6 +161,8 @@ app.get('/api/test-db', async (_req: Request, res: Response) => {
 app.use('/api/config', configRoutes)
 app.use('/api/demo', demoRoutes)
 app.use('/api/auth', authRoutes)
+// [2026-10-24] Criado: leads comerciais (POST público) — ANTES dos routers que usam router.use(authenticate) — Rafael Brito
+app.use('/api', leadsRoutes)
 app.use('/api', requirementsRoutes)
 app.use('/api', crossMatrixRoutes)
 app.use('/api', commentsRoutes)
@@ -160,6 +174,7 @@ app.use('/api', projectMembersRoutes)
 app.use('/api', projectsRoutes)
 app.use('/api', evidencesRoutes)
 app.use('/api', graphLayoutRoutes)
+app.use('/api', processesRoutes)         // Process Studio (Fase 4)
 app.use('/api', usersRoutes)
 
 // ===== ERROR HANDLER =====

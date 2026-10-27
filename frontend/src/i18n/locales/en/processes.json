@@ -1,0 +1,74 @@
+{
+  "title": "Processes",
+  "subtitle": "BPMN modeling linked to the project's requirements",
+  "list": {
+    "title": "Project processes",
+    "empty": "No processes yet. Create one or import a .bpm (Bizagi) / .bpmn file.",
+    "newPlaceholder": "New process name",
+    "create": "Create",
+    "new": "New process",
+    "import": "Import…",
+    "export": "Export .bpmn",
+    "delete": "Delete",
+    "links": "{{count}} link(s)",
+    "revision": "rev. {{rev}}",
+    "unsavedConfirm": "This process has unsaved changes. Leave anyway?",
+    "collapse": "Collapse list",
+    "expand": "Expand list"
+  },
+  "select": {
+    "title": "Select a process",
+    "body": "Pick a process from the list to view or edit its diagram."
+  },
+  "editor": {
+    "title": "Process editor",
+    "loading": "Opening the editor…",
+    "missing": "The process editor is not installed in this environment. Run \"npm run build:process-studio\" at the project root and reload the page.",
+    "readOnly": "Your role has read-only access to processes."
+  },
+  "coverage": {
+    "title": "Requirements coverage",
+    "summary": "{{covered}} of {{total}} requirements appear in some process",
+    "allCovered": "Every requirement in the project appears in at least one process.",
+    "uncovered": "Without process ({{count}})",
+    "show": "Show list",
+    "hide": "Hide list"
+  },
+  "publish": {
+    "button": "Publish portal",
+    "title": "Publish process portal",
+    "body": "Generates a static site (ZIP) with all project processes, ready to host. Each publication records a new version and what changed.",
+    "label": "Publication label (optional)",
+    "labelPlaceholder": "e.g. Release 2026.10",
+    "password": "Access password (optional)",
+    "passwordHint": "With a password, content is encrypted in the browser (AES-256). Minimum 6 characters.",
+    "confirm": "Generate ZIP",
+    "cancel": "Cancel"
+  },
+  "requirement": {
+    "tab": "Processes",
+    "empty": "This requirement does not appear in any process yet.",
+    "element": "element",
+    "open": "Open process"
+  },
+  "delete": {
+    "title": "Delete process",
+    "message": "Delete the process \"{{name}}\" and all of its versions? This cannot be undone.",
+    "confirm": "Delete",
+    "cancel": "Cancel"
+  },
+  "toast": {
+    "deleted": "Process deleted.",
+    "imported": "{{count}} process(es) imported.",
+    "importWarnings": "The import had {{count}} warning(s).",
+    "published": "Portal published — ZIP downloaded."
+  },
+  "errors": {
+    "create": "Could not create the process.",
+    "delete": "Could not delete the process.",
+    "import": "Could not import the file.",
+    "publish": "Could not publish the portal.",
+    "export": "Could not export the BPMN.",
+    "load": "Could not load the processes."
+  }
+}

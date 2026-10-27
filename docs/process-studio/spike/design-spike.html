@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Process Studio Spike</title>
+<!--
+  [2026-10-14] Criado: Fase 0 (design spike) do Process Studio — Rafael Brito
+  Objetivo: validar estética (tokens + set de elementos BPMN) antes de decidir o motor (README §4).
+  Decisões:
+  - Diagrama é DADOS (JSON abaixo) -> renderer SVG. Mesmo princípio do pipeline de IA (README §5.2):
+    JSON intermediário -> modelo -> layout. Aqui o layout é manual (coordenadas fixas).
+  - Zero dependências: o renderer é plugável e substituível por bpmn-moddle + canvas próprio.
+  - Tema/marca = tokens CSS em :root (requisito de produto: sem script de rebrand).
+
+  TODO [ESTIGMERGIA]: Auto-layout (ELK/dagre) ainda não existe
+  - Coordenadas são manuais; na Fase 1/5 devem vir do layout determinístico.
+  - Próximo passo: converter este JSON <-> BPMN 2.0 XML (bpmn-moddle) e checar round-trip.
+-->
+<style>
+  :root {
+    --bg: #f6f7f9; --surface: #ffffff; --ink: #1c2430; --muted: #66707e; --line: #d9dde3;
+    --flow: #4a5568;
+    --lane-a: #f2f6fc; --lane-b: #f4faf7; --lane-c: #fbf7f1; --lane-head: #e9edf3;
+    --user: #2f6fe4; --user-bg: #eaf1fd;
+    --service: #0f8f7f; --service-bg: #e5f5f2;
+    --manual: #7b5cd6; --manual-bg: #f0ecfb;
+    --gateway: #d98a0b; --gateway-bg: #fdf3df;
+    --start: #2e9d57; --start-bg: #e6f6ec;
+    --inter: #d98a0b; --inter-bg: #fff;
+    --end: #d6453d; --end-bg: #fdecea;
+    --sub: #3b4a63; --sub-bg: #eef1f6;
+    --data: #66707e; --accent: #2f6fe4; --shadow: 0 1px 2px rgba(20,30,50,.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12161c; --surface: #1a2029; --ink: #e8ecf2; --muted: #97a1b0; --line: #2c3541;
+      --flow: #a3adbc;
+      --lane-a: #172030; --lane-b: #16231f; --lane-c: #231e18; --lane-head: #222b38;
+      --user: #6f9dff; --user-bg: #1d2a45; --service: #3ec5b2; --service-bg: #15332f;
+      --manual: #a68cff; --manual-bg: #2a2445; --gateway: #f0a93a; --gateway-bg: #3a2c12;
+      --start: #55c27f; --start-bg: #173324; --inter: #f0a93a; --inter-bg: #1a2029;
+      --end: #ff7a70; --end-bg: #3a1c1a; --sub: #9fb0cc; --sub-bg: #232c3a;
+      --data: #97a1b0; --accent: #6f9dff; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12161c; --surface: #1a2029; --ink: #e8ecf2; --muted: #97a1b0; --line: #2c3541;
+    --flow: #a3adbc;
+    --lane-a: #172030; --lane-b: #16231f; --lane-c: #231e18; --lane-head: #222b38;
+    --user: #6f9dff; --user-bg: #1d2a45; --service: #3ec5b2; --service-bg: #15332f;
+    --manual: #a68cff; --manual-bg: #2a2445; --gateway: #f0a93a; --gateway-bg: #3a2c12;
+    --start: #55c27f; --start-bg: #173324; --inter: #f0a93a; --inter-bg: #1a2029;
+    --end: #ff7a70; --end-bg: #3a1c1a; --sub: #9fb0cc; --sub-bg: #232c3a;
+    --data: #97a1b0; --accent: #6f9dff; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 16px; border-bottom: 1px solid var(--line);
+           background: var(--surface); flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 650; }
+  header .crumb { color: var(--muted); font-size: 13px; }
+  header .spacer { flex: 1; }
+  button { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+           border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  main { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 16px; padding: 16px; }
+  .canvas { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: auto; }
+  /* [2026-10-14] Alterado: min-width 1240->760; o viewBox escala o diagrama e evita cortar o rótulo "Ciclo encerrado" */
+  .canvas svg { display: block; min-width: 760px; width: 100%; height: auto; }
+  aside { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px;
+          align-self: start; position: sticky; top: 16px; }
+  aside h2 { font-size: 15px; margin: 0 0 4px; }
+  aside .type { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  aside dl { margin: 14px 0 0; display: grid; grid-template-columns: 96px 1fr; gap: 8px 10px; font-size: 13px; }
+  aside dt { color: var(--muted); }
+  aside dd { margin: 0; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--sub-bg);
+         border: 1px solid var(--line); font-size: 12px; margin: 0 4px 4px 0; }
+  .hint { color: var(--muted); font-size: 13px; }
+  .legend { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 12px; }
+  /* SVG */
+  .lane-head { fill: var(--lane-head); }
+  .lane-label { fill: var(--muted); font-size: 12px; font-weight: 650; letter-spacing: .03em; }
+  .lane-border { stroke: var(--line); fill: none; }
+  .flow { stroke: var(--flow); stroke-width: 1.6; fill: none; }
+  .assoc { stroke: var(--data); stroke-width: 1.2; stroke-dasharray: 3 3; fill: none; }
+  .flow-label { fill: var(--muted); font-size: 11px; font-weight: 600; }
+  .lbl { fill: var(--ink); font-size: 12px; text-anchor: middle; }
+  .node { cursor: pointer; }
+  .node .shape { transition: filter .12s; }
+  .node:hover .shape { filter: drop-shadow(0 2px 5px rgba(47,111,228,.35)); }
+  .node.sel .shape { stroke-width: 3; }
+  .node:focus-visible { outline: none; }
+  .node:focus-visible .shape { stroke-width: 3; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } aside { position: static; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Process Studio · design spike</h1>
+  <span class="crumb">Repositório › Faturamento ISU › <strong>Ciclo de faturamento de consumo</strong></span>
+  <span class="spacer"></span>
+  <button id="theme" type="button">Alternar tema</button>
+</header>
+<main>
+  <section class="canvas" aria-label="Diagrama BPMN"><svg id="svg" role="img" aria-label="Diagrama do ciclo de faturamento"></svg></section>
+  <aside id="panel" aria-live="polite"></aside>
+  <div class="legend" id="legend"></div>
+</main>
+
+<script>
+/* ---------------------------------------------------------------------------
+   MODELO (dados). Estrutura propositalmente próxima ao JSON intermediário da geração por IA.
+   [2026-10-14] Criado: modelo do processo de exemplo "Ciclo de faturamento de consumo" — Rafael Brito
+   Requisitos (REQ-xxx) são FICTÍCIOS: servem só para demonstrar o vínculo elemento↔requisito.
+--------------------------------------------------------------------------- */
+const LANES = [
+  { id: 'A', name: 'MEDIÇÃO',            y: 0,   h: 170, cls: 'lane-a' },
+  { id: 'B', name: 'FATURAMENTO (ISU)',  y: 170, h: 170, cls: 'lane-b' },
+  { id: 'C', name: 'CONTAS A RECEBER',   y: 340, h: 210, cls: 'lane-c' },
+];
+const W = 1240, H = 550, HEAD = 36;
+
+// kind: start|task|gateway|inter|end|sub|data|note ; sub-kinds em "variant"
+const NODES = [
+  { id:'s1', kind:'start', variant:'timer', x:110, y:85, label:'Ciclo de leitura encerrado',
+    title:'Início por tempo', performer:'Sistema (job)', sla:'Diário, 06:00', reqs:[],
+    desc:'Job agendado dispara o processo ao fechar a janela de leitura da unidade de leitura (Ablesezeit).' },
+  { id:'t1', kind:'task', variant:'service', x:250, y:85, label:'Importar leituras', tx:'EL31',
+    title:'Importar leituras', performer:'Sistema', sla:'< 30 min', reqs:['REQ-014'],
+    desc:'Carga das leituras de medidores (MDUS/arquivo) para a ordem de leitura.' },
+  { id:'g1', kind:'gateway', variant:'xor', x:390, y:85, label:'Leitura plausível?',
+    title:'Plausibilidade', performer:'Sistema', sla:'—', reqs:['REQ-021'],
+    desc:'Verificação de plausibilidade (consumo vs. histórico, tolerâncias por classe).' },
+  { id:'t2', kind:'task', variant:'user', x:560, y:85, label:'Corrigir leitura manualmente', tx:'EL28',
+    title:'Corrigir leitura manualmente', performer:'Analista de Medição', sla:'4 h úteis', reqs:['REQ-021','REQ-033'],
+    desc:'Analista revisa leituras implausíveis, aplica estimativa ou solicita nova leitura em campo.' },
+  { id:'d1', kind:'data', x:250, y:255, label:'Pré-faturamento',
+    title:'Documento de pré-faturamento', performer:'—', sla:'—', reqs:['REQ-008'],
+    desc:'Resultado da simulação de faturamento, base para a emissão.' },
+  { id:'t3', kind:'task', variant:'service', x:390, y:255, label:'Gerar pré-faturamento', tx:'EA00',
+    title:'Gerar pré-faturamento', performer:'Sistema', sla:'< 1 h', reqs:['REQ-008'],
+    desc:'Simula o faturamento por contrato para validação antes da emissão efetiva.' },
+  { id:'g2', kind:'gateway', variant:'and', x:540, y:255, label:'',
+    title:'Divisão paralela', performer:'—', sla:'—', reqs:[],
+    desc:'Emissão da fatura e notificação ao cliente seguem em paralelo.' },
+  { id:'t4', kind:'task', variant:'service', x:690, y:255, label:'Executar faturamento', tx:'EASIBILL',
+    title:'Executar faturamento', performer:'Sistema', sla:'< 2 h', reqs:['REQ-008','REQ-012'],
+    desc:'Faturamento em massa por job; gera documentos de impressão e lançamentos.' },
+  { id:'sub1', kind:'sub', x:860, y:255, label:'Cálculo de tarifa e impostos',
+    title:'Subprocesso: cálculo de tarifa e impostos', performer:'Sistema', sla:'—', reqs:['REQ-012','REQ-040'],
+    desc:'Subprocesso colapsado. Duplo clique abriria o drill-down (a implementar no portal).' },
+  { id:'e1', kind:'end', variant:'plain', x:1010, y:255, label:'Fatura emitida',
+    title:'Fim: fatura emitida', performer:'—', sla:'—', reqs:[], desc:'Fatura disponível para envio e contabilização.' },
+  { id:'t5', kind:'task', variant:'user', x:540, y:435, label:'Notificar cliente',
+    title:'Notificar cliente', performer:'Atendimento', sla:'1 dia útil', reqs:['REQ-027'],
+    desc:'Envio da prévia/aviso de fatura por canal preferencial do cliente.' },
+  { id:'i1', kind:'inter', variant:'timer', x:700, y:435, label:'Aguardar vencimento',
+    title:'Aguardar vencimento', performer:'Sistema', sla:'Data de vencimento', reqs:[],
+    desc:'Espera até a data de vencimento da fatura.' },
+  { id:'t6', kind:'task', variant:'manual', x:860, y:435, label:'Acompanhar pagamento', tx:'FPO4',
+    title:'Acompanhar pagamento', performer:'Contas a Receber', sla:'D+1', reqs:['REQ-031'],
+    desc:'Conciliação de pagamentos recebidos contra faturas em aberto.' },
+  { id:'g4', kind:'gateway', variant:'xor', x:1000, y:435, label:'',
+    title:'Pago?', performer:'—', sla:'—', reqs:['REQ-031'], desc:'Decide entre encerrar o ciclo ou escalar para cobrança.' },
+  { id:'e2', kind:'end', variant:'plain', x:1120, y:435, label:'Ciclo encerrado',
+    title:'Fim: ciclo encerrado', performer:'—', sla:'—', reqs:[], desc:'Fatura quitada.' },
+  { id:'e3', kind:'end', variant:'message', x:1000, y:497, label:'Escalar p/ cobrança',
+    title:'Fim: escalar para cobrança', performer:'Cobrança', sla:'—', reqs:['REQ-035'],
+    desc:'Dispara mensagem ao processo de cobrança/dunning (fora deste diagrama).' },
+  { id:'n1', kind:'note', x:860, y:85, label:'Tarifas vigentes por classe de consumo', w:170, h:46,
+    title:'Anotação', performer:'—', sla:'—', reqs:[], desc:'Texto livre de apoio ao modelador.' },
+];
+
+// Fluxos: waypoints manuais (x,y). [2026-10-14] Criado — Rafael Brito
+const EDGES = [
+  { pts:[[128,85],[190,85]] }, { pts:[[310,85],[365,85]] },
+  { pts:[[415,85],[500,85]], label:'Não', lx:457, ly:76 },
+  { pts:[[390,110],[390,220]], label:'Sim', lx:399, ly:150 },
+  { pts:[[560,120],[560,200],[390,200]] },
+  { pts:[[450,255],[515,255]] }, { pts:[[565,255],[630,255]] },
+  { pts:[[750,255],[790,255]] }, { pts:[[930,255],[992,255]] },
+  { pts:[[540,280],[540,400]] },
+  { pts:[[600,435],[682,435]] }, { pts:[[718,435],[800,435]] }, { pts:[[920,435],[975,435]] },
+  { pts:[[1025,435],[1102,435]], label:'Sim', lx:1063, ly:426 },
+  { pts:[[1000,460],[1000,479]], label:'Não', lx:1008, ly:472 },
+  { pts:[[860,108],[860,215]], assoc:true },
+  { pts:[[280,255],[330,255]], assoc:true },
+];
+
+/* ---------------------------------------------------------------------------
+   RENDERER SVG (plugável). Cada kind -> função que devolve markup.
+--------------------------------------------------------------------------- */
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// Quebra de texto por largura aproximada (12px ≈ 6.2px/char) — suficiente para o spike.
+function wrap(text, maxChars) {
+  const words = text.split(' '); const lines = []; let cur = '';
+  for (const w of words) {
+    if ((cur + ' ' + w).trim().length > maxChars && cur) { lines.push(cur); cur = w; } else cur = (cur + ' ' + w).trim();
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+const tspans = (lines, x, y0, lh = 14) =>
+  lines.map((l, i) => `<tspan x="${x}" y="${y0 + i * lh}">${esc(l)}</tspan>`).join('');
+
+// Ícones de tarefa (16x16, origem no canto sup. esquerdo da tarefa + 8px)
+const ICON = {
+  user: c => `<g fill="none" stroke="${c}" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 15c0-3.5 2.5-5 6-5s6 1.5 6 5z" fill="${c}" fill-opacity=".15"/></g>`,
+  service: c => `<g fill="none" stroke="${c}"><circle cx="8" cy="8" r="5.6" stroke-width="3" stroke-dasharray="2.2 2.2"/><circle cx="8" cy="8" r="4" stroke-width="1.5"/><circle cx="8" cy="8" r="1.6" stroke-width="1.4"/></g>`,
+  manual: c => `<path d="M2 9V5.5a1 1 0 012 0V8m0-3V3.5a1 1 0 012 0V8m0-4.5a1 1 0 012 0V8m0-3a1 1 0 012 0v6c0 2.5-1.8 4-4 4S2 13.5 2 11" fill="none" stroke="${c}" stroke-width="1.4" stroke-linecap="round"/>`,
+};
+const VAR = { user:['--user','--user-bg'], service:['--service','--service-bg'], manual:['--manual','--manual-bg'] };
+
+function renderNode(n) {
+  const { x, y } = n; let body = '', labelY = 0, lbl = '';
+  if (n.kind === 'task') {
+    const [s, bg] = VAR[n.variant]; const w = 120, h = 70;
+    const lines = wrap(n.label, 17);
+    body = `<rect class="shape" x="${x-w/2}" y="${y-h/2}" width="${w}" height="${h}" rx="10" fill="var(${bg})" stroke="var(${s})" stroke-width="1.8"/>
+            <g transform="translate(${x-w/2+7},${y-h/2+6})">${ICON[n.variant](`var(${s})`)}</g>
+            <text class="lbl" y="${y - (lines.length-1)*7 + 8}">${tspans(lines, x, y - (lines.length-1)*7 + 8)}</text>`;
+    if (n.tx) body += `<text x="${x+w/2-8}" y="${y+h/2-7}" text-anchor="end" font-size="10" font-family="ui-monospace,Consolas,monospace" fill="var(${s})">${esc(n.tx)}</text>`;
+  } else if (n.kind === 'sub') {
+    const w = 140, h = 80, lines = wrap(n.label, 20);
+    body = `<rect class="shape" x="${x-w/2}" y="${y-h/2}" width="${w}" height="${h}" rx="10" fill="var(--sub-bg)" stroke="var(--sub)" stroke-width="1.8"/>
+            <text class="lbl" y="${y-4}">${tspans(lines, x, y-4)}</text>
+            <rect x="${x-8}" y="${y+h/2-18}" width="16" height="14" rx="2" fill="none" stroke="var(--sub)" stroke-width="1.3"/>
+            <path d="M${x-4} ${y+h/2-11}h8M${x} ${y+h/2-15}v8" stroke="var(--sub)" stroke-width="1.3"/>`;
+  } else if (n.kind === 'gateway') {
+    const r = 25; const c = 'var(--gateway)';
+    let mark = '';
+    if (n.variant === 'xor') mark = `<path d="M${x-8} ${y-8}L${x+8} ${y+8}M${x+8} ${y-8}L${x-8} ${y+8}" stroke="${c}" stroke-width="3" stroke-linecap="round"/>`;
+    if (n.variant === 'and') mark = `<path d="M${x-10} ${y}H${x+10}M${x} ${y-10}V${y+10}" stroke="${c}" stroke-width="3" stroke-linecap="round"/>`;
+    body = `<path class="shape" d="M${x} ${y-r}L${x+r} ${y}L${x} ${y+r}L${x-r} ${y}Z" fill="var(--gateway-bg)" stroke="${c}" stroke-width="1.8" stroke-linejoin="round"/>${mark}`;
+    if (n.label) lbl = `<text class="lbl" y="${y-r-8}" x="${x}">${esc(n.label)}</text>`;
+  } else if (n.kind === 'start' || n.kind === 'inter' || n.kind === 'end') {
+    const r = 18;
+    const col = n.kind === 'start' ? '--start' : n.kind === 'end' ? '--end' : '--inter';
+    const bg  = n.kind === 'start' ? '--start-bg' : n.kind === 'end' ? '--end-bg' : '--inter-bg';
+    const sw = n.kind === 'end' ? 4 : 1.8;
+    let inner = '';
+    if (n.variant === 'timer') inner = `<g fill="none" stroke="var(${col})" stroke-width="1.4"><circle cx="${x}" cy="${y}" r="9"/><path d="M${x} ${y-6}V${y}l4 3"/></g>`;
+    if (n.variant === 'message') inner = `<g fill="var(${col})"><rect x="${x-7}" y="${y-5}" width="14" height="10" rx="1"/><path d="M${x-7} ${y-5}L${x} ${y+1}L${x+7} ${y-5}" stroke="var(${bg})" stroke-width="1.2" fill="none"/></g>`;
+    const ring = n.kind === 'inter' ? `<circle cx="${x}" cy="${y}" r="${r-4}" fill="none" stroke="var(${col})" stroke-width="1.2"/>` : '';
+    body = `<circle class="shape" cx="${x}" cy="${y}" r="${r}" fill="var(${bg})" stroke="var(${col})" stroke-width="${sw}"/>${ring}${inner}`;
+    const ll = wrap(n.label, 18);
+    lbl = `<text class="lbl" y="${y+r+14}">${tspans(ll, x, y+r+14)}</text>`;
+  } else if (n.kind === 'data') {
+    body = `<path class="shape" d="M${x-14} ${y-18}h18l10 10v26h-28z" fill="var(--surface)" stroke="var(--data)" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M${x+4} ${y-18}v10h10" fill="none" stroke="var(--data)" stroke-width="1.4"/>`;
+    lbl = `<text class="lbl" y="${y+34}">${tspans(wrap(n.label, 16), x, y+34)}</text>`;
+  } else if (n.kind === 'note') {
+    const w = n.w, h = n.h, l = x - w/2, t = y - h/2;
+    body = `<path class="shape" d="M${l+10} ${t}H${l}V${t+h}H${l+10}" fill="none" stroke="var(--data)" stroke-width="1.6"/>
+            <rect x="${l}" y="${t}" width="${w}" height="${h}" fill="transparent"/>
+            <text class="lbl" style="text-anchor:start" y="${y-2}">${tspans(wrap(n.label, 24), l+16, y-2)}</text>`;
+  }
+  return `<g class="node" data-id="${n.id}" tabindex="0" role="button" aria-label="${esc(n.title)}">${body}${lbl}</g>`;
+}
+
+function render() {
+  const lanes = LANES.map(l => `
+    <rect x="0" y="${l.y}" width="${W}" height="${l.h}" fill="var(--${l.cls})"/>
+    <rect class="lane-head" x="0" y="${l.y}" width="${HEAD}" height="${l.h}"/>
+    <text class="lane-label" transform="translate(${HEAD/2+4},${l.y+l.h/2}) rotate(-90)" text-anchor="middle">${esc(l.name)}</text>
+    <rect class="lane-border" x="0.5" y="${l.y+.5}" width="${W-1}" height="${l.h-1}"/>`).join('');
+  const edges = EDGES.map(e => {
+    const d = e.pts.map((p, i) => (i ? 'L' : 'M') + p[0] + ' ' + p[1]).join(' ');
+    const lab = e.label ? `<text class="flow-label" x="${e.lx}" y="${e.ly}">${esc(e.label)}</text>` : '';
+    return e.assoc ? `<path class="assoc" d="${d}"/>` : `<path class="flow" d="${d}" marker-end="url(#arr)"/>${lab}`;
+  }).join('');
+  const nodes = NODES.map(renderNode).join('');
+  document.getElementById('svg').setAttribute('viewBox', `0 0 ${W} ${H}`);
+  document.getElementById('svg').innerHTML = `
+    <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="var(--flow)"/></marker></defs>${lanes}${edges}${nodes}`;
+}
+
+/* Painel de propriedades — equivalente ao painel por elemento do Bizagi (README §2). */
+const KIND_LABEL = { task:'Tarefa', sub:'Subprocesso', gateway:'Gateway', start:'Evento de início', inter:'Evento intermediário',
+                     end:'Evento de fim', data:'Objeto de dados', note:'Anotação' };
+const VARIANT_LABEL = { user:'usuário', service:'serviço', manual:'manual', xor:'exclusivo (XOR)', and:'paralelo (AND)',
+                        timer:'temporizador', message:'mensagem', plain:'' };
+function showPanel(id) {
+  const p = document.getElementById('panel');
+  document.querySelectorAll('.node.sel').forEach(g => g.classList.remove('sel'));
+  const n = NODES.find(x => x.id === id);
+  if (!n) { p.innerHTML = '<p class="hint">Clique em um elemento do diagrama para ver propriedades, responsável, SLA e requisitos vinculados.</p>'; return; }
+  document.querySelector(`.node[data-id="${id}"]`).classList.add('sel');
+  const v = VARIANT_LABEL[n.variant] ? ' · ' + VARIANT_LABEL[n.variant] : '';
+  const reqs = n.reqs.length ? n.reqs.map(r => `<span class="tag">${esc(r)}</span>`).join('') : '<span class="hint">sem requisito (gap de governança)</span>';
+  p.innerHTML = `<div class="type">${KIND_LABEL[n.kind]}${v}</div><h2>${esc(n.title)}</h2>
+    <p>${esc(n.desc)}</p>
+    <dl><dt>Responsável</dt><dd>${esc(n.performer)}</dd>
+        <dt>SLA</dt><dd>${esc(n.sla)}</dd>
+        ${n.tx ? `<dt>Transação SAP</dt><dd><code>${esc(n.tx)}</code></dd>` : ''}
+        <dt>Requisitos</dt><dd>${reqs}</dd></dl>`;
+}
+
+function legend() {
+  const item = (svg, t) => `<span style="display:inline-flex;align-items:center;gap:6px">${svg}${t}</span>`;
+  const s = (inner) => `<svg width="22" height="22" viewBox="-11 -11 22 22">${inner}</svg>`;
+  document.getElementById('legend').innerHTML =
+    item(s('<rect x="-9" y="-7" width="18" height="14" rx="3" fill="var(--user-bg)" stroke="var(--user)" stroke-width="1.6"/>'), 'Tarefa de usuário') +
+    item(s('<rect x="-9" y="-7" width="18" height="14" rx="3" fill="var(--service-bg)" stroke="var(--service)" stroke-width="1.6"/>'), 'Tarefa de serviço') +
+    item(s('<rect x="-9" y="-7" width="18" height="14" rx="3" fill="var(--manual-bg)" stroke="var(--manual)" stroke-width="1.6"/>'), 'Tarefa manual') +
+    item(s('<path d="M0-9L9 0 0 9-9 0z" fill="var(--gateway-bg)" stroke="var(--gateway)" stroke-width="1.6"/>'), 'Gateway') +
+    item(s('<circle r="8" fill="var(--start-bg)" stroke="var(--start)" stroke-width="1.6"/>'), 'Início') +
+    item(s('<circle r="8" fill="var(--end-bg)" stroke="var(--end)" stroke-width="3"/>'), 'Fim');
+}
+
+document.getElementById('svg').addEventListener('click', e => {
+  const g = e.target.closest('.node'); showPanel(g ? g.dataset.id : null);
+});
+document.getElementById('svg').addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('node')) { e.preventDefault(); showPanel(e.target.dataset.id); }
+});
+document.getElementById('theme').addEventListener('click', () => {
+  const r = document.documentElement;
+  const dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme = dark ? 'light' : 'dark';
+});
+
+render(); legend(); showPanel(null);
+</script>
+</body>
+</html>

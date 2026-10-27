@@ -6,14 +6,14 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16
+    image: postgres:16-alpine  # [2026-10-15] alpine: já presente na máquina do Rafael (o pull da imagem completa falhou por rede) — mesma versão major
     container_name: ancoro-postgres
     environment:
       POSTGRES_USER: ancoro
       POSTGRES_PASSWORD: ancoro
       POSTGRES_DB: ancoro_dev
     ports:
-      - "5432:5432"
+      - "${ANCORO_PG_PORT:-5432}:5432"  # [2026-10-15] porta configurável: na máquina do Rafael a 5432 é de um Postgres nativo (use ANCORO_PG_PORT=5433 no .env da raiz)
     volumes:
       - ancoro_pgdata:/var/lib/postgresql/data
     healthcheck:

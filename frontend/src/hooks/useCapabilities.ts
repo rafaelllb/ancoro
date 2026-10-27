@@ -23,6 +23,10 @@ export interface Capabilities {
   canManageMembers: boolean
   canImportRequirements: boolean
   canExportBPD: boolean
+  // [2026-10-15] Process Studio (Fase 4)
+  canViewProcesses: boolean
+  canEditProcesses: boolean
+  canPublishProcesses: boolean
   can: (capability: CapabilityKey) => boolean
   role: string | undefined
 }
@@ -59,6 +63,9 @@ export function useCapabilities(): Capabilities {
       canManageMembers: can('canManageMembers'),
       canImportRequirements: can('canImportRequirements'),
       canExportBPD: can('canExportBPD'),
+      canViewProcesses: can('canViewProcesses'),
+      canEditProcesses: can('canEditProcesses'),
+      canPublishProcesses: can('canPublishProcesses'),
       can,
       role,
     }

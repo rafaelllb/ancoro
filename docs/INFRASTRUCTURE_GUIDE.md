@@ -799,7 +799,7 @@ Não tomar agora, mas marcar para reavaliar em momentos específicos:
 ## 14. Glossário
 
 - **Tenant**: cliente do Ancoro (uma empresa que contratou o produto)
-- **Tenant slug**: identificador URL-safe do tenant (ex: `seidor`, `petrobras`)
+- **Tenant slug**: identificador URL-safe do tenant (ex: `cliente-exemplo`, `petrobras`)
 - **Tenant registry**: banco central que mapeia slug → connection string do banco do tenant
 - **PITR**: Point In Time Recovery, restaurar banco para um momento específico no passado
 - **Cold start**: tempo de "acordar" um servidor que estava em sleep (problema do free tier do Render)

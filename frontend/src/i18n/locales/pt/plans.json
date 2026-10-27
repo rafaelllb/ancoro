@@ -1,0 +1,86 @@
+{
+  "nav": { "back": "← Voltar", "login": "Entrar" },
+  "hero": {
+    "eyebrow": "Planos",
+    "title": "Governança de requisitos do jeito que o seu time trabalha.",
+    "subtitle": "Para quem faz projetos sozinho, para equipes pequenas e para organizações que exigem controle sobre onde os dados ficam."
+  },
+  "audiences": {
+    "self": {
+      "eyebrow": "Consultores e pequenas equipes",
+      "title": "Assinatura self-service",
+      "text": "Crie sua conta, abra o primeiro projeto e pague mensalmente, sem falar com ninguém. Todas as funcionalidades em um plano único.",
+      "badge": "Em breve",
+      "cta": "Entrar na lista de espera"
+    },
+    "enterprise": {
+      "eyebrow": "Médio e grande porte",
+      "title": "Implantação sob medida",
+      "text": "Escolha onde a plataforma roda, como as pessoas acessam e como o contrato é desenhado. Nossa equipe conduz a avaliação com você.",
+      "cta": "Falar com a equipe"
+    }
+  },
+  "deployment": {
+    "title": "Onde a plataforma pode rodar",
+    "subtitle": "O mesmo produto, três modelos de implantação.",
+    "items": [
+      { "code": "SAAS", "title": "SaaS gerenciado", "text": "Operamos a plataforma para você. Começo rápido, sem infraestrutura do seu lado." },
+      { "code": "DEDICATED", "title": "Instância dedicada", "text": "Aplicação e banco isolados para a sua organização, operados por nós sob contrato." },
+      { "code": "ONPREMISE", "title": "On-premise", "text": "Tudo no seu ambiente — aplicação, banco e acesso — com licença anual. Nenhum dado sai da sua rede." }
+    ]
+  },
+  "capabilities": {
+    "title": "O que a sua organização leva",
+    "items": [
+      { "title": "Acesso por papéis", "text": "Administrador, gerente, consultor e cliente, com permissões distintas por projeto." },
+      { "title": "Trilha de auditoria", "text": "Histórico campo a campo de cada requisito, com possibilidade de reverter alterações." },
+      { "title": "Validação antes de avançar", "text": "Dependências circulares, conflitos entre requisitos, requisitos órfãos e evidências são checados no fluxo." },
+      { "title": "Mapa de processos (BPMN)", "text": "Processos vinculados aos requisitos e publicáveis como portal para quem não usa a ferramenta." },
+      { "title": "Exportação", "text": "Documentos e planilhas no formato que o patrocinador e o cliente esperam ler." },
+      { "title": "Português e inglês", "text": "Interface completa nos dois idiomas." }
+    ]
+  },
+  "sap": {
+    "eyebrow": "Para qualquer projeto. Compatível com SAP.",
+    "title": "Pensado para projetos complexos de integração — inclusive SAP.",
+    "text": "O método não depende de uma tecnologia, mas a ferramenta traz recursos prontos para implantações SAP, onde um requisito quase sempre toca mais de um módulo.",
+    "items": [
+      "Matriz de cruzamento entre módulos (ISU, CRM, FICA, Device Management, SD, MM, PM)",
+      "Documento de processo de negócio (BPD) para projetos S/4HANA Utilities",
+      "Tipos de integração e temporalidade configuráveis (BAPI, IDoc, arquivo, API, batch)",
+      "Listas e terminologia ajustáveis por projeto"
+    ],
+    "disclaimer": "SAP, S/4HANA e demais marcas citadas pertencem aos seus respectivos titulares. Ancoro é um produto independente e não possui afiliação com a SAP SE."
+  },
+  "form": {
+    "title": "Fale com a nossa equipe",
+    "titleWaitlist": "Lista de espera do self-service",
+    "subtitle": "Respondemos pelo e-mail informado. Se preferir, use os contatos diretos ao lado.",
+    "subtitleWaitlist": "Avisamos você assim que a assinatura self-service abrir.",
+    "interestLabel": "Meu interesse",
+    "interestEnterprise": "Médio / grande porte",
+    "interestWaitlist": "Self-service (lista de espera)",
+    "name": "Nome",
+    "email": "E-mail corporativo",
+    "company": "Empresa",
+    "phone": "Telefone (opcional)",
+    "teamSize": "Tamanho da equipe",
+    "teamSizeOptions": { "1": "Só eu", "2-5": "2 a 5 pessoas", "6-20": "6 a 20 pessoas", "21-100": "21 a 100 pessoas", "100+": "Mais de 100" },
+    "deployment": "Modelo de implantação",
+    "deploymentOptions": { "SAAS": "SaaS gerenciado", "DEDICATED": "Instância dedicada", "ONPREMISE": "On-premise", "UNSURE": "Ainda não sei" },
+    "select": "Selecione",
+    "message": "Contexto do projeto (opcional)",
+    "messagePlaceholder": "Tipo de projeto, prazo, requisitos de segurança ou o que mais for relevante.",
+    "consent": "Concordo em ser contatado(a) sobre o Ancoro usando os dados informados.",
+    "submit": "Enviar",
+    "sending": "Enviando…",
+    "successTitle": "Recebido.",
+    "successText": "Retornaremos em breve pelo e-mail informado.",
+    "error": "Não foi possível enviar agora. Tente novamente ou use os contatos diretos."
+  },
+  "contact": {
+    "title": "Contato direto",
+    "email": "E-mail",
+    "phone": "Telefone"
+  }
+}

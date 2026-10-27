@@ -38,6 +38,8 @@ model Project {
   objectives   ProjectObjective[]
   pendingMemberships PendingProjectMembership[]
   graphLayout  GraphLayout?
+  businessProcesses BusinessProcess[]
+  processPortal    ProcessPortal?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -163,6 +165,7 @@ model Requirement {
   updatedAt       DateTime @updatedAt
 
   @@unique([projectId, reqId])
+  processLinks ProcessRequirementLink[]
   @@map("requirements")
 }
 
@@ -454,3 +457,107 @@ model GraphLayout {
 // IntegrationTiming: SYNC | ASYNC | BATCH | EVENT
 // IntegrationStatus: OK | PENDING | CONFLICT | CIRCULAR
 // ChangeType: CREATE | UPDATE | DELETE | STATUS_CHANGE | COMMENT_ADDED
+
+// ===== PROCESS STUDIO (Fase 4) =====
+// [2026-10-15] Criado: modelagem de processos BPMN dentro do projeto (ver docs/process-studio/README.md §6.4) — Rafael Brito
+// Fonte da verdade = `model` (JSON do ProcessModel do @ancoro/process-core). ProcessRequirementLink é uma PROJEÇÃO
+// reconstruída a cada save (consulta "em quais processos este requisito aparece?" + análise de lacunas): nunca editar à mão.
+
+model BusinessProcess {
+  id          String   @id @default(cuid())
+  projectId   String
+  /// id do processo DENTRO do modelo (ProcessModel.id): é o que `calledProcessId` (drill-down) referencia; único por projeto
+  key         String
+  name        String
+  /// Revisão otimista: o save só vale com baseRev == rev (senão 409). Incrementa a cada save.
+  rev         Int      @default(1)
+  /// JSON do ProcessModel (texto: compatível com SQLite e PostgreSQL)
+  model       String
+  createdById String?
+  updatedById String?
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versions    ProcessVersion[]
+  links       ProcessRequirementLink[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, key])
+  @@index([projectId])
+  @@map("business_processes")
+}
+
+// Snapshot imutável (rótulo opcional). Restaurar = novo save com este conteúdo; o histórico nunca é reescrito.
+model ProcessVersion {
+  id          String   @id @default(cuid())
+  processId   String
+  version     Int
+  label       String?
+  // [2026-10-27] Criado: revisão (r) do processo salvo no momento em que a versão foi tirada — versão é manual, r é o salvamento — Rafael Brito
+  rev         Int?
+  model       String
+  createdById String?
+
+  process     BusinessProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([processId, version])
+  @@map("process_versions")
+}
+
+// Elemento BPMN <-> Requisito (N:N). `elementName` é cópia do nome do elemento no último save (evita abrir o JSON para listar).
+model ProcessRequirementLink {
+  id            String   @id @default(cuid())
+  processId     String
+  elementId     String
+  elementName   String   @default("")
+  requirementId String
+
+  process       BusinessProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+  requirement   Requirement     @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@unique([processId, elementId, requirementId])
+  @@index([requirementId])
+  @@map("process_requirement_links")
+}
+
+// Estado da publicação do portal do projeto: o versions.json da última publicação continua o histórico ("O que mudou").
+model ProcessPortal {
+  id                String    @id @default(cuid())
+  projectId         String    @unique
+  versionsJson      String    @default("")
+  publishCount      Int       @default(0)
+  lastLabel         String?
+  lastPublishedAt   DateTime?
+  lastPublishedById String?
+
+  project           Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("process_portals")
+}
+
+// ===== LEADS COMERCIAIS =====
+// [2026-10-24] Criado: espelho do model Lead de schema.prisma (manter os dois em sincronia) — Rafael Brito
+model Lead {
+  id          String   @id @default(cuid())
+  interest    String
+  name        String
+  email       String
+  company     String?
+  phone       String?
+  teamSize    String?
+  deployment  String?
+  message     String?
+  locale      String   @default("pt")
+  status      String   @default("NEW")
+  consentAt   DateTime @map("consent_at")
+  notifiedAt  DateTime? @map("notified_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@index([email])
+  @@map("leads")
+}

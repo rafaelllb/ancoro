@@ -12,7 +12,10 @@ import Dashboard from './pages/Dashboard'
 import CrossMatrix from './pages/CrossMatrix'
 import Metrics from './pages/Metrics'
 import LandingPage from './pages/LandingPage'
+import Plans from './pages/Plans'
 import DependencyGraph from './pages/DependencyGraph'
+import Processes from './pages/Processes'
+import { useEntitlements } from './hooks/useEntitlements'
 
 /**
  * Extrai mensagem de erro amigável de diferentes formatos de erro
@@ -115,6 +118,13 @@ const queryClient = new QueryClient({
 })
 
 // Componente de rota protegida
+// [2026-10-16] Criado: sem assinatura do Process Studio a rota não existe (volta ao dashboard) — Rafael Brito
+function ProcessStudioRoute({ children }: { children: React.ReactNode }) {
+  const { processStudio, isLoading } = useEntitlements()
+  if (isLoading) return null
+  return processStudio ? <>{children}</> : <Navigate to="/dashboard" replace />
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
   const { t } = useTranslation('common')
@@ -221,7 +231,31 @@ function App() {
             />
 
             {/* Landing page (sempre acessível) */}
+            {/* [2026-10-15] Process Studio (Fase 4): lista + editor BPMN embutido */}
+            <Route
+              path="/processes"
+              element={
+                <ProtectedRoute>
+                  <ProcessStudioRoute>
+                    <Processes />
+                  </ProcessStudioRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/processes/:processId"
+              element={
+                <ProtectedRoute>
+                  <ProcessStudioRoute>
+                    <Processes />
+                  </ProcessStudioRoute>
+                </ProtectedRoute>
+              }
+            />
+
             <Route path="/" element={<LandingPage />} />
+            {/* [2026-10-24] Planos e contato comercial (público, sempre acessível) */}
+            <Route path="/planos" element={<Plans />} />
 
             {/* 404 */}
             <Route

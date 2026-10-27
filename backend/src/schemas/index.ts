@@ -473,3 +473,57 @@ export function validate<T>(schema: z.ZodSchema<T>, data: unknown): T {
   }
   return result.data
 }
+
+// ===== PROCESS STUDIO (Fase 4) =====
+// [2026-10-15] Criado: corpos das rotas de processos BPMN — Rafael Brito
+// O `model` é validado em profundidade pelo processkit (mesmo schema do editor); aqui só garantimos o envelope.
+const processModelEnvelope = z.object({ id: z.string().min(1) }).passthrough()
+
+export const processCreateSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  model: processModelEnvelope.optional(),
+})
+
+export const processSaveSchema = z.object({
+  baseRev: z.number().int().min(1),
+  model: processModelEnvelope,
+})
+
+export const processSnapshotSchema = z.object({ label: z.string().trim().max(120).optional() })
+
+export const processImportSchema = z.object({
+  kind: z.enum(['bpm', 'bpmn']),
+  /** conteúdo do arquivo em base64 */
+  data: z.string().min(1),
+})
+
+export const processPublishSchema = z.object({
+  label: z.string().trim().max(120).optional(),
+  password: z.string().min(6).max(200).optional(),
+  brand: z.record(z.string(), z.unknown()).optional(),
+})
+
+// ===== LEAD SCHEMAS =====
+// [2026-10-24] Criado: validação do formulário público de /planos — Rafael Brito
+// `website` é um honeypot: humanos não veem o campo; bots preenchem. Preenchido => descartamos em silêncio (rota responde 201).
+const optionalText = (max: number) =>
+  z.string().trim().max(max).optional().transform((v) => (v ? v : undefined))
+
+export const leadSchema = z.object({
+  interest: z.enum(['ENTERPRISE', 'SELF_SERVICE_WAITLIST']),
+  name: z.string().trim().min(2, 'Nome deve ter no mínimo 2 caracteres').max(100),
+  email: z.string().trim().toLowerCase().email('Email inválido').max(254),
+  company: optionalText(120),
+  phone: optionalText(40),
+  teamSize: z.enum(['1', '2-5', '6-20', '21-100', '100+']).optional(),
+  deployment: z.enum(['SAAS', 'DEDICATED', 'ONPREMISE', 'UNSURE']).optional(),
+  message: optionalText(2000),
+  locale: z.enum(['pt', 'en']).default('pt'),
+  // LGPD: sem consentimento explícito não gravamos dado pessoal
+  consent: z.literal(true, { error: 'É necessário aceitar o contato para enviar' }),
+  website: z.string().max(200).optional(),
+})
+
+export const leadStatusSchema = z.object({
+  status: z.enum(['NEW', 'CONTACTED', 'QUALIFIED', 'WON', 'LOST']),
+})

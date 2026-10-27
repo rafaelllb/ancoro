@@ -1,0 +1,13 @@
+import puppeteer from 'puppeteer-core';
+import { pathToFileURL } from 'node:url';
+import { join } from 'node:path';
+const dir = join(process.env.TEMP, 'portal-biin');
+const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: 'new', defaultViewport: { width: 1600, height: 950 } });
+const p = await b.newPage();
+const errs = [];
+p.on('pageerror', (e) => errs.push(String(e))); p.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto(pathToFileURL(join(dir, 'index.html')).href, { waitUntil: 'networkidle0' });
+await new Promise((r) => setTimeout(r, 600));
+await p.screenshot({ path: 'e2e/out/p1.png' });
+console.log('hash', await p.evaluate(() => location.hash), 'errs', errs);
+await b.close();

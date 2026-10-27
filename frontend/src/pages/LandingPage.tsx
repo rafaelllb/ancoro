@@ -97,6 +97,13 @@ function HeroSection() {
                     {t('hero.ctaDemo')}
                   </Link>
                 )}
+                {/* [2026-10-24] Criado: entrada para o ramo comercial (/planos) — Rafael Brito */}
+                <Link
+                  to="/planos"
+                  className="inline-flex items-center justify-center rounded-2xl border border-ancoro-navy-200 bg-white/85 px-6 py-3.5 text-base font-semibold text-ancoro-navy-800 transition hover:-translate-y-0.5 hover:bg-ancoro-navy-50"
+                >
+                  {t('hero.ctaPlans')}
+                </Link>
               </div>
 
               <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -438,12 +445,20 @@ function FooterSection() {
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-ancoro-teal-600">Ancoro</p>
           <p className="mt-2 text-sm text-ancoro-navy-600">{t('footer.tagline')}</p>
         </div>
-        <Link
-          to={isAuthenticated ? '/dashboard' : '/login'}
-          className="inline-flex items-center justify-center rounded-2xl bg-ancoro-teal-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-ancoro-teal-700"
-        >
-          {isAuthenticated ? t('footer.ctaAuthenticated') : t('footer.ctaGuest')}
-        </Link>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link
+            to="/planos"
+            className="inline-flex items-center justify-center rounded-2xl border border-ancoro-navy-200 bg-white px-6 py-3 text-sm font-semibold text-ancoro-navy-800 transition hover:bg-ancoro-navy-50"
+          >
+            {t('footer.ctaPlans')}
+          </Link>
+          <Link
+            to={isAuthenticated ? '/dashboard' : '/login'}
+            className="inline-flex items-center justify-center rounded-2xl bg-ancoro-teal-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-ancoro-teal-700"
+          >
+            {isAuthenticated ? t('footer.ctaAuthenticated') : t('footer.ctaGuest')}
+          </Link>
+        </div>
       </div>
     </footer>
   )

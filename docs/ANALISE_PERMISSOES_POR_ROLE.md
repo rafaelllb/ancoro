@@ -26,6 +26,12 @@ Documentar o comportamento desejado para cada tipo de usuario na aplicacao e map
 | Gerenciar membros do projeto | Sim | Sim | Nao | Nao |
 | Importar requisitos por planilha | Sim | Sim | Nao | Nao |
 | Exportar BPD | Sim | Sim | Sim | Nao |
+| Visualizar processos BPMN (Process Studio)* | Sim | Sim | Sim | Sim |
+| Criar/editar processos BPMN* | Sim | Sim | Sim | Nao |
+| Excluir processo BPMN* | Qualquer | Somente o que criou | Somente o que criou | Nao |
+| Publicar portal de processos* | Sim | Sim | Nao | Nao |
+
+\* Process Studio (2026-10-16): so existe para **assinantes** (contratacao unica). Sem assinatura, o backend responde 403 `PROCESS_STUDIO_DISABLED` e o frontend esconde menu, rota e aba do requisito, para qualquer role. Fonte: `canViewProcesses`/`canEditProcesses`/`canDeleteAnyProcess`/`canDeleteOwnProcess`/`canPublishProcesses` em `utils/roleCapabilities.ts` (backend e frontend em sincronia).
 
 ### Observacoes importantes
 
