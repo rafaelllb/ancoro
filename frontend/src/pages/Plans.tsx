@@ -64,7 +64,7 @@ export default function Plans() {
 
   const deployments = t('deployment.items', { returnObjects: true }) as DeploymentItem[]
   const capabilities = t('capabilities.items', { returnObjects: true }) as TitleText[]
-  const sapItems = t('sap.items', { returnObjects: true }) as string[]
+  const integrationItems = t('integration.items', { returnObjects: true }) as string[]
   const isWaitlist = interest === 'SELF_SERVICE_WAITLIST'
 
   const set = (field: keyof typeof form) => (e: { target: { value: string } }) =>
@@ -183,19 +183,18 @@ export default function Plans() {
           </div>
         </section>
 
-        {/* Compatibilidade SAP (destaque, sem restringir a SAP) */}
+        {/* Projetos de integração (destaque; produto agnóstico de tecnologia) */}
         <section className="mb-12 overflow-hidden rounded-[32px] bg-ancoro-navy-950 px-6 py-10 sm:px-10">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-ancoro-teal-300">{t('sap.eyebrow')}</p>
-          <h2 className="mt-3 max-w-3xl text-3xl font-bold text-white">{t('sap.title')}</h2>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-ancoro-navy-200">{t('sap.text')}</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-ancoro-teal-300">{t('integration.eyebrow')}</p>
+          <h2 className="mt-3 max-w-3xl text-3xl font-bold text-white">{t('integration.title')}</h2>
+          <p className="mt-4 max-w-3xl text-sm leading-7 text-ancoro-navy-200">{t('integration.text')}</p>
           <ul className="mt-6 grid gap-3 md:grid-cols-2">
-            {sapItems.map((item) => (
+            {integrationItems.map((item) => (
               <li key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-ancoro-navy-100">
                 {item}
               </li>
             ))}
           </ul>
-          <p className="mt-6 text-xs leading-5 text-ancoro-navy-300">{t('sap.disclaimer')}</p>
         </section>
 
         {/* Formulário + contato direto */}
