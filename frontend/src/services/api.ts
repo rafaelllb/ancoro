@@ -777,6 +777,26 @@ export interface ProcessDetail extends Omit<ProcessSummary, 'linkCount' | 'versi
   permissions: ProcessPermissions
 }
 
+export interface ProcessAttachmentRow {
+  id: string
+  elementId: string
+  fileName: string
+  mimeType: string
+  size: number
+  sha256: string
+  uploadedById: string | null
+  uploadedByName: string | null
+  createdAt: string
+  canDelete: boolean
+}
+
+export interface ProcessAttachmentQuota {
+  usedBytes: number
+  maxBytes: number
+  maxFileBytes: number
+  maxPerElement: number
+}
+
 export interface ProcessVersionRow {
   version: number
   label: string | null
@@ -790,6 +810,22 @@ export interface ProcessCoverage {
   total: number
   covered: number
   uncovered: Array<{ id: string; reqId: string; shortDesc: string; module: string }>
+}
+
+export interface ProcessGenerateInput {
+  requirementIds: string[]
+  view: 'AS_IS' | 'TO_BE'
+  name?: string
+  engine?: 'auto' | 'deterministic'
+}
+
+export interface ProcessGenerateResult {
+  process: ProcessSummary
+  /** subprocessos detalhados (processos filhos, ligados por calledProcessId) */
+  children: ProcessSummary[]
+  engine: 'llm' | 'deterministic'
+  warnings: string[]
+  unresolvedRefs: number
 }
 
 export interface RequirementProcessLink {
@@ -867,17 +903,42 @@ export const processesAPI = {
   exportBpmn: (projectId: string, processId: string) =>
     api.get<Blob>(`/api/projects/${projectId}/processes/${processId}/bpmn`, { responseType: 'blob' }),
 
+  // [2026-10-30] Criado: anexos por elemento BPMN. Upload = corpo binário cru (o backend valida pela assinatura do arquivo) — Rafael Brito
+  listAttachments: (projectId: string, processId: string, elementId?: string) =>
+    api.get<{ attachments: ProcessAttachmentRow[]; quota: ProcessAttachmentQuota }>(
+      `/api/projects/${projectId}/processes/${processId}/attachments`, { params: elementId ? { elementId } : undefined }),
+
+  uploadAttachment: (projectId: string, processId: string, elementId: string, name: string, data: ArrayBuffer) =>
+    api.post<ProcessAttachmentRow>(`/api/projects/${projectId}/processes/${processId}/attachments`, data, {
+      params: { elementId, name }, headers: { 'Content-Type': 'application/octet-stream' }, transformRequest: [(d) => d],
+    }),
+
+  attachmentContent: (projectId: string, processId: string, attachmentId: string, download = false) =>
+    api.get<ArrayBuffer>(`/api/projects/${projectId}/processes/${processId}/attachments/${attachmentId}/content`, {
+      responseType: 'arraybuffer', params: download ? { download: 1 } : undefined,
+    }),
+
+  deleteAttachment: (projectId: string, processId: string, attachmentId: string) =>
+    api.delete<void>(`/api/projects/${projectId}/processes/${processId}/attachments/${attachmentId}`),
+
   coverage: (projectId: string) =>
     api.get<ProcessCoverage>(`/api/projects/${projectId}/processes/coverage`),
 
   forRequirement: (projectId: string, requirementId: string) =>
     api.get<{ links: RequirementProcessLink[] }>(`/api/projects/${projectId}/requirements/${requirementId}/processes`),
 
-  searchRequirements: (projectId: string, q: string) =>
+  searchRequirements: (projectId: string, q: string, limit?: number) =>
     api.get<{ requirements: Array<{ id: string; reqId: string; shortDesc: string; module: string }> }>(
       `/api/projects/${projectId}/process-requirements`,
-      { params: { q } }
+      { params: { q, ...(limit && { limit }) } }
     ),
+
+  // [2026-10-27] Criado: geração automática de processo a partir de requisitos
+  generationInfo: (projectId: string) =>
+    api.get<{ llm: boolean }>(`/api/projects/${projectId}/processes/generation-info`),
+
+  generate: (projectId: string, data: ProcessGenerateInput) =>
+    api.post<ProcessGenerateResult>(`/api/projects/${projectId}/processes/generate`, data),
 
   /** Publica o portal estático do projeto: devolve o ZIP (Blob) */
   publish: (projectId: string, data: { label?: string; password?: string }) =>
