@@ -40,17 +40,16 @@
       { "title": "Português e inglês", "text": "Interface completa nos dois idiomas." }
     ]
   },
-  "sap": {
-    "eyebrow": "Para qualquer projeto. Compatível com SAP.",
-    "title": "Pensado para projetos complexos de integração — inclusive SAP.",
-    "text": "O método não depende de uma tecnologia, mas a ferramenta traz recursos prontos para implantações SAP, onde um requisito quase sempre toca mais de um módulo.",
+  "integration": {
+    "eyebrow": "Para qualquer projeto.",
+    "title": "Pensado para projetos complexos de integração.",
+    "text": "O método não depende de uma tecnologia, mas a ferramenta traz recursos prontos para projetos em que um requisito quase sempre toca mais de um módulo ou sistema.",
     "items": [
-      "Matriz de cruzamento entre módulos (ISU, CRM, FICA, Device Management, SD, MM, PM)",
-      "Documento de processo de negócio (BPD) para projetos S/4HANA Utilities",
-      "Tipos de integração e temporalidade configuráveis (BAPI, IDoc, arquivo, API, batch)",
+      "Matriz de cruzamento entre módulos e sistemas",
+      "Documento de processo de negócio (BPD) gerado a partir dos requisitos",
+      "Tipos de integração e temporalidade configuráveis (API, arquivo, mensageria, batch)",
       "Listas e terminologia ajustáveis por projeto"
-    ],
-    "disclaimer": "SAP, S/4HANA e demais marcas citadas pertencem aos seus respectivos titulares. Ancoro é um produto independente e não possui afiliação com a SAP SE."
+    ]
   },
   "form": {
     "title": "Fale com a nossa equipe",

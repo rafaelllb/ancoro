@@ -14,7 +14,8 @@
     "revision": "rev. {{rev}}",
     "unsavedConfirm": "Há alterações não salvas neste processo. Sair mesmo assim?",
     "collapse": "Recolher lista",
-    "expand": "Expandir lista"
+    "expand": "Expandir lista",
+    "generate": "Gerar a partir de requisitos…"
   },
   "select": {
     "title": "Selecione um processo",
@@ -61,7 +62,10 @@
     "deleted": "Processo excluído.",
     "imported": "{{count}} processo(s) importado(s).",
     "importWarnings": "O import teve {{count}} aviso(s).",
-    "published": "Portal publicado — ZIP baixado."
+    "published": "Portal publicado — ZIP baixado.",
+    "generatedAi": "Processo gerado com IA ({{count}} subprocesso(s)) — revise antes de publicar",
+    "generatedRules": "Processo gerado por regras ({{count}} subprocesso(s)) — revise antes de publicar",
+    "generateFallback": "A IA não respondeu; usamos o gerador por regras."
   },
   "errors": {
     "create": "Não foi possível criar o processo.",
@@ -69,6 +73,26 @@
     "import": "Não foi possível importar o arquivo.",
     "publish": "Não foi possível publicar o portal.",
     "export": "Não foi possível exportar o BPMN.",
-    "load": "Não foi possível carregar os processos."
+    "load": "Não foi possível carregar os processos.",
+    "generate": "Não foi possível gerar o processo"
+  },
+  "generate": {
+    "title": "Gerar processo a partir de requisitos",
+    "body": "Cria um rascunho com raias por responsável, decisões e subprocessos, vinculado aos requisitos escolhidos. Você revisa e ajusta no editor.",
+    "view": "Visão",
+    "namePlaceholder": "Nome do processo (opcional)",
+    "search": "Buscar requisito…",
+    "pickUncovered": "Selecionar sem processo",
+    "clear": "Limpar",
+    "noProcess": "sem processo",
+    "selected": "{{count}} de {{max}} selecionado(s)",
+    "forceRules": "Gerar apenas por regras (sem IA)",
+    "cancel": "Cancelar",
+    "confirm": "Gerar processo",
+    "generating": "Gerando…",
+    "loadError": "Não foi possível carregar os requisitos do projeto. Tente novamente.",
+    "noRequirements": "Este projeto ainda não tem requisitos. Cadastre requisitos (com o campo \"Como\") para gerar o processo.",
+    "noMatch": "Nenhum requisito corresponde à busca.",
+    "pickHint": "Marque ao menos um requisito para gerar."
   }
 }

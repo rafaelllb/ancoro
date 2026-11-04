@@ -180,12 +180,12 @@
     "cta": "Ver demonstração",
     "demos": [
       {
-        "tag": "SAP Utilities",
+        "tag": "Utilities",
         "title": "Distribuidora de energia",
-        "description": "Migração S/4HANA Utilities (ISU): Business Partner, Conta Contrato, contratos e integrações CRM → FI-CA → ISU."
+        "description": "Migração do sistema de faturamento: cadastro de clientes, contas, contratos e integrações CRM → financeiro → faturamento."
       },
       {
-        "tag": "SAP BRIM",
+        "tag": "Telecom",
         "title": "Telco / Subscription",
         "description": "Faturamento convergente (voz + dados), gestão de assinaturas e renovação automática de contratos."
       },
