@@ -489,6 +489,15 @@ export const processSaveSchema = z.object({
   model: processModelEnvelope,
 })
 
+// [2026-10-27] Criado: geração automática de processo a partir de requisitos (ids internos dos requisitos do projeto)
+export const processGenerateSchema = z.object({
+  requirementIds: z.array(z.string().min(1)).min(1).max(25),
+  view: z.enum(['AS_IS', 'TO_BE']).default('TO_BE'),
+  name: z.string().trim().min(1).max(200).optional(),
+  /** 'auto' = LLM se houver chave, senão determinístico; 'deterministic' força o gerador sem IA */
+  engine: z.enum(['auto', 'deterministic']).default('auto'),
+})
+
 export const processSnapshotSchema = z.object({ label: z.string().trim().max(120).optional() })
 
 export const processImportSchema = z.object({
