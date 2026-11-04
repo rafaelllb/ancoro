@@ -36,6 +36,10 @@ model Project {
   sprints      Sprint[]
   listItems    ProjectListItem[]
   objectives   ProjectObjective[]
+  pendingMemberships PendingProjectMembership[]
+  graphLayout  GraphLayout?
+  businessProcesses BusinessProcess[]
+  processPortal    ProcessPortal?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -48,10 +52,11 @@ model User {
   name        String
   email       String   @unique
   password    String   // Hashed with bcrypt
-  role        String   @default("CONSULTANT") // CONSULTANT | CLIENT | MANAGER | ADMIN
+  role        String   // CONSULTANT | CLIENT | MANAGER | ADMIN
+  columnPreferences String? // JSON de preferências de UI por usuário (ex.: visibilidade de colunas da grade)
 
   projects    ProjectUser[]
-  requirements Requirement[] @relation("AssignedTo")
+  assignedRequirements Requirement[] @relation("ResponsibleConsultant")
   comments    Comment[]
   changes     ChangeLog[]
   ownedIntegrations CrossMatrixEntry[] @relation("IntegrationOwner")
@@ -62,6 +67,24 @@ model User {
   updatedAt   DateTime @updatedAt
 
   @@map("users")
+}
+
+model PendingProjectMembership {
+  id          String   @id @default(cuid())
+  projectId   String
+  email       String
+  role        String   // CONSULTANT | CLIENT | MANAGER | ADMIN
+  module      String?
+  createdBy   String?
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, email])
+  @@index([email])
+  @@map("pending_project_memberships")
 }
 
 model ProjectUser {
@@ -103,12 +126,24 @@ model Requirement {
   howMuchPromised String?  // Volumetria/critério de aceitação prometido
   howMuchActual   String?  // Volumetria/critério de aceitação realizado
 
+  // 5W2H TO-BE fields (Ancora Method v2 — toggle AS-IS / TO-BE)
+  // Campos opcionais que representam a visão futura de cada dimensão 5W2H.
+  // Os campos originais (what, why, who, when, where, howToday, howMuch) são o AS-IS.
+  // howToBe já existe acima para o campo HOW.
+  whatToBe         String?  // Visão futura: o que será feito
+  whyToBe          String?  // Visão futura: por que será necessário
+  whoToBe          String?  // Visão futura: quem executará
+  whenToBe         String?  // Visão futura: quando será feito
+  whereToBe        String?  // Visão futura: onde será implementado
+  howMuchToBe      String?  // Visão futura: volumetria/critério de aceitação
+
   // Integrations (arrays de Req IDs)
   dependsOn       String   @default("") // JSON array string: ["REQ-002", "REQ-003"]
   providesFor     String   @default("") // JSON array string: ["REQ-005"]
 
   // Collaboration
-  consultantId    String
+  responsibleConsultantId String?
+  responsibleBusiness String?
   consultantNotes String?  // Dúvidas do consultor
   status          String   @default("PENDING") // PENDING | IN_PROGRESS | VALIDATED | CONFLICT | REJECTED | APPROVED
   observations    String?
@@ -119,7 +154,7 @@ model Requirement {
 
   // Relations
   project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  consultant      User     @relation("AssignedTo", fields: [consultantId], references: [id])
+  responsibleConsultant User? @relation("ResponsibleConsultant", fields: [responsibleConsultantId], references: [id])
   comments        Comment[]
   changes         ChangeLog[]
   crossMatrixFrom CrossMatrixEntry[] @relation("FromRequirement")
@@ -130,6 +165,7 @@ model Requirement {
   updatedAt       DateTime @updatedAt
 
   @@unique([projectId, reqId])
+  processLinks ProcessRequirementLink[]
   @@map("requirements")
 }
 
@@ -215,14 +251,16 @@ model CrossMatrixEntry {
 
   // Relations
   project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  fromReq         Requirement @relation("FromRequirement", fields: [fromReqId], references: [id])
-  toReq           Requirement @relation("ToRequirement", fields: [toReqId], references: [id])
+  fromReq         Requirement @relation("FromRequirement", fields: [fromReqId], references: [id], onDelete: Cascade)
+  toReq           Requirement @relation("ToRequirement", fields: [toReqId], references: [id], onDelete: Cascade)
   owner           User?    @relation("IntegrationOwner", fields: [ownerUserId], references: [id])
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@unique([projectId, fromReqId, toReqId])
+  @@index([fromReqId])
+  @@index([toReqId])
   @@map("cross_matrix_entries")
 }
 
@@ -276,7 +314,7 @@ model ProjectObjective {
   // Descrição detalhada do objetivo de negócio
   description String?
 
-  // Fase SAP Activate relacionada (opcional)
+  // Fase Activate relacionada (opcional)
   // DISCOVER | EXPLORE | REALIZE | DEPLOY | RUN
   activatePhase String?
 
@@ -392,6 +430,130 @@ model ConfigChangeLog {
   @@map("config_change_logs")
 }
 
+// Layout do grafo de dependencias por projeto
+// Armazena posicoes dos nos (x, y) como JSON string com chave = dbId do requisito
+model GraphLayout {
+  id        String   @id @default(cuid())
+  projectId String   @unique
+  positions String   @default("{}") // JSON: { [dbId]: { x: number, y: number } }
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("graph_layouts")
+}
+
+// ===== PROCESS STUDIO (Fase 4) =====
+// [2026-10-15] Criado: modelagem de processos BPMN dentro do projeto (ver docs/process-studio/README.md §6.4) — Rafael Brito
+// Fonte da verdade = `model` (JSON do ProcessModel do @ancoro/process-core). ProcessRequirementLink é uma PROJEÇÃO
+// reconstruída a cada save (consulta "em quais processos este requisito aparece?" + análise de lacunas): nunca editar à mão.
+
+model BusinessProcess {
+  id          String   @id @default(cuid())
+  projectId   String
+  /// id do processo DENTRO do modelo (ProcessModel.id): é o que `calledProcessId` (drill-down) referencia; único por projeto
+  key         String
+  name        String
+  /// Revisão otimista: o save só vale com baseRev == rev (senão 409). Incrementa a cada save.
+  rev         Int      @default(1)
+  /// JSON do ProcessModel (texto: compatível com SQLite e PostgreSQL)
+  model       String
+  createdById String?
+  updatedById String?
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versions    ProcessVersion[]
+  links       ProcessRequirementLink[]
+  // [2026-10-30] Criado: anexos por elemento BPMN (repositório) — Rafael Brito
+  attachments ProcessAttachment[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, key])
+  @@index([projectId])
+  @@map("business_processes")
+}
+
+// Snapshot imutável (rótulo opcional). Restaurar = novo save com este conteúdo; o histórico nunca é reescrito.
+model ProcessVersion {
+  id          String   @id @default(cuid())
+  processId   String
+  version     Int
+  label       String?
+  // [2026-10-27] Criado: revisão (r) do processo salvo no momento em que a versão foi tirada — versão é manual, r é o salvamento — Rafael Brito
+  rev         Int?
+  model       String
+  createdById String?
+
+  process     BusinessProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([processId, version])
+  @@map("process_versions")
+}
+
+// Elemento BPMN <-> Requisito (N:N). `elementName` é cópia do nome do elemento no último save (evita abrir o JSON para listar).
+model ProcessRequirementLink {
+  id            String   @id @default(cuid())
+  processId     String
+  elementId     String
+  elementName   String   @default("")
+  requirementId String
+
+  process       BusinessProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+  requirement   Requirement     @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@unique([processId, elementId, requirementId])
+  @@index([requirementId])
+  @@map("process_requirement_links")
+}
+
+// [2026-10-30] Criado: anexos (arquivos/imagens) por elemento BPMN — Rafael Brito
+// Só METADADOS aqui; os bytes vivem no storage (disco local / S3-R2) sob `storageKey`. Ficam FORA do JSON do ProcessModel de propósito:
+// não inflam save/snapshot/portal e a restauração de uma versão antiga "reencontra" os anexos do elemento (chave = processId + elementId).
+// Excluir o processo apaga as linhas em cascata, mas NÃO os bytes: a rota DELETE do processo remove os blobs antes (ver processes.ts).
+model ProcessAttachment {
+  id           String   @id @default(cuid())
+  processId    String
+  /// id do elemento no modelo (nó, fluxo, lane, participante) ou "__process" para o processo como um todo
+  elementId    String
+  fileName     String
+  /// tipo DETECTADO pelo servidor (assinatura binária), nunca o declarado pelo cliente
+  mimeType     String
+  size         Int
+  /// SHA-256 do conteúdo (integridade/auditoria; permite dedupe futuro)
+  sha256       String
+  /// chave opaca no storage (gerada no servidor; nunca derivada do nome enviado)
+  storageKey   String   @unique
+  uploadedById String?
+
+  process      BusinessProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+
+  @@index([processId, elementId])
+  @@map("process_attachments")
+}
+
+// Estado da publicação do portal do projeto: o versions.json da última publicação continua o histórico ("O que mudou").
+model ProcessPortal {
+  id                String    @id @default(cuid())
+  projectId         String    @unique
+  versionsJson      String    @default("")
+  publishCount      Int       @default(0)
+  lastLabel         String?
+  lastPublishedAt   DateTime?
+  lastPublishedById String?
+
+  project           Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("process_portals")
+}
+
 // ===== MULTI-TENANCY MODELS =====
 // Modelos para suporte a multi-tenant (database-per-client)
 // Ver: docs/INFRASTRUCTURE_GUIDE.md seção 3.4
@@ -404,8 +566,8 @@ model ConfigChangeLog {
 
 model Tenant {
   id                    String   @id @default(cuid())
-  slug                  String   @unique  // URL-safe identifier: "seidor", "energia-vitalis"
-  name                  String            // Nome legível: "Seidor Brasil"
+  slug                  String   @unique  // URL-safe identifier: "cliente-exemplo", "energia-vitalis"
+  name                  String            // Nome legível: "Cliente Exemplo"
   databaseUrlEncrypted  String   @map("database_url_encrypted")  // AES-256-GCM encrypted
 
   // Plano e status
@@ -441,10 +603,35 @@ model TenantUser {
 
 // ProjectStatus: DISCOVERY | REALIZATION | GOLIVE | HYPERCARE | CLOSED
 // UserRole: CONSULTANT | CLIENT | MANAGER | ADMIN
-// SAPModule: ISU | CRM | FICA | DEVICE | SD | MM | PM | OTHER
+// Module: ISU | CRM | FICA | DEVICE | SD | MM | PM | OTHER
 // ReqStatus: PENDING | IN_PROGRESS | VALIDATED | CONFLICT | REJECTED | APPROVED
 // CommentType: QUESTION | ANSWER | OBSERVATION | CONFLICT
 // IntegrationType: BAPI | IDOC | FILE | API | BATCH | OTHER
 // IntegrationTiming: SYNC | ASYNC | BATCH | EVENT
 // IntegrationStatus: OK | PENDING | CONFLICT | CIRCULAR
 // ChangeType: CREATE | UPDATE | DELETE | STATUS_CHANGE | COMMENT_ADDED
+
+// ===== LEADS COMERCIAIS =====
+// [2026-10-24] Criado: captura de interesse comercial da página /planos (médio/grande porte e lista de espera do self-service) — Rafael Brito
+// Vive no banco do SaaS do fornecedor (não em banco de tenant). Em instalação on-premise a rota fica desligada (ver routes/leads.ts).
+model Lead {
+  id          String   @id @default(cuid())
+  interest    String                       // ENTERPRISE | SELF_SERVICE_WAITLIST
+  name        String
+  email       String
+  company     String?
+  phone       String?
+  teamSize    String?                      // faixa livre: "1", "2-5", "6-20", "21-100", "100+"
+  deployment  String?                      // SAAS | DEDICATED | ONPREMISE | UNSURE (preferência declarada)
+  message     String?
+  locale      String   @default("pt")
+  status      String   @default("NEW")     // NEW | CONTACTED | QUALIFIED | WON | LOST
+  consentAt   DateTime @map("consent_at")  // LGPD: momento em que o titular aceitou ser contatado
+  notifiedAt  DateTime? @map("notified_at") // preenchido quando o aviso (e-mail/webhook) saiu; null = falhou/pendente
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@index([email])
+  @@map("leads")
+}
