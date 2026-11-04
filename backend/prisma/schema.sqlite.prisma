@@ -479,6 +479,8 @@ model BusinessProcess {
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   versions    ProcessVersion[]
   links       ProcessRequirementLink[]
+  // [2026-10-30] Criado: anexos por elemento BPMN (repositório) — Rafael Brito
+  attachments ProcessAttachment[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -521,6 +523,33 @@ model ProcessRequirementLink {
   @@unique([processId, elementId, requirementId])
   @@index([requirementId])
   @@map("process_requirement_links")
+}
+
+// [2026-10-30] Criado: anexos (arquivos/imagens) por elemento BPMN — Rafael Brito
+// Só METADADOS aqui; os bytes vivem no storage (disco local / S3-R2) sob `storageKey`. Ficam FORA do JSON do ProcessModel de propósito:
+// não inflam save/snapshot/portal e a restauração de uma versão antiga "reencontra" os anexos do elemento (chave = processId + elementId).
+// Excluir o processo apaga as linhas em cascata, mas NÃO os bytes: a rota DELETE do processo remove os blobs antes (ver processes.ts).
+model ProcessAttachment {
+  id           String   @id @default(cuid())
+  processId    String
+  /// id do elemento no modelo (nó, fluxo, lane, participante) ou "__process" para o processo como um todo
+  elementId    String
+  fileName     String
+  /// tipo DETECTADO pelo servidor (assinatura binária), nunca o declarado pelo cliente
+  mimeType     String
+  size         Int
+  /// SHA-256 do conteúdo (integridade/auditoria; permite dedupe futuro)
+  sha256       String
+  /// chave opaca no storage (gerada no servidor; nunca derivada do nome enviado)
+  storageKey   String   @unique
+  uploadedById String?
+
+  process      BusinessProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+
+  @@index([processId, elementId])
+  @@map("process_attachments")
 }
 
 // Estado da publicação do portal do projeto: o versions.json da última publicação continua o histórico ("O que mudou").
