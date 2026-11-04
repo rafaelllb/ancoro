@@ -40,17 +40,16 @@
       { "title": "Portuguese and English", "text": "Full interface in both languages." }
     ]
   },
-  "sap": {
-    "eyebrow": "For any project. SAP compatible.",
-    "title": "Built for complex integration projects — including SAP.",
-    "text": "The method does not depend on a technology, but the tool ships with features ready for SAP implementations, where one requirement almost always touches more than one module.",
+  "integration": {
+    "eyebrow": "For any project.",
+    "title": "Built for complex integration projects.",
+    "text": "The method does not depend on a technology, but the tool ships with features ready for projects where one requirement almost always touches more than one module or system.",
     "items": [
-      "Cross-module matrix (ISU, CRM, FICA, Device Management, SD, MM, PM)",
-      "Business process document (BPD) for S/4HANA Utilities projects",
-      "Configurable integration types and timing (BAPI, IDoc, file, API, batch)",
+      "Cross-module and cross-system matrix",
+      "Business process document (BPD) generated from the requirements",
+      "Configurable integration types and timing (API, file, messaging, batch)",
       "Lists and terminology adjustable per project"
-    ],
-    "disclaimer": "SAP, S/4HANA and other brands mentioned belong to their respective owners. Ancoro is an independent product and is not affiliated with SAP SE."
+    ]
   },
   "form": {
     "title": "Talk to our team",
