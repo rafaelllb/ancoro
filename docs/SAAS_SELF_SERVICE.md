@@ -11,10 +11,16 @@
 | Pagamento | **Stripe Billing** (Checkout hospedado + Customer Portal; nunca formulário de cartão próprio) |
 | Modelo comercial | Plano **único**, todas as funcionalidades (ver `config/entitlements.ts`); cobrança por assento a definir |
 | Médio/grande porte | Formulário + e-mail/telefone diretos; implantação SaaS, dedicada ou on-premise (licença JWT) |
-| Posicionamento | Ferramenta para **qualquer projeto**, com compatibilidade SAP destacada (seção em `/planos`) |
+| Posicionamento | Ferramenta para **qualquer projeto** de levantamento de requisitos e modelagem de processo (sem vertical específica) |
 | Topologia | **Não** fazer "backend do fornecedor + banco do cliente": exigiria expor o banco do cliente à internet e adiciona latência por query. Quem quer dado no cliente usa on-premise completo |
 
-## Infraestrutura alvo (recomendação)
+## Infraestrutura alvo
+
+> **[2026-10-30] Substituída:** a recomendação desta seção foi revisada e consolidada em [INFRASTRUCTURE_GUIDE.md](./INFRASTRUCTURE_GUIDE.md) v2.0
+> (nuvem única em São Paulo, banco por cliente em instância HA, storage privado para anexos, backup por tenant em outro fornecedor).
+> A tabela abaixo fica como registro da análise de 24/out; **não é mais a decisão vigente**.
+
+### Registro histórico (24/out/2026)
 
 Critérios: uso gratuito mensal generoso, segurança, escalabilidade. Os números de camada gratuita abaixo
 são os que eu conhecia e **mudam com frequência — confirme nas páginas de preço antes de contratar**.

@@ -6,7 +6,7 @@ Rafael (identidade, filosofia de comunicação, qualidade de código) já vivem 
 
 ## O que é o projeto
 Ancoro é uma aplicação desktop-first (Electron) e web para gestão colaborativa de requisitos
-SAP S/4HANA Utilities, implementando o **Ancora ReqOps Method** (5W2H Duplo AS-IS/TO-BE,
+de qualquer projeto, implementando o **Ancora ReqOps Method** (5W2H Duplo AS-IS/TO-BE,
 Matriz de Cruzamento, pipeline de validação). Backend Express + Prisma + PostgreSQL;
 frontend React + Vite + TanStack Query.
 

@@ -11,12 +11,12 @@
 ## 1. Visão geral
 
 Ancoro é uma aplicação **desktop-first** (Electron) e web para **gestão colaborativa de
-requisitos** em projetos SAP S/4HANA Utilities (ISU). Implementa o **Ancora ReqOps Method**:
+requisitos** em qualquer projeto. Implementa o **Ancora ReqOps Method**:
 aplica princípios de DevOps ao ciclo de vida dos requisitos.
 
 **Pilares:**
 1. **Pensamento estruturado** — requisitos em formato **5W2H Duplo** (AS-IS + TO-BE).
-2. **Integração explícita** — *cross-module awareness* entre módulos SAP (Matriz de Cruzamento).
+2. **Integração explícita** — *cross-module awareness* entre módulos/áreas do projeto (Matriz de Cruzamento).
 3. **Melhoria contínua pragmática** — métricas e colaboração em tempo real.
 4. **Pipeline de validação** — requisitos só avançam se passarem em todas as checagens
    (ciclos + conflitos semânticos + órfãos + evidências).
@@ -36,7 +36,7 @@ Visão de negócio detalhada: `docs/Ancora_Method_Guide_v2_0.docx` e [README.md]
 
 Convenção de idioma: **backend e enums internos permanecem em código PT/constantes** (ex.:
 `PENDING`, `ISU`, `DISCOVERY`); apenas o **label exibido** é traduzido no frontend via i18n
-(analogia: o backend é o "alemão do SAP", o frontend é a camada de apresentação).
+(o backend é a fonte canônica; o frontend é a camada de apresentação).
 
 ---
 
@@ -138,7 +138,7 @@ Todas montadas sob `/api` em [index.ts](../backend/src/index.ts#L146-L163).
 | Métricas | [services/metricsService.ts](../backend/src/services/metricsService.ts) | Lead time, taxa de rejeição, cobertura de objetivos/evidências |
 | Objetivos | [services/objectiveService.ts](../backend/src/services/objectiveService.ts) | Matching WHY ↔ objetivo por keywords; órfãos |
 | Evidências | [services/evidenceService.ts](../backend/src/services/evidenceService.ts) | Anexo e validação para aprovação de requisito |
-| Gerador BPD | [services/bpdGenerator.ts](../backend/src/services/bpdGenerator.ts) | Business Process Diagram/Document para SAP ISU |
+| Gerador BPD | [services/bpdGenerator.ts](../backend/src/services/bpdGenerator.ts) | Business Process Diagram/Document |
 | Notificações | [services/notificationService.ts](../backend/src/services/notificationService.ts) | Socket.io real-time |
 | Process Studio (kit) | [services/processKit.ts](../backend/src/services/processKit.ts) | Carrega `backend/vendor/processkit.cjs` (gerado por `npm run build:processkit`, gitignored): valida/importa/exporta BPMN e publica o portal com o MESMO código do editor |
 
@@ -265,7 +265,7 @@ Localização: [frontend/src/hooks/](../frontend/src/hooks/).
 
 - **5W2H Duplo:** cada requisito descreve o estado atual (**AS-IS**) e o futuro (**TO-BE**).
   Campos AS-IS e `*ToBe` no modelo `Requirement`.
-- **Matriz de Cruzamento (Cross Matrix):** dependências de integração entre módulos SAP;
+- **Matriz de Cruzamento (Cross Matrix):** dependências de integração entre módulos;
   auto-gerada e validada manualmente; detecta ciclos (status CIRCULAR).
 - **Grafo de dependências:** DAG visual (canvas) com layout topológico; sincronização
   bidirecional grafo ↔ banco.
@@ -356,6 +356,6 @@ Workflows em [.github/workflows/](../.github/workflows/):
 | [ROADMAP.md](ROADMAP.md) | Roadmap de features | ✅ Atual |
 | [ANALISE_PERMISSOES_POR_ROLE.md](ANALISE_PERMISSOES_POR_ROLE.md) | Matriz de permissões por role | ✅ Atual |
 | [ANALISE_ARMAZENAMENTO.md](ANALISE_ARMAZENAMENTO.md) | Análise de armazenamento/dados | ✅ Atual |
-| [sap_isu_graph_spec.md](sap_isu_graph_spec.md) | Especificação do grafo SAP ISU | ✅ Atual |
+| [sap_isu_graph_spec.md](sap_isu_graph_spec.md) | Especificação do grafo de dependências (exemplo com módulos ISU) | ✅ Atual |
 | [process-studio/README.md](process-studio/README.md) | Módulo Process Studio (BPMN): visão, fases, decisões, medições | ✅ Atual |
 | `Ancora_Method_Guide_v2_0.docx` | Metodologia de negócio | ✅ Referência |

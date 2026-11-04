@@ -8,7 +8,7 @@ Ancoro implementa o **Ancora ReqOps Method** — sistema operacional de requisit
 
 ### Pilares
 1. **Pensamento Estruturado** — Requisitos em formato 5W2H Duplo
-2. **Integração Explícita** — Cross-Module Awareness entre módulos SAP
+2. **Integração Explícita** — Cross-Module Awareness entre módulos/áreas do projeto
 3. **Melhoria Contínua Pragmática** — Métricas e colaboração em tempo real
 4. **Pipeline de Validação** — Requisitos só avançam se passarem em todas as checagens
 
@@ -278,7 +278,7 @@ Ver [docs/INFRASTRUCTURE_GUIDE.md](docs/INFRASTRUCTURE_GUIDE.md) para detalhes c
 
 ## Autor
 
-**Rafael Brito** — Consultor SAP Utilities ISU/S4HANA
+**Rafael Brito** — Criador do Ancora ReqOps Method
 
 ## Filosofia
 

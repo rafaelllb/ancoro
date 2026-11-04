@@ -1,7 +1,7 @@
 {
   "name": "ancoro",
   "version": "1.0.0",
-  "description": "Aplicação desktop-first para gestão colaborativa de requisitos SAP S/4 Utilities.",
+  "description": "Aplicação desktop-first para gestão colaborativa de requisitos e processos de qualquer projeto.",
   "author": "Rafael Brito",
   "license": "UNLICENSED",
   "scripts": {

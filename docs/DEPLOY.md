@@ -2,6 +2,10 @@
 
 > Passo a passo para deploy em todos os ambientes.
 
+> **[2026-10-30] Atenção:** as seções 3–5 descrevem a stack de abril (Northflank/Railway). A arquitetura de produção vigente é a do
+> [INFRASTRUCTURE_GUIDE.md](./INFRASTRUCTURE_GUIDE.md) v2.0 (GCP São Paulo: Cloud Run + Cloud SQL + Cloud Storage). Local/dev (§2), Neon para
+> dev/QA/demo e a configuração de secrets (§6) continuam válidos; os passos de Railway/produção serão reescritos quando a nova stack for provisionada.
+
 **Autor:** Rafael Brito
 **Versão:** 2.0
 **Data:** Abril 2026

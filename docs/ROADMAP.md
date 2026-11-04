@@ -496,7 +496,7 @@
 - [x] Grid de requisitos com scroll horizontal em mobile
 
 **Testes de Usabilidade:**
-- [ ] Testar com Rafael (ou outro consultor SAP)
+- [ ] Testar com Rafael (ou outro consultor)
 - [ ] Coletar feedback sobre UX
 - [ ] Ajustar fluxos confusas
 

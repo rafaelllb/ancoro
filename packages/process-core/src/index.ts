@@ -12,3 +12,6 @@ export { billingSample } from './samples/billing.js';
 export * from './edit.js';
 export * from './attributes.js';
 export * from './labels.js';
+// [2026-10-27] Criado: geração automática de processos a partir de requisitos — Rafael Brito
+export * from './generate.js';
+export * from './generate-requirements.js';

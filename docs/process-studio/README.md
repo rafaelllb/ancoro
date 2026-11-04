@@ -99,7 +99,7 @@ spike* cedo: 15–20 elementos BPMN essenciais.
 - BPMN 2.0 completo no MVP+: pools/lanes, tarefas (user, service, manual, script), gateways
   (XOR, AND, OR, event-based), eventos (start/intermediate/end, timer, message, error),
   subprocessos (colapsado/expandido, drill-down), anotações, data objects.
-- Propriedades ricas por elemento: descrição, responsável (performer), sistema SAP/transação,
+- Propriedades ricas por elemento: descrição, responsável (performer), sistema/transação,
   SLA, documentos anexos, links para requisitos.
 - Import/export **BPMN 2.0 XML puro** (sem formato proprietário) + import de `.bpm` do Bizagi
   como meta futura (formato zip/XML; **a investigar** — engenharia reversa do `.bpm`).
@@ -135,11 +135,11 @@ alinhado à governança, que é o diferencial do Ancoro.
 - Processo herda permissões por role/projeto (`permissions.ts` + `roleCapabilities.ts`).
 - Gap-analysis: requisito sem processo / processo sem requisito (governança).
 - Reaproveitar `GraphLayout` existente? **A verificar** — já há modelo `GraphLayout` no Prisma
-  para o grafo SAP ISU; avaliar se há algo reutilizável ou se é conceito distinto.
+  para o grafo de dependências; avaliar se há algo reutilizável ou se é conceito distinto.
 
 ### 5.5 Futuro (fora do escopo inicial)
-- **Process Mining / conformance:** comparar o BPMN TO-BE com event logs (SAP ISU, Signavio)
-  via PM4Py. Alinha com a meta de carreira (Signavio + Utilities + IA). Alto valor, alto custo.
+- **Process Mining / conformance:** comparar o BPMN TO-BE com event logs (ERP, Signavio)
+  via PM4Py. Alto valor para quem já possui logs de execução. Alto valor, alto custo.
 - Engine de execução (Camunda 8/Zeebe ou Flowable) — **não construir; integrar** se vier.
 - Colaboração em tempo real (Yjs/CRDT).
 
@@ -165,13 +165,13 @@ alinhado à governança, que é o diferencial do Ancoro.
 **Fase 1 — ✅ `packages/process-core` (standalone, não importa nada do Ancoro)**
 - [x] Modelo de domínio + schema Zod (`src/model.ts`) — também é o JSON intermediário da IA.
 - [x] Serializer modelo → BPMN 2.0 XML com BPMNDI e parser BPMN XML → modelo, com `warnings` explícitos (`src/bpmn/`).
-- [x] Extensão `ancoro:` (performer, SLA, transação SAP, requisitos, origem) em `extensionElements`.
+- [x] Extensão `ancoro:` (performer, SLA, código/transação do sistema, requisitos, origem) em `extensionElements`.
 - [x] Validação de integridade e boas práticas (`src/validate.ts`), incl. pares de link event e boundary.
 - [x] Ports hexagonais (`src/ports.ts`) — só contratos, sem implementação.
 - [x] Layout automático determinístico (`src/layout.ts`): dagre define camadas/ordem, lanes viram faixas, roteamento ortogonal próprio. Preview: `npm run preview`.
 - [x] **Importador Bizagi `.bpm`** (`src/import/bizagi.ts`) — ver descoberta abaixo.
 - [x] **Corpus real**: 7 diagramas do `BIIN Process/Processo geral Billing - EN.bpm` importados, validados e com round-trip BPMN sem perda e XML idempotente (`test/bizagi-corpus.test.ts`; arquivo não versionado, caminho via env `BIIN_BPM`, teste pulado se ausente).
-- [x] Modelo estendido com o que o corpus real exigiu: boundary events (10 ocorrências), eventos conditional/link/terminate, throw/catch, data stores (tabelas SAP), pools externos + message flows, call activity entre diagramas.
+- [x] Modelo estendido com o que o corpus real exigiu: boundary events (10 ocorrências), eventos conditional/link/terminate, throw/catch, data stores (tabelas do sistema), pools externos + message flows, call activity entre diagramas.
 - [x] 33 testes verdes. Relatório do corpus: `npm run report:bizagi -- "<arquivo.bpm>"` (gera `.bpmn` em `out/` para abrir no bpmn.io).
 
 Ressalvas honestas (Fase 1 fechada, mas isto fica em aberto):
@@ -194,7 +194,7 @@ Ressalvas honestas (Fase 1 fechada, mas isto fica em aberto):
 | 1 | **Visualizador**: renderer SVG de todos os kinds, pan/zoom, seleção, painel + validação, abrir `.bpm`/`.bpmn`/exemplo, drill-down em call activities, i18n PT/EN, tema claro/escuro | ✅ Feito |
 | 2 | **Edição básica**: arrastar com grade de 10px (fluxos re-roteados), excluir, desfazer/refazer (Ctrl+Z/Y), setas para ajustar, dirty-flag | ✅ Feito |
 | 3 | **Criação**: paleta (29 itens, clique ou arraste), conectar arrastando a alça (regras com motivo), renomear inline (duplo clique/F2/Enter), lanes (criar, redimensionar arrastando, excluir), participantes externos | ✅ Feito |
-| 4 | **Propriedades editáveis** (nome, variante, lane, responsável, SLA, transação SAP, requisitos, documentação, processo chamado, fluxo padrão), **exportar `.bpmn`** (Ctrl+S), autosave local, novo processo | ✅ Feito |
+| 4 | **Propriedades editáveis** (nome, variante, lane, responsável, SLA, código/transação do sistema, requisitos, documentação, processo chamado, fluxo padrão), **exportar `.bpmn`** (Ctrl+S), autosave local, novo processo | ✅ Feito |
 | 5 | **Critério de pronto**: reproduzir o processo de referência | ✅ Feito — ver evidência abaixo |
 
 **Evidência da etapa 5** (o critério original era "reproduzir o processo Billing de referência"):
@@ -212,7 +212,7 @@ Operações de edição puras vivem em `packages/process-core/src/edit.ts` (test
   - *Geral*: nome, variante, lane, descrição, link (URL), processo chamado, interrompe/lançamento.
   - *Documentação*: texto longo (elemento, fluxo, processo).
   - *Responsáveis*: **RACI** (R responsável, A aprovador, C consultados, I informados) e sistemas/módulos envolvidos.
-  - *Execução*: SLA, duração estimada, custo, prioridade, **repetição** (loop / multi-instância paralela / sequencial, com marcador no diagrama), transação SAP.
+  - *Execução*: SLA, duração estimada, custo, prioridade, **repetição** (loop / multi-instância paralela / sequencial, com marcador no diagrama), código/transação do sistema.
   - *Dados*: dados de entrada, de saída, regras e controles.
   - *Atributos*: atributos estendidos livres (nome/valor), como os *Extended Attributes* do Bizagi.
   - *Aparência*: preenchimento e borda (8 pares sugeridos + seletor), também para lanes (`bioc:fill/stroke`, lido pelo bpmn.io).
@@ -272,9 +272,9 @@ Republicar na mesma pasta continua o histórico (`versions.json`); sem mudança 
 **O que o portal tem** (tudo coberto por teste; 42 testes do publisher, 16 deles em **Chrome real por `file://`**):
 - **Navegação**: árvore montada pelos subprocessos (call activities), breadcrumbs, drill-down por duplo clique, **link direto por processo e por elemento** (`#/p/<id>/e/<elemento>`; recarregar e voltar do navegador funcionam).
 - **Diagrama**: o *mesmo renderer do editor* (pacote `process-render`) → SVG com classes/tokens; pan/zoom, ajustar à tela, destaque do elemento, foco automático.
-- **Painel do elemento**: descrição, documentação, **RACI**, execução (SLA/duração/custo/prioridade/loop/transação SAP), sistemas, dados e regras, **atributos tipados** (TCodes em texto, **tabela Fiori com links F2185/F3133…**, imagens, arquivos), requisitos, ligações de entrada/saída clicáveis.
+- **Painel do elemento**: descrição, documentação, **RACI**, execução (SLA/duração/custo/prioridade/loop/código/transação do sistema), sistemas, dados e regras, **atributos tipados** (TCodes em texto, **tabela Fiori com links F2185/F3133…**, imagens, arquivos), requisitos, ligações de entrada/saída clicáveis.
 - **Abas**: *Elementos* (filtro por texto/tipo) e *Responsáveis* (**matriz RACI** gerada dos dados).
-- **Busca** instantânea e offline (índice pré-computado no publish): nome, transação SAP, texto de atributos (TCodes), apps Fiori, responsáveis, requisitos; sem acento/caixa, prefixo, teclado (`/` foca, ↑↓ Enter).
+- **Busca** instantânea e offline (índice pré-computado no publish): nome, código/transação do sistema, texto de atributos (TCodes), apps Fiori, responsáveis, requisitos; sem acento/caixa, prefixo, teclado (`/` foca, ↑↓ Enter).
 - **Marca por configuração** (`brand.json`): título, logo (otimizado para webp no publish), cor de destaque, tokens CSS (inclusive cores dos shapes BPMN) claro/escuro, fonte, rodapé; sem script de rebrand. Analytics **opt-in** (GA4) e respeitando Do-Not-Track.
 - **Tema claro/escuro/auto**, **PT/EN**, **impressão** (só o diagrama), **celular** (navegação e detalhes viram gavetas; busca em largura total).
 - **Páginas estáticas sem JavaScript** (`p/<id>.html`): SVG + tabela de elementos + atributos — indexáveis e imprimíveis.
@@ -406,23 +406,52 @@ cookie HttpOnly, editor embutido via ponte, vínculo, salvar r2, versões, leito
 - [ ] Portas do núcleo (`PersistencePort`/`AuthPort`) seguem sem implementação literal — ver nota em `process-core/src/ports.ts`.
 - [ ] Testado só no Chrome e em Windows.
 
+### 6.6 Anexos por elemento — o mapeamento como repositório ✅ (2026-10-30, Rafael Brito)
+
+**Visão:** o diagrama deixa de ser só um guia visual e passa a ser o **repositório** do processo — cada elemento (tarefa, evento, gateway, fluxo, lane,
+participante) e o processo como um todo podem ter arquivos e imagens anexados (prints de tela, normas em PDF, planilhas, atas).
+
+**Análise do que já existia:** os *atributos* tipados `imagem`/`arquivo embutido` (§6.1) guardam o arquivo **dentro do JSON do modelo**, limitado a 400 KB — inviável
+como repositório (infla save, versão e portal). O `Evidence` do requisito tem `filePath`, mas **nunca teve upload nem storage**. Foi preciso criar a camada de storage.
+
+**Decisões:**
+1. Metadados no banco (`ProcessAttachment`), bytes em storage atrás de `AttachmentStorage` (disco local ou S3-compatível). Fora do `ProcessModel` de propósito.
+2. Chave do vínculo = `(processId, elementId)`: restaurar uma versão antiga recupera os anexos do elemento.
+3. Upload como corpo binário cru (`?elementId=&name=`), sem multipart/dependência nova; o CORS do backend só libera `Content-Type`/`Authorization`, por isso nada de header custom.
+4. Segurança: allowlist por **assinatura binária** (+ extensão coerente); SVG/HTML/executáveis recusados; `nosniff` + CSP `sandbox`; só imagem raster é inline; SHA-256 conferido no download; nome sanitizado e chave de storage gerada no servidor.
+5. O editor (iframe) nunca recebe o token: `attachments.list|upload|content|download|remove` passam pela ponte RPC e o **host** faz o download.
+6. Permissões: ver/baixar = todos os papéis (inclusive CLIENT); enviar = quem edita processo; excluir = quem enviou ou ADMIN. Limites: 10 MB/arquivo, 25/elemento, 500 MB/projeto (env).
+7. Para isso, o painel de propriedades deixou de ser um `<fieldset disabled>` único: agora só o **corpo** das abas é desabilitado em somente leitura, para o CLIENT conseguir trocar de aba e baixar.
+
+**Evidência:** `backend/src/routes/processes.test.ts` (+9 testes: tipo falso, SVG/HTML, nome com `../`, permissões, 404 entre projetos, integridade adulterada, limpeza de blobs ao excluir processo, limites) e
+`packages/process-editor/e2e/ancoro-attachments.mjs` (22 checks em Chrome real: enviar PNG+PDF, miniatura, visualizador, download, recusa de arquivo falso, persistência após recarregar, excluir, CLIENT somente leitura). `ancoro-fullstack.mjs` (48 checks) segue verde.
+
+**Pendências honestas:**
+- [ ] Provedor **S3 não testado contra bucket real** e `@aws-sdk/client-s3` não está nas dependências (carregado sob demanda); `GcsStorage` nativo não existe.
+- [ ] **Antivírus** (ClamAV, fail-closed) — ver TODO em `attachmentPolicy.ts`. Sem ele, a allowlist é a única barreira.
+- [ ] O **portal publicado** (ZIP) ainda não inclui anexos (decidir: embutir imagens, listar com link autenticado ou só contar).
+- [ ] Anexos de elementos removidos do diagrama ficam retidos (de propósito, por causa de restaurar versão); falta política/rotina de limpeza.
+- [ ] Elemento recém-criado e **ainda não salvo** não aceita anexo (o servidor valida o id no modelo salvo) — a UI mostra o motivo.
+- [ ] Standalone (`apps/standalone`) não tem anexos (a aba só aparece embutido no Ancoro). Sem pré-visualização de PDF; sem edição de descrição do anexo; sem busca por nome de arquivo.
+- [ ] Rate limit global (100 req/15 min por IP) conta cada miniatura buscada; elemento com muitas imagens consome a cota rapidamente.
+
 ### 6.2 Fase 7 — Simulação animada (visão do Rafael Brito, 2026-10-14)
 
 **Objetivo:** o usuário *assiste* o processo acontecer. Um token percorre o diagrama em tempo real; a cada elemento um painel
-narra **o que ocorre ali** (quem executa, em qual sistema/transação SAP, dados que entram e saem, regras aplicadas, quanto tempo/custo),
+narra **o que ocorre ali** (quem executa, em qual sistema/transação, dados que entram e saem, regras aplicadas, quanto tempo/custo),
 como se estivesse presenciando a execução. Serve para validar o processo com o cliente, treinar usuários e achar gargalos.
 
 **O que a simulação mostra (e de onde vem — a maior parte já está modelada na Fase 2):**
 | Elemento | Animação | Narração (painel "O que acontece agora") |
 |---|---|---|
-| Início / tarefa | token entra, elemento pulsa durante a duração | descrição, responsável (RACI), sistemas, transação SAP, dados de entrada → saída, regras/controles, SLA vs duração simulada |
+| Início / tarefa | token entra, elemento pulsa durante a duração | descrição, responsável (RACI), sistemas, código/transação do sistema, dados de entrada → saída, regras/controles, SLA vs duração simulada |
 | Gateway exclusivo/inclusivo | token pára; ramo escolhido acende | condição avaliada e **por que** seguiu esse ramo (probabilidade sorteada, escolha manual ou cenário) |
 | Gateway paralelo | token **se divide** em N e se junta (join espera todos) | ramos disparados / aguardando |
 | Boundary event (erro/timer/mensagem) | evento dispara na borda e desvia o fluxo | gatilho e tratamento |
 | Message flow / participante externo | envelope viaja até o pool externo e volta | sistema externo acionado (ex.: Convergent Invoicing) |
 | Link (saltar/destino) | token "teleporta" ao link de mesmo nome | |
 | Subprocesso / call activity | opcional: **mergulhar** no processo chamado (drill-down) e voltar | |
-| Repositório de dados | leitura/escrita piscando | tabelas SAP acessadas (EITR, ERCH, EABL…) |
+| Repositório de dados | leitura/escrita piscando | tabelas do sistema acessadas (ex.: tabelas de leitura e faturamento) |
 | Loop / multi-instância | contador de iterações; N tokens paralelos | iteração k de N |
 | Fim | token consome; terminate encerra todos | resultado do caso |
 
@@ -443,9 +472,9 @@ gargalo (elemento com maior tempo/fila), cobertura (% de elementos exercitados).
   do `duration`/`performer`/RACI já existentes; começar determinístico (duração fixa) e evoluir.
 - Reaproveita a regra de **validação** (processo sem fim, gateway sem padrão…): simulação recusa-se a rodar com erros de integridade e aponta o elemento.
 
-**Evolução natural (alinhada à meta de carreira Signavio + Utilities + IA):**
+**Evolução natural (process mining e IA):**
 - **Execuções em lote (Monte Carlo)**: milhares de casos → histograma de tempo/custo, gargalos, probabilidade de estourar SLA.
-- **Replay de event log real** (SAP ISU / Signavio Process Intelligence) sobre o mesmo diagrama: animar o que *de fato* aconteceu e comparar com o modelo (conformance).
+- **Replay de event log real** (ERP / ferramenta de process intelligence) sobre o mesmo diagrama: animar o que *de fato* aconteceu e comparar com o modelo (conformance).
 - Exportar a simulação como **vídeo/GIF** e **link compartilhável** no portal (Fase 3).
 
 **Etapas sugeridas (a detalhar quando a fase começar):**
@@ -466,7 +495,7 @@ o diferencial mais tangível e já vende sozinho.
   plano de signup). Este módulo compete por tempo com isso. Sugestão: tratar como roadmap
   pós-lançamento do SaaS, exceto a Fase 0 (barata, ajuda a vender a visão).
 - **Concorrência:** Signavio, Camunda Modeler, Bizagi, draw.io. O diferencial **não** é o
-  editor; é geração a partir de requisitos + portal + rastreabilidade + Utilities.
+  editor; é geração a partir de requisitos + portal + rastreabilidade.
 - **Formato `.bpm` do Bizagi:** importar tem valor de migração, mas pode esbarrar em termos de
   licença do Bizagi. Verificar antes de prometer.
 - **Multi-tenancy:** o módulo herda a decisão de isolamento do Ancoro (schema-per-tenant

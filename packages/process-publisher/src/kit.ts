@@ -8,7 +8,8 @@
  * Contrato estável (versionado em KIT_VERSION) — o backend só conhece estas funções.
  */
 import {
-  billingSample, fromBpmnXml, importBizagi, newProcess, parseModel, toBpmnXml, validateModel, type ProcessModel,
+  billingSample, buildProcessSet, fromBpmnXml, genFromRequirements, importBizagi, newProcess, parseGenProcess, parseModel, toBpmnXml, validateModel,
+  type GenProcess, type GenRequirement, type GenView, type ProcessModel,
 } from '@ancoro/process-core';
 import { publish, zipFiles, type PublishInput } from './publish';
 import type { VersionsFile } from './versions';
@@ -64,6 +65,13 @@ export function demoProcess(reqIds: string[], id = 'Process_Demo', name = 'Ciclo
   const map = new Map(used.map((r, i) => [r, reqIds.length ? reqIds[i % reqIds.length]! : r]));
   return parseModel({ ...base, id, name, nodes: base.nodes.map((n) => ({ ...n, requirementRefs: [...new Set(n.requirementRefs.map((r) => map.get(r) ?? r))] })) });
 }
+
+// [2026-10-27] Criado: geração automática (requisitos -> processo). O LLM mora no backend; o kit só traz o contrato, o parser
+// determinístico e a montagem (JSON intermediário -> modelos com raias/layout) — o MESMO código testado no process-core — Rafael Brito
+export const parseGenerated = (input: unknown): GenProcess => parseGenProcess(input);
+export const generateFromRequirements = (reqs: GenRequirement[], view: GenView, name?: string): GenProcess => genFromRequirements(reqs, view, name);
+/** Principal (índice 0) + subprocessos detalhados, com chaves Process_N livres entre `existingKeys`. */
+export const buildGeneratedModels = (gen: GenProcess, existingKeys: string[]): ProcessModel[] => buildProcessSet(gen, { existingKeys });
 
 export interface PublishPortalOptions extends Omit<PublishInput, 'models' | 'viewer'> { models: ProcessModel[] }
 

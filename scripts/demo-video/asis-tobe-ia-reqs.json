@@ -1,0 +1,44 @@
+{
+ "REQ-001": {
+  "who": "Atendimento",
+  "whoToBe": "Atendimento",
+  "howAsIs": "1. Receber documento do cliente\n2. Digitar dados no sistema legado\n3. Conferir cadastro manualmente",
+  "howToBe": "1. Receber documento do cliente\n2. Se CPF/CNPJ já existe, Atendimento: reutilizar o parceiro existente; senão, criar novo parceiro\n3. Validar endereço no CEP\n4. Sistema SAP: gravar Business Partner"
+ },
+ "REQ-002": {
+  "who": "Faturamento",
+  "whoToBe": "Faturamento",
+  "howAsIs": "1. Solicitar abertura ao back-office\n2. Criar conta contrato manualmente",
+  "howToBe": "1. Sistema SAP: criar conta contrato automaticamente\n2. Se houver dívida anterior, Cobrança: avaliar parcelamento; senão, seguir\n3. Notificar cliente"
+ },
+ "REQ-003": {
+  "who": "Comercial",
+  "whoToBe": "Comercial, Jurídico",
+  "howAsIs": "1. Montar proposta em planilha\n2. Enviar para o jurídico revisar\n3. Assinar em papel",
+  "howToBe": "1. Consultar crédito do cliente\n2. Se crédito aprovado, Jurídico: elaborar minuta do contrato; senão, encerrar proposta\n3. Validar documentos\n   a) Conferir cadastro\n   b) Conferir assinaturas\n   c) Registrar pendências\n4. Sistema SAP: criar contrato de fornecimento\n5. Notificar cliente"
+ },
+ "REQ-004": {
+  "who": "Crédito e Cobrança",
+  "whoToBe": "Crédito e Cobrança",
+  "howAsIs": "1. Consultar bureau em portal externo\n2. Anotar resultado no e-mail",
+  "howToBe": "1. Sistema SAP: consultar bureau via API\n2. Se score abaixo do mínimo, exigir garantia; senão, aprovar crédito\n3. Registrar decisão no cadastro"
+ },
+ "REQ-005": {
+  "who": "Atendimento",
+  "whoToBe": "Atendimento",
+  "howAsIs": "1. Receber a solicitação\n2. Agendar vistoria\n3. Aprovar manualmente\n4. Ligar",
+  "howToBe": "1. Receber a solicitação de ligação\n2. Operações de Campo: realizar a vistoria\n3. Se a vistoria é aprovada, Sistema SAP: criar o ponto de entrega e o contrato; senão, encerrar solicitação\n4. Ligar o fornecimento"
+ },
+ "REQ-011": {
+  "who": "Operações de Campo",
+  "whoToBe": "Operações de Campo",
+  "howAsIs": "1. Receber ordem impressa\n2. Instalar medidor\n3. Anotar número da série em papel\n4. Digitar no escritório",
+  "howToBe": "1. Receber ordem de serviço no app\n2. Instalar medidor\n3. Ler número de série pelo QR code\n4. Sistema SAP: atualizar o ponto de entrega\n5. Fotografar instalação"
+ },
+ "REQ-019": {
+  "who": "Operações de Campo",
+  "whoToBe": "Operações de Campo",
+  "howAsIs": "1. Ler o medidor\n2. Anotar em papel\n3. Digitar no escritório",
+  "howToBe": "1. Ler o medidor no app\n2. Se a leitura é implausível, Medição: validar com nova visita; senão, aceitar leitura\n3. Sistema SAP: gravar a leitura"
+ }
+}

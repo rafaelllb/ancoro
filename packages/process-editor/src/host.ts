@@ -11,6 +11,8 @@
  *   host   -> editor { ps:1, kind:'event', type:'lang', payload:{ lang } }
  * Pedidos: process.load · process.save {baseRev,model} · process.saveAs {name,model} · versions.list ·
  *          versions.snapshot {label} · versions.get {version} · requirements.search {q}
+ *          [2026-10-30] Criado: attachments.list {elementId} · attachments.upload {elementId,name,data:ArrayBuffer} · attachments.content {id} -> {data,mimeType}
+ *          · attachments.download {id} (o HOST dispara o download) · attachments.remove {id} — anexos por elemento; o token continua só no host
  *          [2026-10-19] Removido: versions.restore — gravava versão automaticamente; restaurar agora é versions.get + rascunho local + Salvar manual
  * Segurança: só aceita mensagens de `window.parent` cuja origem é a informada em `?origin=` (e só envia para ela).
  */
@@ -32,10 +34,10 @@ let seq = 0;
 const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }>();
 const post = (msg: Record<string, unknown>) => window.parent.postMessage({ ps: 1, ...msg }, parentOrigin);
 
-export function rpc<T = unknown>(type: string, payload?: unknown): Promise<T> {
+export function rpc<T = unknown>(type: string, payload?: unknown, timeoutMs = 30_000): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const id = ++seq;
-    const timer = setTimeout(() => { pending.delete(id); reject(new HostError('timeout', 0)); }, 30_000);
+    const timer = setTimeout(() => { pending.delete(id); reject(new HostError('timeout', 0)); }, timeoutMs);
     pending.set(id, { resolve: resolve as (v: unknown) => void, reject, timer });
     post({ kind: 'req', id, type, payload });
   });

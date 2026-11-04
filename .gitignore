@@ -76,3 +76,6 @@ apps/standalone/public/editor/
 apps/standalone/dist/
 apps/standalone/data/
 apps/standalone/e2e/out/
+
+# [2026-10-30] anexos do Process Studio (storage local de dev/demo/on-premise) — nunca versionar
+backend/data/attachments/

@@ -1,8 +1,8 @@
 /**
  * Configuração de internacionalização (i18n) do Ancoro — react-i18next.
  *
- * Filosofia (analogia SAP): o frontend é a camada de apresentação e traduz
- * tudo que o usuário vê. O backend permanece em PT (o "alemão" do SAP) e os
+ * Filosofia: o frontend é a camada de apresentação e traduz
+ * tudo que o usuário vê. O backend permanece em PT (idioma canônico) e os
  * códigos/enums internos (PENDING, ISU, DISCOVERY) nunca mudam — apenas o
  * label exibido é traduzido via namespace `enums`.
  *
