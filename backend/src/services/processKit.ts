@@ -10,6 +10,12 @@ export interface KitModel {
   nodes: Array<{ id: string; name: string; requirementRefs: string[]; calledProcessId?: string }>
   [k: string]: unknown
 }
+/** Passo/processo no contrato do JSON intermediário (ver packages/process-core/src/generate.ts) */
+export interface GenProcessLike { name: string; steps: unknown[]; edges: unknown[]; children: Record<string, unknown> }
+export interface GenRequirementInput {
+  reqId: string; shortDesc: string; who?: string | null; what?: string | null; howAsIs?: string | null; howToday?: string | null
+  whoToBe?: string | null; whatToBe?: string | null; howToBe?: string | null
+}
 export interface ProcessKit {
   KIT_VERSION: number
   normalizeModel(input: unknown): KitModel
@@ -20,6 +26,10 @@ export interface ProcessKit {
   newProcessModel(existingKeys: string[], name: string): KitModel
   exportBpmn(model: KitModel): Promise<string>
   demoProcess(reqIds: string[], id?: string, name?: string): KitModel
+  /** [2026-10-27] geração automática: valida a saída do LLM / gera determinístico / monta os modelos (principal + subprocessos) */
+  parseGenerated(input: unknown): GenProcessLike
+  generateFromRequirements(reqs: GenRequirementInput[], view: 'AS_IS' | 'TO_BE', name?: string): GenProcessLike
+  buildGeneratedModels(gen: GenProcessLike, existingKeys: string[]): KitModel[]
   publishPortal(opts: Record<string, unknown>): Promise<{ zip: Uint8Array; report: unknown; versionsFile: string; manifest: unknown }>
 }
 
