@@ -12,7 +12,8 @@
     "build:ancoro": "tsc --noEmit && vite build --outDir ../../frontend/public/process-studio --emptyOutDir",
     "typecheck": "tsc --noEmit",
     "e2e": "node e2e/phase2.mjs",
-    "e2e:ancoro": "node e2e/ancoro-fullstack.mjs"
+    "e2e:ancoro": "node e2e/ancoro-fullstack.mjs",
+    "e2e:attachments": "node e2e/ancoro-attachments.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
