@@ -229,3 +229,161 @@ describe('assinatura (liga/desliga)', () => {
     expect((await request(app).get(P()).set(as('admin'))).status).toBe(200)
   })
 })
+
+// [2026-10-27] Criado: geração automática de processo a partir de requisitos (motor determinístico; o LLM é mockado por ausência de chave) — Rafael Brito
+describe('geração automática a partir de requisitos', () => {
+  let ids: string[] = []
+  beforeAll(async () => {
+    delete process.env.ANTHROPIC_API_KEY
+    await prisma.requirement.update({
+      where: { projectId_reqId: { projectId, reqId: 'REQ-001' } },
+      data: { who: 'Comercial', howToBe: '1. Consultar crédito\n2. Se crédito aprovado, criar contrato; senão, encerrar proposta\n3. Notificar cliente' },
+    })
+    ids = (await prisma.requirement.findMany({ where: { projectId, reqId: { in: ['REQ-001', 'REQ-002'] } }, select: { id: true } })).map((r) => r.id)
+  })
+
+  it('generation-info: sem chave => llm=false', async () => {
+    const r = await request(app).get(`${P()}/generation-info`).set(as('consultant'))
+    expect(r.status).toBe(200)
+    expect(r.body.llm).toBe(false)
+  })
+
+  it('gera processo com raias, decisão e vínculos aos requisitos; projeção de links criada', async () => {
+    const r = await request(app).post(`${P()}/generate`).set(as('consultant')).send({ requirementIds: ids, view: 'TO_BE' })
+    expect(r.status).toBe(201)
+    expect(r.body.engine).toBe('deterministic')
+    const got = await request(app).get(`${P()}/${r.body.process.id}`).set(as('consultant'))
+    expect(got.body.model.lanes.length).toBeGreaterThanOrEqual(1)
+    expect(got.body.model.nodes.some((n: any) => n.kind === 'gateway' && n.name === 'Crédito aprovado?')).toBe(true)
+    expect(got.body.model.nodes.every((n: any) => n.bounds)).toBe(true) // já vem com layout
+    expect(await prisma.processRequirementLink.count({ where: { processId: r.body.process.id } })).toBeGreaterThan(0)
+    expect(r.body.unresolvedRefs).toBe(0)
+  })
+
+  it('requisito de outro projeto => 404; CLIENT => 403; sem ids => 400', async () => {
+    const foreign = await prisma.requirement.create({ data: { ...req5w2h('REQ-X'), projectId: otherProjectId } })
+    expect((await request(app).post(`${P()}/generate`).set(as('consultant')).send({ requirementIds: [foreign.id] })).status).toBe(404)
+    expect((await request(app).post(`${P()}/generate`).set(as('client')).send({ requirementIds: ids })).status).toBe(403)
+    expect((await request(app).post(`${P()}/generate`).set(as('consultant')).send({ requirementIds: [] })).status).toBe(400)
+  })
+})
+
+// [2026-10-30] Criado: anexos por elemento BPMN — upload/validação/isolamento/permissões/limpeza de blobs — Rafael Brito
+describe('anexos por elemento', () => {
+  // PNG 1x1 válido e PDF mínimo; os "falsos" provam que a assinatura binária manda, não a extensão
+  const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
+  const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF')
+  let pid = ''
+  let elementId = ''
+  let dir = ''
+  const A = () => `${P()}/${pid}/attachments`
+  const up = (who: string, name: string, body: Buffer, el = elementId, proc = () => pid) =>
+    request(app).post(`${P()}/${proc()}/attachments?elementId=${encodeURIComponent(el)}&name=${encodeURIComponent(name)}`)
+      .set(as(who)).set('Content-Type', 'application/octet-stream').send(body)
+  const firstNode = async (id: string) => (await request(app).get(`${P()}/${id}`).set(as('consultant'))).body.model.nodes[0].id as string
+
+  beforeAll(async () => {
+    const { mkdtempSync } = require('fs'); const { tmpdir } = require('os'); const { join } = require('path')
+    dir = mkdtempSync(join(tmpdir(), 'att-'))
+    const { LocalDiskStorage, setAttachmentStorage } = require('../services/attachmentStorage')
+    setAttachmentStorage(new LocalDiskStorage(dir))
+    pid = (await request(app).post(P()).set(as('consultant')).send({ name: 'Com anexos' })).body.id
+    elementId = await firstNode(pid)
+  })
+  afterAll(() => {
+    require('fs').rmSync(dir, { recursive: true, force: true })
+    require('../services/attachmentStorage').setAttachmentStorage(null)
+  })
+
+  let imgId = ''
+  it('anexa imagem a um elemento, lista e baixa os mesmos bytes (inline, nosniff, sandbox)', async () => {
+    const r = await up('consultant', 'tela.png', PNG)
+    expect(r.status).toBe(201)
+    expect(r.body.mimeType).toBe('image/png')
+    imgId = r.body.id
+    const l = await request(app).get(`${A()}?elementId=${elementId}`).set(as('client'))
+    expect(l.status).toBe(200)
+    expect(l.body.attachments).toHaveLength(1)
+    expect(l.body.attachments[0].canDelete).toBe(false)
+    const d = await request(app).get(`${A()}/${imgId}/content`).set(as('client'))
+      .buffer(true).parse((res, cb) => { const c: Buffer[] = []; res.on('data', (x: Buffer) => c.push(x)); res.on('end', () => cb(null, Buffer.concat(c))) })
+    expect(d.status).toBe(200)
+    expect(Buffer.compare(d.body, PNG)).toBe(0)
+    expect(d.headers['content-disposition']).toMatch(/^inline/)
+    expect(d.headers['x-content-type-options']).toBe('nosniff')
+    expect(d.headers['content-security-policy']).toContain('sandbox')
+  })
+
+  it('PDF baixa como attachment; anexo ao processo inteiro (__process) é aceito', async () => {
+    const r = await up('consultant', 'norma.pdf', PDF, '__process')
+    expect(r.status).toBe(201)
+    const d = await request(app).get(`${A()}/${r.body.id}/content`).set(as('client'))
+    expect(d.headers['content-disposition']).toMatch(/^attachment/)
+  })
+
+  it('recusa: conteúdo que não bate com a extensão, SVG/HTML/EXE, vazio, elemento inexistente', async () => {
+    expect((await up('consultant', 'falso.png', Buffer.from('MZ\x90\x00 executavel'))).status).toBe(415)
+    expect((await up('consultant', 'x.svg', Buffer.from('<svg onload="alert(1)"/>'))).status).toBe(415)
+    expect((await up('consultant', 'x.html', Buffer.from('<script>1</script>'))).status).toBe(415)
+    expect((await up('consultant', 'x.png', PDF)).status).toBe(415) // PDF com extensão de imagem
+    expect((await up('consultant', 'vazio.txt', Buffer.alloc(0))).status).toBe(415)
+    expect((await up('consultant', 'a.png', PNG, 'nao-existe')).status).toBe(400)
+  })
+
+  it('nome malicioso é neutralizado (sem caminho) e a chave no storage nunca deriva dele', async () => {
+    const r = await up('consultant', '../../etc/passwd.png', PNG)
+    expect(r.status).toBe(201)
+    expect(r.body.fileName).toBe('passwd.png')
+    const row = await prisma.processAttachment.findUniqueOrThrow({ where: { id: r.body.id } })
+    expect(row.storageKey).not.toContain('passwd')
+  })
+
+  it('CLIENT não envia; não-membro não lê; outro projeto dá 404; sem token 401', async () => {
+    expect((await up('client', 'a.png', PNG)).status).toBe(403)
+    expect((await request(app).get(A()).set(as('outsider'))).status).toBe(403)
+    expect((await request(app).get(`/api/projects/${otherProjectId}/processes/${pid}/attachments`).set(as('admin'))).status).toBe(404)
+    expect((await request(app).get(`${A()}/${imgId}/content`)).status).toBe(401)
+  })
+
+  it('exclusão: só quem enviou (ou ADMIN); remove linha E blob', async () => {
+    expect((await request(app).delete(`${A()}/${imgId}`).set(as('consultant2'))).status).toBe(403)
+    const key = (await prisma.processAttachment.findUniqueOrThrow({ where: { id: imgId } })).storageKey
+    const { existsSync } = require('fs'); const { join } = require('path')
+    expect(existsSync(join(dir, key))).toBe(true)
+    expect((await request(app).delete(`${A()}/${imgId}`).set(as('consultant'))).status).toBe(204)
+    expect(existsSync(join(dir, key))).toBe(false)
+    expect(await prisma.processAttachment.count({ where: { id: imgId } })).toBe(0)
+  })
+
+  it('arquivo adulterado no storage => 500 de integridade (hash não confere)', async () => {
+    const r = await up('consultant', 'ok.png', PNG)
+    const row = await prisma.processAttachment.findUniqueOrThrow({ where: { id: r.body.id } })
+    require('fs').writeFileSync(require('path').join(dir, row.storageKey), Buffer.concat([PNG, Buffer.from('x')]))
+    expect((await request(app).get(`${A()}/${r.body.id}/content`).set(as('client'))).status).toBe(500)
+  })
+
+  it('excluir o processo apaga os blobs também', async () => {
+    const id = (await request(app).post(P()).set(as('consultant')).send({ name: 'Descartável' })).body.id
+    const r = await up('consultant', 'a.png', PNG, await firstNode(id), () => id)
+    const key = (await prisma.processAttachment.findUniqueOrThrow({ where: { id: r.body.id } })).storageKey
+    expect((await request(app).delete(`${P()}/${id}`).set(as('consultant'))).status).toBe(204)
+    expect(require('fs').existsSync(require('path').join(dir, key))).toBe(false)
+  })
+
+  it('limites: por arquivo (413) e por elemento (409)', async () => {
+    process.env.ATTACHMENT_MAX_FILE_MB = '1'
+    process.env.ATTACHMENT_MAX_PER_ELEMENT = '2'
+    try {
+      const big = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(1024 * 1024 + 10, 0x41)])
+      expect((await up('consultant', 'grande.pdf', big)).status).toBe(413)
+      const fresh = (await request(app).post(P()).set(as('consultant')).send({ name: 'Limite' })).body.id
+      const fel = await firstNode(fresh)
+      expect((await up('consultant', '1.png', PNG, fel, () => fresh)).status).toBe(201)
+      expect((await up('consultant', '2.png', PNG, fel, () => fresh)).status).toBe(201)
+      expect((await up('consultant', '3.png', PNG, fel, () => fresh)).status).toBe(409)
+    } finally {
+      delete process.env.ATTACHMENT_MAX_FILE_MB
+      delete process.env.ATTACHMENT_MAX_PER_ELEMENT
+    }
+  })
+})

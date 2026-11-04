@@ -13,11 +13,15 @@ import { prisma } from '../index'
 import { authenticate } from '../middleware/auth'
 import { requireCapability, requireProjectAccess } from '../middleware/permissions'
 import {
-  processCreateSchema, processImportSchema, processPublishSchema, processSaveSchema, processSnapshotSchema,
+  processCreateSchema, processGenerateSchema, processImportSchema, processPublishSchema, processSaveSchema, processSnapshotSchema,
 } from '../schemas'
 import { canDeleteProcess, hasCapability } from '../utils/roleCapabilities'
 import { isProcessStudioEnabled } from '../config/entitlements'
 import { getProcessKit, KitModel, ProcessKitUnavailableError } from '../services/processKit'
+import { generateWithLlm, isLlmConfigured } from '../services/processGenerator'
+import { createHash, randomUUID } from 'crypto'
+import { getAttachmentStorage } from '../services/attachmentStorage'
+import { classify, limits, sanitizeFileName } from '../services/attachmentPolicy'
 
 const router = express.Router()
 router.use(authenticate)
@@ -168,14 +172,78 @@ router.get('/projects/:projectId/requirements/:requirementId/processes', ...acce
 /** Busca de requisitos para o seletor do editor (por reqId/descrição). */
 router.get('/projects/:projectId/process-requirements', ...access, h(async (req, res) => {
   const q = String(req.query.q ?? '').trim()
+  // [2026-10-27] limit opcional (padrão 30, máx. 200): o diálogo de geração lista os requisitos do projeto
+  const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 30))
   const rows = await prisma.requirement.findMany({
     where: { projectId: req.params.projectId, ...(q && { OR: [{ reqId: { contains: q } }, { shortDesc: { contains: q } }] }) },
-    select: { id: true, reqId: true, shortDesc: true, module: true }, orderBy: { reqId: 'asc' }, take: 30,
+    select: { id: true, reqId: true, shortDesc: true, module: true }, orderBy: { reqId: 'asc' }, take: limit,
   })
   res.json({ requirements: rows })
 }))
 
 // ---------------------------------------------------------------- CRUD
+
+// [2026-10-27] Criado: geração automática de processo a partir de requisitos — Rafael Brito
+// Híbrido: LLM (Claude) se houver ANTHROPIC_API_KEY, senão gerador determinístico. A saída é sempre um RASCUNHO editável
+// (um processo novo por geração; subprocessos viram processos filhos). O texto dos requisitos só sai do servidor no modo LLM.
+router.get(`${BASE}/generation-info`, ...editing, h(async (_req, res) => {
+  // [2026-10-27] sem `model`: o nome do modelo/fornecedor não sai do servidor (a UI não o exibe)
+  res.json({ llm: isLlmConfigured() })
+}))
+
+router.post(`${BASE}/generate`, ...editing, h(async (req, res) => {
+  const parsed = processGenerateSchema.safeParse(req.body)
+  if (!parsed.success) return bad(res, zmsg(parsed.error))
+  const { projectId } = req.params
+  const { requirementIds, view, name, engine } = parsed.data
+  const ids = [...new Set(requirementIds)]
+  const reqs = await prisma.requirement.findMany({
+    where: { projectId, id: { in: ids } },
+    select: { reqId: true, shortDesc: true, who: true, what: true, howAsIs: true, howToday: true, whoToBe: true, whatToBe: true, howToBe: true },
+  })
+  if (reqs.length !== ids.length) return res.status(404).json({ error: 'Not Found', message: 'Algum requisito não pertence a este projeto' })
+
+  const kit = getProcessKit()
+  const warnings: string[] = []
+  let used: 'llm' | 'deterministic' = 'deterministic'
+  let gen: ReturnType<typeof kit.generateFromRequirements> | null = null
+  if (engine === 'auto' && isLlmConfigured()) {
+    try {
+      gen = await generateWithLlm(reqs, view, name)
+      used = 'llm'
+    } catch (e) {
+      console.error('[processes.generate] LLM falhou, usando o gerador determinístico:', e instanceof Error ? e.message : e)
+      warnings.push('llm-failed')
+    }
+  }
+  if (!gen) gen = kit.generateFromRequirements(reqs, view, name)
+  if (name) gen = { ...gen, name }
+
+  const existing = (await prisma.businessProcess.findMany({ where: { projectId }, select: { key: true } })).map((p) => p.key)
+  const checked = kit.buildGeneratedModels(gen, existing).map((m) => checkModel(m, String(m.id)))
+  const broken = checked.find((c) => c.integrity.length)
+  if (broken) return res.status(422).json({ error: 'Invalid model', message: broken.integrity[0]!.message, issues: broken.integrity })
+
+  const created = await prisma.$transaction(async (tx) => {
+    const rows = []
+    let unresolved = 0
+    for (const { model } of checked) {
+      const p = await tx.businessProcess.create({
+        data: { projectId, key: String(model.id), name: model.name, model: JSON.stringify(model), createdById: req.user!.userId, updatedById: req.user!.userId },
+      })
+      unresolved += (await rebuildLinks(tx, p.id, projectId, model)).length
+      rows.push(p)
+    }
+    return { rows, unresolved }
+  })
+  const [main, ...children] = created.rows
+  res.status(201).json({
+    process: describe(main!, req), children: children.map((c) => describe(c, req)),
+    engine: used, warnings, unresolvedRefs: created.unresolved,
+    issues: kit.qualityIssues(checked[0]!.model),
+  })
+}))
+
 
 router.post(BASE, ...editing, h(async (req, res) => {
   const parsed = processCreateSchema.safeParse(req.body)
@@ -229,7 +297,10 @@ router.delete(`${BASE}/:pid`, requireProjectAccess, h(async (req, res) => {
   if (!canDeleteProcess(req.user?.role, req.user?.userId, p.createdById)) {
     return res.status(403).json({ error: 'Forbidden', message: 'Você só pode excluir processos que você criou' })
   }
+  // [2026-10-30] Alterado: a cascata do banco apaga as linhas de anexo mas não os bytes — coleta as chaves antes e remove os blobs depois
+  const blobKeys = (await prisma.processAttachment.findMany({ where: { processId: p.id }, select: { storageKey: true } })).map((a) => a.storageKey)
   await prisma.businessProcess.delete({ where: { id: p.id } })
+  await purgeBlobs(blobKeys)
   res.status(204).end()
 }))
 
@@ -353,4 +424,132 @@ router.post(`${BASE}/publish`, requireProjectAccess, requireCapability('canPubli
   res.send(Buffer.from(out.zip))
 }))
 
+// ---------------------------------------------------------------- anexos por elemento (repositório)
+// [2026-10-30] Criado: arquivos/imagens anexados a elementos BPMN — Rafael Brito
+// Upload = corpo BINÁRIO cru (sem multipart: evita dependência e buffer duplo) com ?elementId=&name=. Os metadados vão no query string
+// (e não em header customizado) porque o CORS do backend só libera Content-Type/Authorization. Download sempre pela API autenticada:
+// não existe URL pública do arquivo (o editor roda em iframe sem token; o host busca e repassa os bytes).
+
+const WHOLE_PROCESS = '__process'
+const ATT = `${BASE}/:pid/attachments`
+
+/** Remove blobs sem derrubar a requisição: uma falha aqui deixa objeto órfão (custo), nunca dado exposto. */
+async function purgeBlobs(keys: string[]) {
+  const storage = getAttachmentStorage()
+  await Promise.all(keys.map((k) => storage.delete(k).catch((e) => console.error('[attachments] falha ao remover blob', k, e instanceof Error ? e.message : e))))
+}
+
+/** ids de elementos aceitos como alvo de anexo: nós, fluxos, lanes, participantes e o processo inteiro. */
+function elementIdsOf(modelJson: string): Set<string> {
+  const m = parseJson(modelJson) as Record<string, Array<{ id?: string }> | undefined>
+  const ids = new Set<string>([WHOLE_PROCESS])
+  for (const k of ['nodes', 'flows', 'lanes', 'participants']) for (const e of m[k] ?? []) if (e?.id) ids.add(e.id)
+  return ids
+}
+
+/** Lê o corpo cru com limite próprio; estouro vira 413 JSON (e não o HTML padrão do Express). */
+const rawBody = (req: Request, res: Response, next: NextFunction) => {
+  express.raw({ type: () => true, limit: limits().maxFileBytes })(req, res, (err?: unknown) => {
+    if ((err as { type?: string } | undefined)?.type === 'entity.too.large') {
+      return res.status(413).json({ error: 'Payload Too Large', message: `Arquivo acima do limite de ${limits().maxFileBytes / 1024 / 1024} MB` })
+    }
+    next(err)
+  })
+}
+
+router.get(ATT, ...access, h(async (req, res) => {
+  const { projectId, pid } = req.params
+  const p = await loadProcess(projectId, pid)
+  if (!p) return notFound(res)
+  const elementId = typeof req.query.elementId === 'string' ? req.query.elementId : undefined
+  const [rows, used] = await Promise.all([
+    prisma.processAttachment.findMany({ where: { processId: p.id, ...(elementId && { elementId }) }, orderBy: { createdAt: 'desc' } }),
+    prisma.processAttachment.aggregate({ where: { process: { projectId } }, _sum: { size: true } }),
+  ])
+  const names = new Map(
+    (await prisma.user.findMany({ where: { id: { in: [...new Set(rows.map((r) => r.uploadedById).filter((x): x is string => !!x))] } }, select: { id: true, name: true } })).map((u) => [u.id, u.name]),
+  )
+  const lim = limits()
+  res.json({
+    attachments: rows.map((a) => ({
+      id: a.id, elementId: a.elementId, fileName: a.fileName, mimeType: a.mimeType, size: a.size, sha256: a.sha256,
+      uploadedById: a.uploadedById, uploadedByName: a.uploadedById ? names.get(a.uploadedById) ?? null : null, createdAt: a.createdAt,
+      canDelete: canDeleteProcess(req.user?.role, req.user?.userId, a.uploadedById),
+    })),
+    quota: { usedBytes: used._sum.size ?? 0, maxBytes: lim.maxProjectBytes, maxFileBytes: lim.maxFileBytes, maxPerElement: lim.maxPerElement },
+  })
+}))
+
+router.post(ATT, ...editing, rawBody, h(async (req, res) => {
+  const { projectId, pid } = req.params
+  const p = await loadProcess(projectId, pid)
+  if (!p) return notFound(res)
+  const elementId = String(req.query.elementId ?? '')
+  const fileName = sanitizeFileName(String(req.query.name ?? ''))
+  if (!elementId || !elementIdsOf(p.model).has(elementId)) return bad(res, 'Elemento inexistente neste processo (salve o processo antes de anexar a elementos novos)')
+  const body = req.body
+  if (!Buffer.isBuffer(body)) return bad(res, 'Envie o arquivo como corpo binário (application/octet-stream)')
+  const verdict = classify(body, fileName)
+  if (!verdict.ok) return res.status(415).json({ error: 'Unsupported Media Type', message: verdict.reason })
+
+  const lim = limits()
+  const [perElement, used] = await Promise.all([
+    prisma.processAttachment.count({ where: { processId: p.id, elementId } }),
+    prisma.processAttachment.aggregate({ where: { process: { projectId } }, _sum: { size: true } }),
+  ])
+  if (perElement >= lim.maxPerElement) return res.status(409).json({ error: 'Limit', message: `Limite de ${lim.maxPerElement} anexos por elemento atingido` })
+  if ((used._sum.size ?? 0) + body.length > lim.maxProjectBytes) return res.status(413).json({ error: 'Quota', message: 'Cota de armazenamento do projeto excedida' })
+
+  const storageKey = `${projectId}/${p.id}/${randomUUID()}`
+  await getAttachmentStorage().put(storageKey, body, verdict.type.mime)
+  try {
+    const row = await prisma.processAttachment.create({
+      data: {
+        processId: p.id, elementId, fileName, mimeType: verdict.type.mime, size: body.length,
+        sha256: createHash('sha256').update(body).digest('hex'), storageKey, uploadedById: req.user!.userId,
+      },
+    })
+    res.status(201).json({ id: row.id, elementId, fileName, mimeType: row.mimeType, size: row.size, sha256: row.sha256, createdAt: row.createdAt })
+  } catch (e) {
+    await purgeBlobs([storageKey]) // sem linha no banco o blob seria inalcançável
+    throw e
+  }
+}))
+
+router.get(`${ATT}/:aid/content`, ...access, h(async (req, res) => {
+  const { projectId, pid, aid } = req.params
+  const p = await loadProcess(projectId, pid)
+  if (!p) return notFound(res)
+  const a = await prisma.processAttachment.findFirst({ where: { id: aid, processId: p.id } })
+  if (!a) return res.status(404).json({ error: 'Not Found', message: 'Anexo não encontrado' })
+  const data = await getAttachmentStorage().get(a.storageKey)
+  if (createHash('sha256').update(data).digest('hex') !== a.sha256) {
+    console.error('[attachments] integridade violada', a.id)
+    return res.status(500).json({ error: 'Integrity', message: 'O arquivo armazenado não confere com o registro (integridade violada)' })
+  }
+  // Entrega defensiva: tipo vem do servidor, nosniff, sandbox total e, exceto imagens raster, sempre como download.
+  const inline = a.mimeType.startsWith('image/') && req.query.download !== '1'
+  res.setHeader('Content-Type', a.mimeType)
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox")
+  res.setHeader('Cache-Control', 'private, max-age=300')
+  res.setHeader('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(a.fileName)}`)
+  res.send(data)
+}))
+
+router.delete(`${ATT}/:aid`, ...editing, h(async (req, res) => {
+  const { projectId, pid, aid } = req.params
+  const p = await loadProcess(projectId, pid)
+  if (!p) return notFound(res)
+  const a = await prisma.processAttachment.findFirst({ where: { id: aid, processId: p.id } })
+  if (!a) return res.status(404).json({ error: 'Not Found', message: 'Anexo não encontrado' })
+  if (!canDeleteProcess(req.user?.role, req.user?.userId, a.uploadedById)) {
+    return res.status(403).json({ error: 'Forbidden', message: 'Você só pode excluir anexos que você enviou' })
+  }
+  await prisma.processAttachment.delete({ where: { id: a.id } })
+  await purgeBlobs([a.storageKey])
+  res.status(204).end()
+}))
+
 export default router
+
