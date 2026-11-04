@@ -11,7 +11,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { processesAPI } from '../services/api'
+import { processesAPI, type ProcessGenerateInput } from '../services/api'
 
 const KEY = 'processes'
 export const processKeys = {
@@ -56,6 +56,31 @@ export function useCreateProcess(projectId: string) {
     mutationFn: async (name: string) => (await processesAPI.create(projectId, { name })).data,
     onSuccess: () => { void qc.invalidateQueries({ queryKey: processKeys.all(projectId) }) },
     onError: (e) => toast.error(errorMessage(e, t('errors.create'))),
+  })
+}
+
+/** [2026-10-27] Criado: motor disponível (IA se houver chave no servidor; senão regras) */
+export function useGenerationInfo(projectId: string) {
+  return useQuery({
+    queryKey: [KEY, projectId, 'gen-info'] as const,
+    queryFn: async () => (await processesAPI.generationInfo(projectId)).data,
+    enabled: !!projectId,
+    staleTime: 5 * 60_000,
+  })
+}
+
+/** [2026-10-27] Criado: gera um processo (rascunho) a partir de requisitos */
+export function useGenerateProcess(projectId: string) {
+  const qc = useQueryClient()
+  const { t } = useTranslation('processes')
+  return useMutation({
+    mutationFn: async (input: ProcessGenerateInput) => (await processesAPI.generate(projectId, input)).data,
+    onSuccess: (r) => {
+      void qc.invalidateQueries({ queryKey: processKeys.all(projectId) })
+      toast.success(t(r.engine === 'llm' ? 'toast.generatedAi' : 'toast.generatedRules', { count: r.children.length }))
+      if (r.warnings.includes('llm-failed')) toast(t('toast.generateFallback'), { icon: '⚠️' })
+    },
+    onError: (e) => toast.error(errorMessage(e, t('errors.generate'))),
   })
 }
 
@@ -171,6 +196,25 @@ export function useProcessStudioBridge({ projectId, processId, iframe, onNavigat
         // [2026-10-19] Alterado: 'versions.restore' (gravava nova versão sozinho) -> 'versions.get' (só leitura).
         // O editor carrega o conteúdo como rascunho e o usuário salva manualmente — Rafael Brito
         case 'versions.get': return (await processesAPI.getVersion(projectId, processId, p.version)).data
+        // [2026-10-30] Criado: anexos por elemento. Os bytes passam pelo host (que tem o token); o editor só recebe ArrayBuffer/metadados.
+        case 'attachments.list': return (await processesAPI.listAttachments(projectId, processId, p?.elementId)).data
+        case 'attachments.upload': {
+          if (!(p?.data instanceof ArrayBuffer)) throw Object.assign(new Error('invalid payload'), { status: 400 })
+          return (await processesAPI.uploadAttachment(projectId, processId, String(p.elementId), String(p.name), p.data)).data
+        }
+        case 'attachments.content': {
+          const r = await processesAPI.attachmentContent(projectId, processId, String(p.id))
+          return { data: r.data, mimeType: String(r.headers['content-type'] ?? 'application/octet-stream') }
+        }
+        case 'attachments.download': {
+          // o download é disparado AQUI (página-pai): iframe isolado não deve criar links/blobs com dados do usuário
+          const r = await processesAPI.attachmentContent(projectId, processId, String(p.id), true)
+          const cd = String(r.headers['content-disposition'] ?? '')
+          const name = decodeURIComponent(/filename\*=UTF-8''([^;]+)/i.exec(cd)?.[1] ?? 'anexo')
+          downloadBlob(new Blob([r.data], { type: String(r.headers['content-type'] ?? 'application/octet-stream') }), name)
+          return null
+        }
+        case 'attachments.remove': await processesAPI.deleteAttachment(projectId, processId, String(p.id)); return null
         case 'requirements.search': return (await processesAPI.searchRequirements(projectId, p?.q ?? '')).data
         default: throw Object.assign(new Error(`unknown request: ${type}`), { status: 400 })
       }
