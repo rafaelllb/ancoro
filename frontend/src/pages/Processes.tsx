@@ -20,6 +20,7 @@ import {
 import ProjectSwitcher from '../components/ProjectSwitcher'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import ConfirmDialog from '../components/ConfirmDialog'
+import GenerateProcessDialog from '../components/GenerateProcessDialog'
 import type { ProcessSummary } from '../services/api'
 
 /** URL do editor compilado (npm run build:process-studio gera em public/process-studio). Sobrescrevível para apontar a outro host. */
@@ -52,6 +53,7 @@ export default function Processes() {
   const [toDelete, setToDelete] = useState<ProcessSummary | null>(null)
   const [showUncovered, setShowUncovered] = useState(false)
   const [publishOpen, setPublishOpen] = useState(false)
+  const [generateOpen, setGenerateOpen] = useState(false)
   const [publishLabel, setPublishLabel] = useState('')
   const [publishPassword, setPublishPassword] = useState('')
   const [timedOut, setTimedOut] = useState(false)
@@ -231,6 +233,11 @@ export default function Processes() {
                     {t('processes:list.create')}
                   </button>
                 </form>
+                {/* [2026-10-27] Criado: geração automática de processo a partir de requisitos (IA ou regras) — Rafael Brito */}
+                <button type="button" data-testid="generate-open" onClick={() => setGenerateOpen(true)}
+                  className="w-full rounded-lg border border-ancoro-teal-400 bg-ancoro-teal-50 px-3 py-1.5 text-sm text-ancoro-teal-700 hover:bg-ancoro-teal-100">
+                  {t('processes:list.generate')}
+                </button>
                 <button type="button" onClick={() => fileRef.current?.click()} disabled={importMutation.isPending}
                   className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
                   {t('processes:list.import')}
@@ -313,6 +320,15 @@ export default function Processes() {
           deleteMutation.mutate(id, { onSuccess: () => { setToDelete(null); if (id === processId) navigate('/processes') } })
         }}
       />
+
+      {generateOpen && (
+        <GenerateProcessDialog
+          projectId={projectId}
+          uncoveredIds={new Set((coverage?.uncovered ?? []).map((r) => r.id))}
+          onClose={() => setGenerateOpen(false)}
+          onGenerated={(id) => { setGenerateOpen(false); navigate(`/processes/${id}`) }}
+        />
+      )}
 
       {publishOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" data-testid="publish-dialog">
