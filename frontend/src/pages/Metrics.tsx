@@ -81,7 +81,7 @@ export default function Metrics() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap justify-between items-center gap-3">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="Ancoro" className="h-10" />
             <div>
@@ -89,7 +89,7 @@ export default function Metrics() {
               <p className="text-sm text-gray-600">{t('metrics:subtitle')}</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <ProjectSwitcher
               projects={projects}
               currentProject={currentProject}

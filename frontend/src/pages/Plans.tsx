@@ -95,7 +95,7 @@ export default function Plans() {
   return (
     <div className="min-h-screen ancoro-shell">
       {/* Topo */}
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 sm:px-8 lg:px-12">
+      <header className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-8 sm:py-6 sm:px-8 lg:px-12">
         <Link to="/" className="flex items-center gap-3 text-ancoro-navy-900">
           <img src="/logo-new.png" alt="Ancoro" className="h-10 w-auto" />
           <span className="text-lg font-bold">Ancoro</span>

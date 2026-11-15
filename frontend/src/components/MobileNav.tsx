@@ -54,7 +54,7 @@ export function MobileNav({ items, userName, userRole, onLogout }: MobileNavProp
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+        className="xl:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
         aria-label={t('nav:openMenu')}
         aria-expanded={isOpen}
       >
@@ -80,7 +80,7 @@ export function MobileNav({ items, userName, userRole, onLogout }: MobileNavProp
           {/* Overlay */}
           {isOpen && (
             <div
-              className="fixed inset-0 z-[55] bg-black/50 lg:hidden"
+              className="fixed inset-0 z-[55] bg-black/50 xl:hidden"
               onClick={() => setIsOpen(false)}
               aria-hidden="true"
             />
@@ -89,7 +89,7 @@ export function MobileNav({ items, userName, userRole, onLogout }: MobileNavProp
           {/* Drawer lateral */}
           <div
             className={`
-              fixed top-0 left-0 z-[60] h-full w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:hidden
+              fixed top-0 left-0 z-[60] h-full w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out xl:hidden
               ${isOpen ? 'translate-x-0' : '-translate-x-full'}
             `}
             role="dialog"

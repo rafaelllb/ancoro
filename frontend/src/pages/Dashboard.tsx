@@ -94,9 +94,9 @@ export default function Dashboard() {
   return (
     <div className="ancoro-shell min-h-screen bg-transparent">
       <header className="sticky top-0 z-20 border-b border-white/40 bg-white/70 backdrop-blur-xl">
-        <div className="flex w-full items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-3 sm:px-6 lg:px-8">
           {/* LEFT: Logo + Texto + ProjectSwitcher */}
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <MobileNav
               items={navItems.filter((item) => {
                 if (item.path === '/metrics' && !canViewMetrics) return false
@@ -109,11 +109,11 @@ export default function Dashboard() {
               onLogout={logout}
             />
 
-            <div className="hidden rounded-2xl bg-white/80 p-2 shadow-sm ring-1 ring-ancoro-navy-100 sm:block">
+            <div className="hidden shrink-0 rounded-2xl bg-white/80 p-2 shadow-sm ring-1 ring-ancoro-navy-100 sm:block">
               <img src="/logo.png" alt="Ancoro" className="h-10" />
             </div>
 
-            <div className="hidden sm:block">
+            <div className="hidden shrink-0 2xl:block">
               <h1 className="text-xl font-bold text-ancoro-navy-950 lg:text-2xl">{t('common:appName')}</h1>
               <p className="text-xs uppercase tracking-[0.22em] text-ancoro-teal-600 lg:text-sm">{t('common:appSubtitle')}</p>
             </div>
@@ -129,12 +129,12 @@ export default function Dashboard() {
           </div>
 
           {/* RIGHT: Nav + Notificações + Usuário + Sair */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="hidden items-center gap-3 lg:flex">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <div className="hidden items-center gap-2 xl:flex">
               {canViewMatrix && (
                 <Link
                   to="/dependency-graph"
-                  className="rounded-xl bg-ancoro-navy-800 px-4 py-2.5 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-ancoro-navy-700"
+                  className="rounded-xl bg-ancoro-navy-800 px-3 py-2 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-ancoro-navy-700"
                 >
                   {t('nav:graphShort')}
                 </Link>
@@ -142,7 +142,7 @@ export default function Dashboard() {
               {canViewMatrix && (
                 <Link
                   to="/cross-matrix"
-                  className="rounded-xl bg-ancoro-teal-500 px-4 py-2.5 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-ancoro-teal-600"
+                  className="rounded-xl bg-ancoro-teal-500 px-3 py-2 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-ancoro-teal-600"
                 >
                   {t('nav:matrixShort')}
                 </Link>
@@ -150,7 +150,7 @@ export default function Dashboard() {
               {processStudio && (
                 <Link
                   to="/processes"
-                  className="rounded-xl border border-ancoro-navy-200 bg-white/80 px-4 py-2.5 text-sm font-medium text-ancoro-navy-700 transition hover:-translate-y-0.5 hover:bg-ancoro-navy-50"
+                  className="rounded-xl border border-ancoro-navy-200 bg-white/80 px-3 py-2 text-sm font-medium text-ancoro-navy-700 transition hover:-translate-y-0.5 hover:bg-ancoro-navy-50"
                 >
                   {t('nav:processes')}
                 </Link>
@@ -158,7 +158,7 @@ export default function Dashboard() {
               {canViewMetrics && (
                 <Link
                   to="/metrics"
-                  className="rounded-xl border border-ancoro-teal-200 bg-white/80 px-4 py-2.5 text-sm font-medium text-ancoro-teal-700 transition hover:-translate-y-0.5 hover:bg-ancoro-teal-50"
+                  className="rounded-xl border border-ancoro-teal-200 bg-white/80 px-3 py-2 text-sm font-medium text-ancoro-teal-700 transition hover:-translate-y-0.5 hover:bg-ancoro-teal-50"
                 >
                   {t('nav:metrics')}
                 </Link>
@@ -169,7 +169,7 @@ export default function Dashboard() {
 
             <NotificationBell />
 
-            <div className="hidden items-center gap-3 lg:flex">
+            <div className="hidden items-center gap-3 2xl:flex">
               <div className="text-right">
                 <p className="text-sm font-medium text-ancoro-navy-950">{user?.name}</p>
                 <p className="text-xs uppercase tracking-[0.18em] text-ancoro-navy-500">{user?.role}</p>
@@ -182,7 +182,7 @@ export default function Dashboard() {
             <button
               type="button"
               onClick={logout}
-              className="hidden rounded-xl border border-ancoro-navy-100 bg-white/80 px-4 py-2.5 text-sm font-medium text-ancoro-navy-700 transition hover:bg-ancoro-navy-50 lg:block"
+              className="hidden rounded-xl border border-ancoro-navy-100 bg-white/80 px-3 py-2 text-sm font-medium text-ancoro-navy-700 transition hover:bg-ancoro-navy-50 xl:block"
             >
               {t('nav:logout')}
             </button>

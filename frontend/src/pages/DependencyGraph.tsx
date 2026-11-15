@@ -77,8 +77,8 @@ export default function DependencyGraph() {
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header — mesmo padrão do CrossMatrix */}
-      <header className="bg-white border-b border-gray-200 px-6 py-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
+      <header className="bg-white border-b border-gray-200 px-4 py-3 sm:px-6 flex-shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold text-gray-900">
               {t('graph:title')}
@@ -87,7 +87,7 @@ export default function DependencyGraph() {
               {t('graph:subtitle')}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Link
               to="/dashboard"
               className="px-4 py-2 text-sm text-ancoro-navy-600 hover:text-ancoro-navy-700 border border-ancoro-navy-300 rounded-lg hover:bg-ancoro-navy-50"

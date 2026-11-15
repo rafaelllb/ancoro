@@ -52,10 +52,10 @@ export default function ProjectSwitcher({
   }, [])
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative min-w-0" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex min-w-[180px] max-w-[320px] items-center gap-3 rounded-2xl border border-ancoro-navy-100 bg-white/85 px-3 py-2.5 shadow-sm transition hover:bg-ancoro-navy-50"
+        className="flex w-full min-w-[140px] max-w-[320px] items-center gap-3 rounded-2xl border border-ancoro-navy-100 bg-white/85 px-3 py-2.5 shadow-sm transition hover:bg-ancoro-navy-50"
         title={currentProject ? `${currentProject.name} - ${currentProject.client}` : t('projects:switcher.selectProject')}
       >
         <svg className="h-5 w-5 flex-shrink-0 text-ancoro-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
