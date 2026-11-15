@@ -944,3 +944,68 @@ export const processesAPI = {
   publish: (projectId: string, data: { label?: string; password?: string }) =>
     api.post<Blob>(`/api/projects/${projectId}/processes/publish`, data, { responseType: 'blob' }),
 }
+
+// ===== PROCESS COMMENTS / LINK PÚBLICO DE REVISÃO =====
+// [2026-11-10] Criado: comentários por elemento do processo e link público (sem login) para o cliente validar — Rafael Brito
+
+export type ProcessCommentType = 'OBSERVATION' | 'QUESTION' | 'CHANGE_REQUEST'
+export interface ProcessCommentDTO {
+  id: string
+  elementId: string
+  elementName: string
+  type: ProcessCommentType
+  content: string
+  status: 'OPEN' | 'RESOLVED'
+  parentId: string | null
+  authorName: string
+  /** só na API interna */
+  authorEmail?: string | null
+  viaShare: boolean
+  mine?: boolean
+  createdAt: string
+  updatedAt: string
+  resolvedAt: string | null
+}
+export interface ProcessCommentInput { elementId: string; type?: ProcessCommentType; content: string; parentId?: string }
+export interface ProcessShareLinkInfo { token: string | null; enabled: boolean; canShare: boolean; createdAt?: string; updatedAt?: string }
+
+export const processCommentsAPI = {
+  list: (projectId: string, processId: string) =>
+    api.get<{ comments: ProcessCommentDTO[]; permissions: { canComment: boolean; canModerate: boolean } }>(
+      `/api/projects/${projectId}/processes/${processId}/comments`),
+  add: (projectId: string, processId: string, data: ProcessCommentInput) =>
+    api.post<{ comment: ProcessCommentDTO }>(`/api/projects/${projectId}/processes/${processId}/comments`, data),
+  setStatus: (projectId: string, processId: string, commentId: string, status: 'OPEN' | 'RESOLVED') =>
+    api.patch<{ comment: ProcessCommentDTO }>(`/api/projects/${projectId}/processes/${processId}/comments/${commentId}`, { status }),
+  remove: (projectId: string, processId: string, commentId: string) =>
+    api.delete<void>(`/api/projects/${projectId}/processes/${processId}/comments/${commentId}`),
+
+  getShare: (projectId: string, processId: string) =>
+    api.get<ProcessShareLinkInfo>(`/api/projects/${projectId}/processes/${processId}/share`),
+  enableShare: (projectId: string, processId: string, regenerate = false) =>
+    api.post<ProcessShareLinkInfo>(`/api/projects/${projectId}/processes/${processId}/share`, { regenerate }),
+  disableShare: (projectId: string, processId: string) =>
+    api.delete<ProcessShareLinkInfo>(`/api/projects/${projectId}/processes/${processId}/share`),
+}
+
+/**
+ * Cliente da API PÚBLICA do link de revisão. Instância separada de propósito:
+ * - não envia o JWT de quem estiver logado neste navegador (o link vale por si; nada de vazar sessão para a rota pública);
+ * - 401/403 aqui não desloga ninguém.
+ * Em dev usa a MESMA origem da página (o Vite repassa /api ao backend): assim o link funciona por um túnel público
+ * (ex.: encaminhamento de porta do VS Code) expondo UMA porta só. Fora do dev segue o VITE_API_URL.
+ */
+const publicApi: AxiosInstance = axios.create({
+  baseURL: import.meta.env.DEV ? '' : BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
+})
+
+export interface PublicShareProcess { process: { name: string; rev: number; updatedAt: string; model: unknown }; comments: ProcessCommentDTO[]; stamp: string }
+
+export const publicShareAPI = {
+  get: (token: string) => publicApi.get<PublicShareProcess>(`/api/public/share/${encodeURIComponent(token)}`),
+  state: (token: string) => publicApi.get<{ rev: number; stamp: string }>(`/api/public/share/${encodeURIComponent(token)}/state`),
+  comments: (token: string) => publicApi.get<{ comments: ProcessCommentDTO[]; stamp: string }>(`/api/public/share/${encodeURIComponent(token)}/comments`),
+  add: (token: string, data: ProcessCommentInput & { authorName: string; authorEmail?: string }) =>
+    publicApi.post<{ comment: ProcessCommentDTO | null }>(`/api/public/share/${encodeURIComponent(token)}/comments`, data),
+}

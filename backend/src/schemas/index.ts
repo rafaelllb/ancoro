@@ -533,6 +533,28 @@ export const leadSchema = z.object({
   website: z.string().max(200).optional(),
 })
 
+// ===== PROCESS COMMENTS / SHARE SCHEMAS =====
+// [2026-11-10] Criado: comentários por elemento (interno e via link público) — Rafael Brito
+export const PROCESS_COMMENT_TYPES = ['OBSERVATION', 'QUESTION', 'CHANGE_REQUEST'] as const
+/** id de elemento do modelo ou "__process"; mesmo alfabeto dos ids BPMN (sem espaços/HTML) */
+const elementIdSchema = z.string().trim().min(1).max(200).regex(/^[A-Za-z0-9_.:-]+$/, 'elementId inválido')
+
+export const processCommentCreateSchema = z.object({
+  elementId: elementIdSchema,
+  type: z.enum(PROCESS_COMMENT_TYPES).default('OBSERVATION'),
+  content: z.string().trim().min(1).max(4000),
+  parentId: z.string().trim().min(1).max(64).optional(),
+})
+
+/** Visitante do link público: identifica-se por nome (obrigatório) e e-mail (opcional). `website` = honeypot. */
+export const publicProcessCommentSchema = processCommentCreateSchema.extend({
+  authorName: z.string().trim().min(2).max(80),
+  authorEmail: z.union([z.string().trim().toLowerCase().email().max(160), z.literal('')]).optional(),
+  website: z.string().max(200).optional(),
+})
+
+export const processCommentStatusSchema = z.object({ status: z.enum(['OPEN', 'RESOLVED']) })
+
 export const leadStatusSchema = z.object({
   status: z.enum(['NEW', 'CONTACTED', 'QUALIFIED', 'WON', 'LOST']),
 })

@@ -8,7 +8,7 @@
  * Campos são NÃO-controlados com `key` = id+valor: ao desfazer/refazer o valor externo muda, a key muda e o campo remonta.
  * Quais abas aparecem depende do elemento (uma anotação não tem "Execução"; um evento não tem "Dados"…).
  */
-import { IS_HOST } from '../host';
+import { IS_HOST, IS_SHARE } from '../host';
 import { ReqPicker } from '../HostUi';
 import { useEffect, useMemo, useRef } from 'react';
 import { EVENT_VARIANTS, GATEWAY_VARIANTS, LOOP_TYPES, PRIORITIES, TASK_VARIANTS, isSatellite, validateModel, type ProcessModel, type ProcessNode } from '@ancoro/process-core';
@@ -17,7 +17,11 @@ import { useEditor } from '../store';
 import { useUi, type PanelTab } from '../ui';
 import { AttributesTab } from './AttributesTab';
 import { AttachmentsTab } from './AttachmentsTab';
+import { CommentsTab } from './CommentsTab';
 import { Check, ChipsField, Field, SelectField, TextField } from './fields';
+
+// [2026-11-10] abas que só existem embutido; no modo revisão (link público) não há anexos — Rafael Brito
+const HOST_TABS: PanelTab[] = !IS_HOST ? [] : IS_SHARE ? ['comments'] : ['files', 'comments'];
 
 // ---------------------------------------------------------------------------------------------- campos
 const PRESETS: Array<[string, string]> = [
@@ -75,13 +79,13 @@ export function PropertiesPanel({ model }: { model: ProcessModel }) {
           : isPool ? <ProcessProps model={model} />
           : <ProcessProps model={model} showHint />}
         {called && <button className="link" onClick={() => openProcess(called.id, true)}>↗ {called.name}</button>}
-        {selectedId && !isPool && (node || flow || lane || participant) && (
+        {selectedId && !isPool && !IS_SHARE && (node || flow || lane || participant) && (
           <button className="danger" disabled={readOnly} onClick={deleteSelected} data-action="delete">{t.delete}</button>
         )}
       </section>
       </div>
 
-      <section>
+      {!IS_SHARE && <section>
         <h3>{t.issues} <span className="badge">{issues.length}</span></h3>
         {issues.length === 0 ? <p className="hint">{t.noIssues}</p> : (
           <ul className="issues">
@@ -92,9 +96,9 @@ export function PropertiesPanel({ model }: { model: ProcessModel }) {
             ))}
           </ul>
         )}
-      </section>
+      </section>}
 
-      {warnings.length > 0 && (
+      {!IS_SHARE && warnings.length > 0 && (
         <section>
           <h3>{t.warnings} <span className="badge">{warnings.length}</span></h3>
           <ul className="issues">{warnings.map((w, i) => <li key={i} className="sev-info">{w}</li>)}</ul>
@@ -131,7 +135,7 @@ function NodeProps({ node: n, model }: { node: ProcessNode; model: ProcessModel 
   const tabs: PanelTab[] = ['general', 'docs',
     ...(isFlowNode ? (['people'] as PanelTab[]) : []),
     ...(isActivity ? (['execution', 'data'] as PanelTab[]) : []),
-    'attrs', 'look', 'links', ...(IS_HOST ? (['files'] as PanelTab[]) : [])];
+    'attrs', 'look', 'links', ...HOST_TABS];
   const [tab, setTab] = useTab(tabs);
 
   const variants: readonly string[] | null =
@@ -149,7 +153,7 @@ function NodeProps({ node: n, model }: { node: ProcessNode; model: ProcessModel 
     <>
       <div className="type">{t.kind[n.kind]}</div>
       <Tabs tabs={tabs} active={tab} onPick={setTab} />
-      <fieldset className="ro tabbody" disabled={readOnly && tab !== 'files'} data-tabbody={tab}>
+      <fieldset className="ro tabbody" disabled={readOnly && tab !== 'files' && tab !== 'comments'} data-tabbody={tab}>
         {tab === 'general' && (
           <>
             <Field label={t.prop.name}><TextField id={n.id} value={n.name} label={t.prop.name} onCommit={(v) => rename(n.id, v)} /></Field>
@@ -236,6 +240,7 @@ function NodeProps({ node: n, model }: { node: ProcessNode; model: ProcessModel 
         {tab === 'attrs' && <AttributesTab node={n} model={model} />}
 
         {tab === 'files' && <AttachmentsTab elementId={n.id} />}
+        {tab === 'comments' && <CommentsTab elementId={n.id} />}
 
         {tab === 'look' && <Appearance fill={n.fill} stroke={n.stroke} onChange={(p) => patchNode(n.id, p)} />}
 
@@ -275,7 +280,7 @@ function FlowProps({ flowId, model }: { flowId: string; model: ProcessModel }) {
   const readOnly = useEditor((st) => st.readOnly);
   const { patchFlow, rename, resetLabel, autoRoute } = useEditor();
   const f = model.flows.find((x) => x.id === flowId)!;
-  const tabs: PanelTab[] = ['general', 'docs', ...(IS_HOST ? (['files'] as PanelTab[]) : [])];
+  const tabs: PanelTab[] = ['general', 'docs', ...HOST_TABS];
   const [tab, setTab] = useTab(tabs);
   const src = model.nodes.find((n) => n.id === f.sourceId);
   const nameOf = (id: string) => model.nodes.find((x) => x.id === id)?.name || model.participants.find((p) => p.id === id)?.name || (id === model.id ? model.name : id);
@@ -285,7 +290,7 @@ function FlowProps({ flowId, model }: { flowId: string; model: ProcessModel }) {
     <>
       <div className="type">{t.kind[f.kind]}</div>
       <Tabs tabs={tabs} active={tab} onPick={setTab} />
-      <fieldset className="ro tabbody" disabled={readOnly && tab !== 'files'} data-tabbody={tab}>
+      <fieldset className="ro tabbody" disabled={readOnly && tab !== 'files' && tab !== 'comments'} data-tabbody={tab}>
         {tab === 'general' && (
           <>
             <Field label={t.prop.name}><TextField id={f.id} value={f.name ?? ''} label={t.prop.name} onCommit={(v) => rename(f.id, v)} /></Field>
@@ -310,6 +315,7 @@ function FlowProps({ flowId, model }: { flowId: string; model: ProcessModel }) {
           <Field label={t.prop.doc}><TextField id={`${f.id}:doc`} multiline rows={12} value={f.documentation ?? ''} label={t.prop.doc} onCommit={(v) => patchFlow(f.id, { documentation: v })} /></Field>
         )}
         {tab === 'files' && <AttachmentsTab elementId={f.id} />}
+        {tab === 'comments' && <CommentsTab elementId={f.id} />}
       </fieldset>
     </>
   );
@@ -322,7 +328,7 @@ function ContainerProps({ kind, id, model }: { kind: 'lane' | 'participant'; id:
   const { patchLane, patchParticipant, rename } = useEditor();
   const lane = kind === 'lane' ? model.lanes.find((l) => l.id === id) : undefined;
   const part = kind === 'participant' ? model.participants.find((p) => p.id === id) : undefined;
-  const tabs: PanelTab[] = [...(kind === 'lane' ? ['general', 'look'] : ['general']) as PanelTab[], ...(IS_HOST ? (['files'] as PanelTab[]) : [])];
+  const tabs: PanelTab[] = [...(kind === 'lane' ? ['general', 'look'] : ['general']) as PanelTab[], ...HOST_TABS];
   const [tab, setTab] = useTab(tabs);
   const name = lane?.name ?? part?.name ?? '';
   const description = lane?.description ?? part?.description ?? '';
@@ -332,7 +338,7 @@ function ContainerProps({ kind, id, model }: { kind: 'lane' | 'participant'; id:
     <>
       <div className="type">{t.kind[kind]}</div>
       <Tabs tabs={tabs} active={tab} onPick={setTab} />
-      <fieldset className="ro tabbody" disabled={readOnly && tab !== 'files'} data-tabbody={tab}>
+      <fieldset className="ro tabbody" disabled={readOnly && tab !== 'files' && tab !== 'comments'} data-tabbody={tab}>
         {tab === 'general' && (
           <>
             <Field label={t.prop.name}><TextField id={id} value={name} label={t.prop.name} onCommit={(v) => rename(id, v)} /></Field>
@@ -353,6 +359,7 @@ function ContainerProps({ kind, id, model }: { kind: 'lane' | 'participant'; id:
           </>
         )}
         {tab === 'files' && <AttachmentsTab elementId={id} />}
+        {tab === 'comments' && <CommentsTab elementId={id} />}
       </fieldset>
     </>
   );
@@ -363,7 +370,7 @@ function ProcessProps({ model, showHint }: { model: ProcessModel; showHint?: boo
   const t = useT();
   const readOnly = useEditor((st) => st.readOnly);
   const { setProcessName, patchMeta } = useEditor();
-  const tabs: PanelTab[] = ['general', 'docs', ...(IS_HOST ? (['files'] as PanelTab[]) : [])];
+  const tabs: PanelTab[] = ['general', 'docs', ...HOST_TABS];
   const [tab, setTab] = useTab(tabs);
   const m = model.meta;
   const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleString() : '—');
@@ -372,7 +379,7 @@ function ProcessProps({ model, showHint }: { model: ProcessModel; showHint?: boo
     <>
       <div className="type">{t.kind.pool}</div>
       <Tabs tabs={tabs} active={tab} onPick={setTab} />
-      <fieldset className="ro tabbody" disabled={readOnly && tab !== 'files'} data-tabbody={tab}>
+      <fieldset className="ro tabbody" disabled={readOnly && tab !== 'files' && tab !== 'comments'} data-tabbody={tab}>
         {tab === 'general' && (
           <>
             <Field label={t.prop.processName}><TextField id={model.id} value={model.name} label={t.prop.processName} onCommit={setProcessName} /></Field>
@@ -391,6 +398,7 @@ function ProcessProps({ model, showHint }: { model: ProcessModel; showHint?: boo
           <Field label={t.prop.doc}><TextField id={`${model.id}:doc`} multiline rows={14} value={m.documentation ?? ''} label={t.prop.doc} onCommit={(v) => patchMeta({ documentation: v })} /></Field>
         )}
         {tab === 'files' && <AttachmentsTab elementId="__process" />}
+        {tab === 'comments' && <CommentsTab elementId="__process" />}
       </fieldset>
     </>
   );

@@ -19,8 +19,10 @@ import {
 } from '../hooks/useProcesses'
 import ProjectSwitcher from '../components/ProjectSwitcher'
 import LanguageSwitcher from '../components/LanguageSwitcher'
+import { NotificationBell } from '../components/NotificationBell'
 import ConfirmDialog from '../components/ConfirmDialog'
 import GenerateProcessDialog from '../components/GenerateProcessDialog'
+import ShareProcessDialog from '../components/ShareProcessDialog'
 import type { ProcessSummary } from '../services/api'
 
 /** URL do editor compilado (npm run build:process-studio gera em public/process-studio). Sobrescrevível para apontar a outro host. */
@@ -35,7 +37,7 @@ export default function Processes() {
   const { processId } = useParams<{ processId?: string }>()
   const { currentProject, projects, setCurrentProject } = useCurrentProject()
   const projectId = currentProject?.id || ''
-  const { canViewProcesses, canEditProcesses, canPublishProcesses } = useCapabilities()
+  const { canViewProcesses, canEditProcesses, canPublishProcesses, canShareProcesses } = useCapabilities()
 
   const { data, isLoading } = useProcesses(projectId)
   const { data: coverage } = useProcessCoverage(projectId)
@@ -54,6 +56,7 @@ export default function Processes() {
   const [showUncovered, setShowUncovered] = useState(false)
   const [publishOpen, setPublishOpen] = useState(false)
   const [generateOpen, setGenerateOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [publishLabel, setPublishLabel] = useState('')
   const [publishPassword, setPublishPassword] = useState('')
   const [timedOut, setTimedOut] = useState(false)
@@ -129,8 +132,8 @@ export default function Processes() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-3 flex-shrink-0">
-        <div className="flex items-center justify-between gap-4">
+      <header className="bg-white border-b border-gray-200 px-4 py-3 sm:px-6 flex-shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-4">
             <div>
               <h1 className="text-xl font-bold text-gray-900">{t('processes:title')}</h1>
@@ -140,7 +143,14 @@ export default function Processes() {
               <ProjectSwitcher projects={projects} currentProject={currentProject} onProjectChange={setCurrentProject} />
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {/* [2026-11-10] Criado: link público para o cliente revisar e comentar este processo — Rafael Brito */}
+            {canShareProcesses && current && (
+              <button type="button" data-testid="share-open" onClick={() => setShareOpen(true)}
+                className="px-4 py-2 text-sm text-ancoro-teal-700 border border-ancoro-teal-400 bg-ancoro-teal-50 hover:bg-ancoro-teal-100 rounded-lg">
+                {t('processes:share.button')}
+              </button>
+            )}
             {canPublishProcesses && processes.length > 0 && (
               <button
                 type="button"
@@ -158,6 +168,8 @@ export default function Processes() {
             >
               {t('nav:requirementsLink')}
             </Link>
+            {/* [2026-11-10] sino também aqui: mantém o Socket.io conectado => comentários do cliente aparecem ao vivo no editor */}
+            <NotificationBell />
             <LanguageSwitcher />
             <span className="text-sm text-gray-600 hidden lg:inline">{user?.name} ({user?.role})</span>
             <button
@@ -328,6 +340,10 @@ export default function Processes() {
           onClose={() => setGenerateOpen(false)}
           onGenerated={(id) => { setGenerateOpen(false); navigate(`/processes/${id}`) }}
         />
+      )}
+
+      {shareOpen && current && (
+        <ShareProcessDialog projectId={projectId} processId={current.id} processName={current.name} onClose={() => setShareOpen(false)} />
       )}
 
       {publishOpen && (

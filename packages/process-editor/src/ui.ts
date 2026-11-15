@@ -4,7 +4,7 @@
  */
 import { create } from 'zustand';
 
-export type PanelTab = 'general' | 'docs' | 'people' | 'execution' | 'data' | 'attrs' | 'look' | 'links' | 'files';
+export type PanelTab = 'general' | 'docs' | 'people' | 'execution' | 'data' | 'attrs' | 'look' | 'links' | 'files' | 'comments';
 
 interface UiState {
   rightOpen: boolean;

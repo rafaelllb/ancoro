@@ -14,17 +14,24 @@
  *          [2026-10-30] Criado: attachments.list {elementId} · attachments.upload {elementId,name,data:ArrayBuffer} · attachments.content {id} -> {data,mimeType}
  *          · attachments.download {id} (o HOST dispara o download) · attachments.remove {id} — anexos por elemento; o token continua só no host
  *          [2026-10-19] Removido: versions.restore — gravava versão automaticamente; restaurar agora é versions.get + rascunho local + Salvar manual
+ *          [2026-11-10] Criado: comments.list · comments.add {elementId,type,content,parentId?[,authorName,authorEmail]} · comments.setStatus {id,status} · comments.remove {id}
+ *          eventos host -> editor: comments.changed (recarregar comentários) · process.changed (o processo foi salvo por alguém: recarregar)
+ *          ?share=1 = MODO REVISÃO (link público): somente leitura, comentários com identificação por nome, sem versões/salvar
  * Segurança: só aceita mensagens de `window.parent` cuja origem é a informada em `?origin=` (e só envia para ela).
  */
 import { parseModel, type ProcessModel } from '@ancoro/process-core';
 import { create } from 'zustand';
 import { useEditor, ensureGeometry } from './store';
 import { currentT, useLang, type Lang } from './i18n';
+import { useComments } from './comments';
+import { useUi } from './ui';
 
 const params = new URLSearchParams(location.search);
 const parentOrigin = params.get('origin') ?? '';
 /** true só quando embutido E com origem declarada: sem origem não há como enviar mensagens com segurança. */
 export const IS_HOST = params.get('host') === '1' && window.parent !== window && !!parentOrigin;
+/** [2026-11-10] modo revisão: aberto pelo link público (sem login) — só ver e comentar */
+export const IS_SHARE = IS_HOST && params.get('share') === '1';
 
 export class HostError extends Error {
   constructor(message: string, public status: number, public data?: Record<string, unknown>) { super(message); }
@@ -70,6 +77,19 @@ export async function loadFromHost(): Promise<void> {
   useEditor.getState().replaceAll(model, !p.permissions.canEdit);
 }
 
+/** [2026-11-10] O processo foi salvo por outra pessoa (modo revisão): recarrega mantendo o que ainda existe da seleção. */
+async function reloadKeepingSelection(): Promise<void> {
+  const ed = useEditor.getState();
+  if (ed.dirty.length) return; // nunca descartar trabalho local (no modo revisão nada fica sujo; é só proteção)
+  const keep = ed.selectedIds;
+  await loadFromHost();
+  const m = useEditor.getState().processes[0];
+  if (!m) return;
+  const exists = new Set([m.id, ...m.nodes.map((n) => n.id), ...m.flows.map((f) => f.id), ...m.lanes.map((l) => l.id), ...m.participants.map((p) => p.id)]);
+  useEditor.getState().selectMany(keep.filter((id) => exists.has(id)));
+  useEditor.getState().showToast(currentT().share.updated);
+}
+
 /** Salva no servidor com concorrência otimista. Em conflito (409) abre o diálogo, sem perder o que o usuário fez. */
 export async function saveToHost(): Promise<boolean> {
   const ed = useEditor.getState();
@@ -111,12 +131,16 @@ export function startHost(): void {
       clearTimeout(p.timer);
       if (d.ok) p.resolve(d.data); else p.reject(new HostError(d.error?.message ?? 'error', d.error?.status ?? 0, d.error?.data));
     } else if (d.kind === 'event' && d.type === 'lang' && d.payload?.lang) useLang.getState().setLang(d.payload.lang);
+    else if (d.kind === 'event' && d.type === 'comments.changed') void useComments.getState().refresh();
+    else if (d.kind === 'event' && d.type === 'process.changed') void reloadKeepingSelection().catch(() => undefined);
   });
   // avisa o host sempre que muda o "tem alterações não salvas" (ele bloqueia a navegação do app)
   let last = false;
   useEditor.subscribe((s) => { const dirty = s.dirty.length > 0; if (dirty !== last) { last = dirty; notify('dirty', { dirty }); } });
   const initLang = params.get('lang');
   if (initLang === 'pt' || initLang === 'en') useLang.getState().setLang(initLang);
+  // modo revisão abre direto na aba Comentários, com o painel visível (não persiste: é a preferência só desta visita)
+  if (IS_SHARE) useUi.setState({ tab: 'comments', rightOpen: true, leftOpen: false });
   notify('ready');
-  void loadFromHost().catch((err) => useEditor.getState().setError(err instanceof Error ? err.message : String(err)));
+  void loadFromHost().then(() => useComments.getState().refresh()).catch((err) => useEditor.getState().setError(err instanceof Error ? err.message : String(err)));
 }

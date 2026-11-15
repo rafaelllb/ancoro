@@ -13,7 +13,7 @@ import { PropertiesPanel } from './panel/PropertiesPanel';
 import { useEditor } from './store';
 import { useUi } from './ui';
 import { ConflictDialog, HostBar, VersionsDialog } from './HostUi';
-import { IS_HOST, notify, saveToHost, useHost } from './host';
+import { IS_HOST, IS_SHARE, notify, saveToHost, useHost } from './host';
 
 /** true quando o foco está num campo de texto: atalhos globais não devem roubar teclas dali */
 const isTyping = (el: EventTarget | null) => el instanceof HTMLElement && (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable);
@@ -71,6 +71,8 @@ export function App() {
       // [2026-10-14] Criado: Ctrl+B oculta/mostra a paleta; Ctrl+Shift+B as propriedades (convenção de IDEs) — Rafael Brito
       if (mod && e.key.toLowerCase() === 'b') { e.preventDefault(); e.shiftKey ? useUi.getState().toggleRight() : useUi.getState().toggleLeft(); return; }
       if (isTyping(e.target)) return;
+      // [2026-11-10] Criado: Ctrl+A seleciona todos os nós e fluxos do processo — Rafael Brito
+      if (mod && e.key.toLowerCase() === 'a') { e.preventDefault(); s.selectAll(); return; }
       if (e.key === 'Escape') { if (s.armed) s.arm(null); else s.select(null); return; }
       if (s.readOnly && ['Delete', 'Backspace', 'F2', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
       if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); s.deleteSelected(); return; }
@@ -78,7 +80,7 @@ export function App() {
       const step = e.shiftKey ? 50 : 10;
       const arrows: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
       const a = arrows[e.key];
-      if (a && s.selectedId) { e.preventDefault(); s.nudge(a[0], a[1]); }
+      if (a && s.selectedIds.length) { e.preventDefault(); s.nudge(a[0], a[1]); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -97,7 +99,11 @@ export function App() {
       onDragLeave={() => setDragOver(false)}
       onDrop={(e) => { setDragOver(false); if (e.dataTransfer.files.length) { e.preventDefault(); void handleFile(e.dataTransfer.files[0]); } }}>
       <header>
-        <strong>{t.app}</strong>
+        {/* [2026-11-10] modo revisão (link público): só o necessário para ver e comentar — Rafael Brito */}
+        <strong>{IS_SHARE ? t.share.title : t.app}</strong>
+        {IS_SHARE && model && <span className="share-name">{model.name}</span>}
+        {IS_SHARE && <span className="badge live-badge" data-testid="live-badge">● {t.share.live}</span>}
+        {IS_SHARE && <span className="muted share-hint">{t.share.hint}</span>}
         {trail.length > 0 && <button onClick={ed.back}>← {t.back}</button>}
         {/* modo host: o processo vem do servidor; criar/abrir arquivo/exemplo locais não se aplicam */}
         {!IS_HOST && <button onClick={ed.createProcess} data-action="new">{t.newProcess}</button>}
@@ -108,10 +114,10 @@ export function App() {
         {!readOnly && <button onClick={ed.redo} disabled={!future.length} data-action="redo" title="Ctrl+Y">↷ {t.redo}</button>}
         <span className="spacer" />
         {model && <button onClick={ed.requestFit}>{t.fit}</button>}
-        <button className={`toggle${leftOpen ? ' on' : ''}`} onClick={toggleLeft} data-action="toggle-left" aria-pressed={leftOpen} title={`${leftOpen ? t.ui.hideLeft : t.ui.showLeft} (Ctrl+B)`}>◧ {t.ui.showLeft}</button>
+        {!IS_SHARE && <button className={`toggle${leftOpen ? ' on' : ''}`} onClick={toggleLeft} data-action="toggle-left" aria-pressed={leftOpen} title={`${leftOpen ? t.ui.hideLeft : t.ui.showLeft} (Ctrl+B)`}>◧ {t.ui.showLeft}</button>}
         {model && <button className={`toggle${rightOpen ? ' on' : ''}`} onClick={toggleRight} data-action="toggle-right" aria-pressed={rightOpen} title={`${rightOpen ? t.ui.hideRight : t.ui.showRight} (Ctrl+Shift+B)`}>◨ {t.ui.showRight}</button>}
-        {model && <button onClick={() => void exportBpmn()} data-action="export" title="Ctrl+S">{t.exportBpmn}</button>}
-        {IS_HOST && hostReady && <HostBar />}
+        {model && !IS_SHARE && <button onClick={() => void exportBpmn()} data-action="export" title="Ctrl+S">{t.exportBpmn}</button>}
+        {IS_HOST && !IS_SHARE && hostReady && <HostBar />}
         {!IS_HOST && <button onClick={() => setLang(lang === 'pt' ? 'en' : 'pt')}>{lang === 'pt' ? 'EN' : 'PT'}</button>}
         <input ref={inputRef} type="file" accept=".bpm,.bpmn,.xml" hidden onChange={(e) => { void handleFile(e.target.files?.[0]); e.target.value = ''; }} />
       </header>
@@ -139,7 +145,7 @@ export function App() {
         {model && rightOpen && <PropertiesPanel model={model} />}
       </div>
       {IS_HOST && <ConflictDialog />}
-      {IS_HOST && <VersionsDialog />}
+      {IS_HOST && !IS_SHARE && <VersionsDialog />}
       <span hidden data-state={JSON.stringify({ selectedId, armed: armed?.id ?? null, editing })} id="ps-state" />
     </div>
   );

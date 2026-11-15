@@ -29,7 +29,7 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 const state = () => page.evaluate(() => {
   const s = window.__ps.getState();
   const m = s.processes.find((p) => p.id === s.currentId);
-  return { m, selectedId: s.selectedId, past: s.past.length, future: s.future.length, armed: s.armed?.id ?? null, editing: s.editing, toast: s.toast, count: s.processes.length, dirty: s.dirty };
+  return { m, selectedId: s.selectedId, selectedIds: s.selectedIds, past: s.past.length, future: s.future.length, armed: s.armed?.id ?? null, editing: s.editing, toast: s.toast, count: s.processes.length, dirty: s.dirty };
 });
 const node = async (id) => (await state()).m.nodes.find((n) => n.id === id);
 const box = async (sel) => {
@@ -292,15 +292,15 @@ check('arrastar a alça cria o fluxo', s.m.flows.length === before + 1, `${befor
 const nf = s.m.flows.find((f) => f.sourceId === created.id && f.targetId === 'e1');
 check('fluxo novo é sequência roteada', nf?.kind === 'sequence' && nf.waypoints.length >= 2);
 
-// conexão inválida (fim -> tarefa) é recusada com toast
+// conexão inválida (fim -> tarefa): desde 2026-10-27 o evento de fim nem oferece a alça de conectar
+// [2026-11-10] Alterado: o teste ainda esperava a alça no fim (estava desatualizado) — Rafael Brito
 await page.click('[data-id="e1"]');
 await settle();
-const h2 = await box('[data-handle="connect"]');
-const t3 = await box('[data-id="t3"]');
-await drag(h2, t3, 15);
+check('evento de fim não oferece alça de conectar', !(await page.$('[data-handle="connect"]')));
+const okConn = await page.evaluate(() => window.__ps.getState().connect('e1', 't3'));
 await settle(200);
 s = await state();
-check('conexão inválida é recusada (sem criar fluxo)', s.m.flows.length === before + 1);
+check('conexão inválida é recusada (sem criar fluxo)', !okConn && s.m.flows.length === before + 1);
 check('recusa mostra o motivo (toast)', /fim/i.test(s.toast ?? ''), String(s.toast));
 await shot('03-connected');
 
@@ -518,7 +518,9 @@ check('modifiedAt é carimbado a cada edição', !!s.m.meta.modifiedAt);
 const laneA = (await state()).m.lanes.find((l) => l.id === 'Lane_A').bounds;
 await page.click('.lane-0 .head'); // seleciona a lane
 await settle();
-const rz = await box('[data-handle="resize"] rect');
+// [2026-11-10] Alterado: a pega é a borda INTEIRA — agarra perto da ponta esquerda (não no meio) — Rafael Brito
+const rzEdge = await box('rect[data-handle="resize"][data-for="Lane_A"]');
+const rz = { x: rzEdge.left + rzEdge.w * 0.12, y: rzEdge.y };
 await drag(rz, { x: rz.x, y: rz.y + 60 * 0.9 }, 10);
 await settle();
 const laneA2 = (await state()).m.lanes.find((l) => l.id === 'Lane_A').bounds;
@@ -612,20 +614,20 @@ if (existsSync(BPM)) {
   await settle(300);
   await page.click('[data-id="t1"] rect, [data-id="t1"]');
   await settle(100);
-  const handles = await page.$$('[data-handle="nresize"]');
+  const handles = await page.$$('g[data-handle="nresize"]');
   check('tarefa selecionada mostra 8 alças de redimensionar', handles.length === 8, String(handles.length));
   const b0 = (await node('t1')).bounds;
-  const se = await box('[data-handle="nresize"][data-pos="se"]');
+  const se = await box('g[data-handle="nresize"][data-pos="se"]');
   await drag(se, { x: se.x + 40, y: se.y + 30 }, 8);
   await settle();
   const b1 = (await node('t1')).bounds;
   check('alça SE aumenta largura e altura e mantém a origem', b1.w > b0.w && b1.h > b0.h && b1.x === b0.x && b1.y === b0.y, JSON.stringify([b0, b1]));
-  const w = await box('[data-handle="nresize"][data-pos="w"]');
+  const w = await box('g[data-handle="nresize"][data-pos="w"]');
   await drag(w, { x: w.x - 30, y: w.y }, 8);
   await settle();
   const b2 = (await node('t1')).bounds;
   check('alça W cresce para a esquerda e mantém a borda direita', b2.x < b1.x && Math.abs(b2.x + b2.w - (b1.x + b1.w)) < 0.01, JSON.stringify([b1, b2]));
-  const nn = await box('[data-handle="nresize"][data-pos="n"]');
+  const nn = await box('g[data-handle="nresize"][data-pos="n"]');
   await drag(nn, { x: nn.x, y: nn.y + 400 }, 8);
   await settle();
   const b3 = (await node('t1')).bounds;
@@ -640,7 +642,85 @@ if (existsSync(BPM)) {
   // eventos não são redimensionáveis
   await page.evaluate(() => window.__ps.getState().select('s1'));
   await settle(100);
-  check('evento (forma fixa) não mostra alças', (await page.$$('[data-handle="nresize"]')).length === 0);
+  check('evento (forma fixa) não mostra alças', (await page.$$('g[data-handle="nresize"]')).length === 0);
+}
+
+// ------------------------------------------------------------------ 8c. seleção múltipla + bordas de pool/lane
+// [2026-11-10] Criado: laço, Shift/Ctrl+clique, mover/apagar grupo, redimensionar pool por qualquer ponto da borda — Rafael Brito
+{
+  await page.click('[data-action="sample"]');
+  await settle(300);
+  const b1 = await box('[data-id="t1"]'), b2 = await box('[data-id="t2"]');
+  // laço: do canto superior esquerdo ao inferior direito envolvendo t1 e t2 (começa no fundo da lane)
+  const from = { x: Math.min(b1.left, b2.left) - 12, y: Math.min(b1.top, b2.top) - 12 };
+  const to = { x: Math.max(b1.left + b1.w, b2.left + b2.w) + 12, y: Math.max(b1.top + b1.h, b2.top + b2.h) + 12 };
+  const view0 = await page.$eval('svg.canvas > g', (g) => g.getAttribute('transform'));
+  await drag(from, to, 10);
+  await settle();
+  s = await state();
+  check('laço seleciona t1 e t2', s.selectedIds.includes('t1') && s.selectedIds.includes('t2'), JSON.stringify(s.selectedIds));
+  check('arrastar no fundo não faz mais pan', view0 === await page.$eval('svg.canvas > g', (g) => g.getAttribute('transform')));
+  check('seleção múltipla não tem selectedId (sem alças individuais)', s.selectedId === null);
+
+  // mover o grupo agarrando um dos nós
+  const t1a = (await node('t1')).bounds, t2a = (await node('t2')).bounds;
+  const g1 = await box('[data-id="t1"]');
+  await page.keyboard.down('Alt'); // sem ímã: delta exato
+  await drag({ x: g1.x, y: g1.y }, { x: g1.x + 45, y: g1.y }, 10);
+  await page.keyboard.up('Alt');
+  await settle();
+  const t1b = (await node('t1')).bounds, t2b = (await node('t2')).bounds;
+  check('arrastar um nó da seleção move o grupo inteiro', t1b.x - t1a.x > 20 && Math.abs((t1b.x - t1a.x) - (t2b.x - t2a.x)) < 0.01, JSON.stringify([t1b.x - t1a.x, t2b.x - t2a.x]));
+  check('seleção continua após mover o grupo', (await state()).selectedIds.length >= 2);
+
+  // Ctrl+clique retira; Shift+clique inclui
+  await page.keyboard.down('Control'); await page.click('[data-id="t2"]'); await page.keyboard.up('Control');
+  await settle();
+  check('Ctrl+clique retira da seleção', !(await state()).selectedIds.includes('t2'));
+  await page.keyboard.down('Shift'); await page.click('[data-id="t3"]'); await page.keyboard.up('Shift');
+  await settle();
+  s = await state();
+  check('Shift+clique inclui na seleção', s.selectedIds.includes('t3') && s.selectedIds.includes('t1'), JSON.stringify(s.selectedIds));
+
+  // Shift+clique = intervalo: clica s1 sozinho (âncora) e Shift+clica t2 → s1, t2 e tudo no retângulo entre eles (t1, g1, fluxos)
+  await page.click('[data-id="s1"]');
+  await page.keyboard.down('Shift'); await page.click('[data-id="t2"]'); await page.keyboard.up('Shift');
+  await settle();
+  s = await state();
+  const between = await page.evaluate(() => { const st = window.__ps.getState(); return st.selectedIds; });
+  check('Shift+clique seleciona tudo entre a âncora e o clicado', ['s1', 't2', 't1'].every((id) => between.includes(id)) && between.length > 3, JSON.stringify(between));
+  // volta à seleção usada pelo Delete abaixo
+  await page.click('[data-id="t1"]');
+  await page.keyboard.down('Control'); await page.click('[data-id="t3"]'); await page.keyboard.up('Control');
+  await settle();
+
+  // Delete apaga todos
+  await page.keyboard.press('Delete');
+  await settle();
+  s = await state();
+  check('Delete apaga todos os selecionados', !s.m.nodes.some((n) => n.id === 't1' || n.id === 't3'));
+  await page.keyboard.down('Control'); await page.keyboard.press('z'); await page.keyboard.up('Control');
+  await settle();
+  s = await state();
+  check('um Ctrl+Z desfaz a exclusão em grupo', ['t1', 't3'].every((id) => s.m.nodes.some((n) => n.id === id)));
+
+  // pool: borda leste agarrada perto do topo (fora do meio)
+  await page.keyboard.press('Escape');
+  const p0 = (await state()).m.pool;
+  const east = await box('rect[data-handle="presize"][data-pos="e"]');
+  const ep = { x: east.x, y: east.top + east.h * 0.1 };
+  await drag(ep, { x: ep.x + 60, y: ep.y }, 8);
+  await settle();
+  const p1 = (await state()).m.pool;
+  check('borda leste do pool (qualquer ponto) alarga o pool', p1.w > p0.w + 20, `${p0.w} -> ${p1.w}`);
+
+  // Ctrl+A
+  await page.keyboard.down('Control'); await page.keyboard.press('a'); await page.keyboard.up('Control');
+  await settle();
+  s = await state();
+  check('Ctrl+A seleciona todos os nós e fluxos', s.selectedIds.length === s.m.nodes.length + s.m.flows.length);
+  await page.keyboard.press('Escape');
+  await shot('10-multiselect');
 }
 
 // ------------------------------------------------------------------ 9. novo processo do zero

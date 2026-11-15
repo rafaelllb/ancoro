@@ -481,6 +481,9 @@ model BusinessProcess {
   links       ProcessRequirementLink[]
   // [2026-10-30] Criado: anexos por elemento BPMN (repositório) — Rafael Brito
   attachments ProcessAttachment[]
+  // [2026-11-10] Criado: link público de revisão e comentários do cliente por elemento — Rafael Brito
+  shareLink   ProcessShareLink?
+  comments    ProcessComment[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -550,6 +553,59 @@ model ProcessAttachment {
 
   @@index([processId, elementId])
   @@map("process_attachments")
+}
+
+// [2026-11-10] Criado: link PÚBLICO de revisão do processo (sem login, sem senha) — Rafael Brito
+// Quem tem o link vê o processo e comenta se identificando por nome. O token é a credencial: aleatório (32 bytes),
+// guardado em claro de propósito (o link precisa poder ser copiado de novo); revogar = enabled=false, regenerar = token novo.
+model ProcessShareLink {
+  id          String   @id @default(cuid())
+  processId   String   @unique
+  token       String   @unique
+  enabled     Boolean  @default(true)
+  createdById String?
+
+  process     BusinessProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("process_share_links")
+}
+
+// [2026-11-10] Criado: comentário/observação/ajuste por elemento do processo (ou __process = processo geral) — Rafael Brito
+// Autor: usuário do Ancoro (userId) OU visitante do link público (authorName/authorEmail declarados, viaShare=true).
+// Respostas: parentId aponta para o comentário raiz (um nível). Status só no raiz: OPEN | RESOLVED.
+model ProcessComment {
+  id            String    @id @default(cuid())
+  processId     String
+  /// id do elemento no modelo (nó, fluxo, lane, participante) ou __process
+  elementId     String
+  /// cópia do nome do elemento no momento do comentário (o elemento pode ser renomeado/excluído depois)
+  elementName   String    @default("")
+  /// OBSERVATION | QUESTION | CHANGE_REQUEST
+  type          String    @default("OBSERVATION")
+  content       String
+  /// OPEN | RESOLVED
+  status        String    @default("OPEN")
+  parentId      String?
+  userId        String?
+  authorName    String
+  authorEmail   String?
+  viaShare      Boolean   @default(false)
+  resolvedById  String?
+  resolvedAt    DateTime?
+
+  process       BusinessProcess @relation(fields: [processId], references: [id], onDelete: Cascade)
+  parent        ProcessComment?  @relation("ProcessCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       ProcessComment[] @relation("ProcessCommentReplies")
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([processId, elementId])
+  @@index([processId, updatedAt])
+  @@map("process_comments")
 }
 
 // Estado da publicação do portal do projeto: o versions.json da última publicação continua o histórico ("O que mudou").

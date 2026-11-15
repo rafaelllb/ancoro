@@ -22,6 +22,8 @@ export function DiagramDefs() {
 export interface DiagramLayersProps {
   model: ProcessModel;
   selectedId?: string | null;
+  /** [2026-11-10] seleção múltipla (editor): todos estes ids aparecem selecionados — Rafael Brito */
+  selectedIds?: ReadonlyArray<string>;
   editingId?: string | null;
   /** ids de processos que existem no repositório/portal — habilita o drill-down das call activities */
   loadedProcessIds?: ReadonlySet<string>;
@@ -29,7 +31,7 @@ export interface DiagramLayersProps {
 
 const NONE: ReadonlySet<string> = new Set();
 
-export function DiagramLayers({ model, selectedId = null, editingId = null, loadedProcessIds = NONE }: DiagramLayersProps) {
+export function DiagramLayers({ model, selectedId = null, selectedIds, editingId = null, loadedProcessIds = NONE }: DiagramLayersProps) {
   // Sem hooks de propósito: este componente também é renderizado no servidor (publisher, react-dom/server), possivelmente com OUTRA cópia
   // do React; hook de uma cópia sem dispatcher quebraria. O cálculo é barato (O(nós)).
   const boundsById = new Map<string, Bounds>();
@@ -41,7 +43,8 @@ export function DiagramLayers({ model, selectedId = null, editingId = null, load
   const boundary = model.nodes.filter((n) => n.kind === 'boundary');
   const pool = model.pool;
   const laneHeader = pool && model.lanes[0]?.bounds ? model.lanes[0].bounds.x - pool.x : 0;
-  const cls = (base: string, id: string) => `${base}${selectedId === id ? ' sel' : ''}${editingId === id ? ' editing' : ''}`;
+  const isSel = (id: string) => selectedId === id || (!!selectedIds && selectedIds.includes(id));
+  const cls = (base: string, id: string) => `${base}${isSel(id) ? ' sel' : ''}${editingId === id ? ' editing' : ''}`;
 
   return (
     <>
@@ -69,11 +72,11 @@ export function DiagramLayers({ model, selectedId = null, editingId = null, load
           <text className="pool-label" x={p.bounds.x + p.bounds.w / 2} y={p.bounds.y + 20} textAnchor="middle">{p.name}</text>
         </g>
       ))}
-      {model.flows.map((f) => <FlowPath key={f.id} flow={f} nodes={boundsById} selected={f.id === selectedId} editing={f.id === editingId} />)}
+      {model.flows.map((f) => <FlowPath key={f.id} flow={f} nodes={boundsById} selected={isSel(f.id)} editing={f.id === editingId} />)}
       {regular.map((n) => (
-        <NodeShape key={n.id} node={n} selected={n.id === selectedId} editing={n.id === editingId} drillable={!!n.calledProcessId && loadedProcessIds.has(n.calledProcessId)} />
+        <NodeShape key={n.id} node={n} selected={isSel(n.id)} editing={n.id === editingId} drillable={!!n.calledProcessId && loadedProcessIds.has(n.calledProcessId)} />
       ))}
-      {boundary.map((n) => <NodeShape key={n.id} node={n} selected={n.id === selectedId} editing={n.id === editingId} drillable={false} />)}
+      {boundary.map((n) => <NodeShape key={n.id} node={n} selected={isSel(n.id)} editing={n.id === editingId} drillable={false} />)}
     </>
   );
 }

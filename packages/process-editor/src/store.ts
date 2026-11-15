@@ -20,7 +20,7 @@ import { create } from 'zustand';
 import {
   addFlow, addLane, addNode, addNodeAfter, addParticipant, canConnect, deleteElements, billingSample, layoutModel, moveNodes, newProcess, nodeAt,
   parseModel, renameProcess, resizeLane, setNodeLane, snap, updateFlow, updateLane, updateMeta, updateNode, updateParticipant,
-  addAttributeDef, autoRouteFlow, changeNodeKind, deleteAttributeDef, setLabelOffset, setNodeAttribute, updateAttributeDef,
+  addAttributeDef, autoRouteFlow, idsBetween, changeNodeKind, deleteAttributeDef, setLabelOffset, setNodeAttribute, updateAttributeDef,
   type AttributeDefSpec, type AttrValue, type FlowPatch, type NodePatch, type Point, type ProcessMeta, type ProcessModel,
 } from '@ancoro/process-core';
 import { currentT } from './i18n';
@@ -38,7 +38,12 @@ interface EditorState {
   currentId: string | null;
   /** pilha de processos visitados via drill-down (para "Voltar") */
   trail: string[];
+  /** elemento selecionado quando a seleção é de UM só (alças, painel de propriedades); null se vazia ou múltipla */
   selectedId: string | null;
+  /** [2026-11-10] seleção completa (0..n ids): Shift/Ctrl+clique e laço (marquee) — Rafael Brito */
+  selectedIds: string[];
+  /** âncora do Shift+clique: último elemento clicado sozinho ou incluído com Ctrl */
+  anchorId: string | null;
   warnings: string[];
   error: string | null;
   toast: string | null;
@@ -68,6 +73,14 @@ interface EditorState {
   openProcess: (id: string, viaDrill?: boolean) => void;
   back: () => void;
   select: (id: string | null) => void;
+  /** substitui a seleção por `ids` (laço) */
+  selectMany: (ids: ReadonlyArray<string>) => void;
+  /** Shift/Ctrl+clique: inclui/retira `id` da seleção */
+  toggleSelect: (id: string) => void;
+  /** Shift+clique: seleciona da âncora até `id` (tudo no retângulo entre os dois) */
+  selectRange: (id: string) => void;
+  /** Ctrl+A: todos os nós e fluxos do processo atual */
+  selectAll: () => void;
   setError: (msg: string | null) => void;
   showToast: (msg: string) => void;
   requestFit: () => void;
@@ -125,6 +138,13 @@ function loadAutosave(): Pick<EditorState, 'processes' | 'currentId' | 'dirty'> 
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
+/** seleção de um elemento (ou nenhum) — mantém selectedId e selectedIds coerentes */
+const one = (id: string | null) => ({ selectedId: id, selectedIds: id ? [id] : [], anchorId: id });
+/** seleção de 0..n elementos: selectedId só existe quando há exatamente um */
+const many = (ids: ReadonlyArray<string>) => {
+  const u = [...new Set(ids)];
+  return { selectedIds: u, selectedId: u.length === 1 ? u[0]! : null };
+};
 const stamp = (m: ProcessModel): ProcessModel => ({ ...m, meta: { ...m.meta, modifiedAt: new Date().toISOString() } });
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -158,7 +178,7 @@ export const useEditor = create<EditorState>((set, get) => {
       past: [...s.past.slice(-(MAX_HISTORY - 1)), { id: m.id, model: m }],
       future: [],
       dirty: withDirty(s, m.id),
-      ...(opts.select !== undefined && { selectedId: opts.select }),
+      ...(opts.select !== undefined && one(opts.select)),
       ...(opts.rename && opts.select ? { editing: opts.select } : {}),
     }));
     return true;
@@ -168,10 +188,10 @@ export const useEditor = create<EditorState>((set, get) => {
 
   return {
     ...initial,
-    trail: [], selectedId: null, warnings: [], error: null, toast: null, fitSignal: 0, armed: null, editing: null,
+    trail: [], selectedId: null, selectedIds: [], anchorId: null, warnings: [], error: null, toast: null, fitSignal: 0, armed: null, editing: null,
     past: [], future: [], drag: null, readOnly: false,
     replaceAll: (model, readOnly) => {
-      set({ processes: [model], currentId: model.id, trail: [], selectedId: null, editing: null, armed: null, past: [], future: [], dirty: [], drag: null, readOnly, error: null, warnings: [] });
+      set({ processes: [model], currentId: model.id, trail: [], ...one(null), editing: null, armed: null, past: [], future: [], dirty: [], drag: null, readOnly, error: null, warnings: [] });
       get().requestFit();
     },
     markClean: () => set({ dirty: [] }),
@@ -189,7 +209,7 @@ export const useEditor = create<EditorState>((set, get) => {
       set((s) => ({
         // reabrir o mesmo arquivo substitui os processos de mesmo id em vez de duplicar
         processes: [...s.processes.filter((p) => !ids.has(p.id)), ...incoming],
-        currentId: incoming[0]!.id, trail: [], selectedId: null, warnings, error: null, editing: null,
+        currentId: incoming[0]!.id, trail: [], ...one(null), warnings, error: null, editing: null,
         past: s.past.filter((x) => !ids.has(x.id)), future: s.future.filter((x) => !ids.has(x.id)),
         dirty: s.dirty.filter((d) => !ids.has(d)),
       }));
@@ -198,20 +218,34 @@ export const useEditor = create<EditorState>((set, get) => {
     createProcess: () => {
       const t = currentT();
       const m = newProcess(get().processes.map((p) => p.id), t.newProcessName);
-      set((s) => ({ processes: [...s.processes, m], currentId: m.id, trail: [], selectedId: null, dirty: [...s.dirty, m.id], warnings: [], error: null }));
+      set((s) => ({ processes: [...s.processes, m], currentId: m.id, trail: [], ...one(null), dirty: [...s.dirty, m.id], warnings: [], error: null }));
       get().requestFit();
     },
     openProcess: (id, viaDrill = false) =>
-      set((s) => ({ trail: viaDrill && s.currentId ? [...s.trail, s.currentId] : [], currentId: id, selectedId: null, editing: null, armed: null })),
+      set((s) => ({ trail: viaDrill && s.currentId ? [...s.trail, s.currentId] : [], currentId: id, ...one(null), editing: null, armed: null })),
     back: () => set((s) => {
       const prev = s.trail[s.trail.length - 1];
-      return prev ? { currentId: prev, trail: s.trail.slice(0, -1), selectedId: null, editing: null } : {};
+      return prev ? { currentId: prev, trail: s.trail.slice(0, -1), ...one(null), editing: null } : {};
     }),
-    select: (id) => set({ selectedId: id }),
+    select: (id) => set(one(id)),
+    selectMany: (ids) => set(many(ids)),
+    toggleSelect: (id) => set((s) => s.selectedIds.includes(id)
+      ? { ...many(s.selectedIds.filter((x) => x !== id)), anchorId: s.anchorId === id ? null : s.anchorId }
+      : { ...many([...s.selectedIds, id]), anchorId: id }),
+    // [2026-11-10] Criado: Shift+clique seleciona o intervalo âncora..id (sem âncora válida, só acrescenta) — Rafael Brito
+    selectRange: (id) => {
+      const m = current();
+      const a = get().anchorId;
+      if (!m) return;
+      // sem âncora utilizável (nenhuma, a própria, lane ou pool): só acrescenta o elemento e ele vira a âncora
+      if (!a || a === id || a === m.id || m.lanes.some((l) => l.id === a)) { set((st) => ({ ...many([...st.selectedIds, id]), anchorId: id })); return; }
+      set(many(idsBetween(m, a, id))); // a âncora se mantém: Shift+clique de novo refaz o intervalo a partir dela
+    },
+    selectAll: () => { const m = current(); if (m) set(many([...m.nodes.map((n) => n.id), ...m.flows.map((f) => f.id)])); },
     setError: (error) => set({ error }),
     showToast: toast,
     requestFit: () => set((s) => ({ fitSignal: s.fitSignal + 1 })),
-    arm: (armed) => set({ armed, selectedId: armed ? null : get().selectedId }),
+    arm: (armed) => set({ armed, ...(armed ? one(null) : {}) }),
     startEditing: (id) => set({ editing: get().readOnly ? null : id }),
 
     placeTool: (tool, at) => {
@@ -219,13 +253,13 @@ export const useEditor = create<EditorState>((set, get) => {
       if (tool.type === 'lane') {
         edit((m) => addLane(m, t.defaults.lane).model, { select: undefined });
         const m = current();
-        set({ selectedId: m?.lanes[m.lanes.length - 1]?.id ?? null, armed: null });
+        set({ ...one(m?.lanes[m.lanes.length - 1]?.id ?? null), armed: null });
         return;
       }
       if (tool.type === 'participant') {
         edit((m) => addParticipant(m, t.defaults.participant).model);
         const m = current();
-        set({ selectedId: m?.participants[m.participants.length - 1]?.id ?? null, armed: null });
+        set({ ...one(m?.participants[m.participants.length - 1]?.id ?? null), armed: null });
         return;
       }
       const kind = tool.kind!;
@@ -244,7 +278,7 @@ export const useEditor = create<EditorState>((set, get) => {
         newId = r.id;
         return r.model;
       });
-      if (ok) set({ selectedId: newId, armed: null, editing: ['task', 'subprocess', 'annotation', 'dataStore', 'dataObject', 'gateway'].includes(kind) ? newId : null });
+      if (ok) set({ ...one(newId), armed: null, editing: ['task', 'subprocess', 'annotation', 'dataStore', 'dataObject', 'gateway'].includes(kind) ? newId : null });
     },
 
     connect: (sourceId, targetId) => {
@@ -254,7 +288,7 @@ export const useEditor = create<EditorState>((set, get) => {
       if (why) { toast((currentT().toast as Record<string, string>)[why] ?? why); return false; }
       let id = '';
       const ok = edit((x) => { const r = addFlow(x, { sourceId, targetId }); id = r.id; return r.model; });
-      if (ok) set({ selectedId: id });
+      if (ok) set({ ...one(id) });
       return ok;
     },
 
@@ -271,16 +305,17 @@ export const useEditor = create<EditorState>((set, get) => {
         newId = r.id;
         return r.model;
       });
-      if (ok) set({ selectedId: newId, armed: null, editing: ['task', 'subprocess', 'annotation', 'dataStore', 'dataObject', 'gateway'].includes(kind) ? newId : null });
+      if (ok) set({ ...one(newId), armed: null, editing: ['task', 'subprocess', 'annotation', 'dataStore', 'dataObject', 'gateway'].includes(kind) ? newId : null });
       return ok;
     },
 
     deleteSelected: () => {
-      const { selectedId } = get();
+      // [2026-11-10] Alterado: apaga a seleção inteira; o pool nunca é apagado (se só ele está selecionado, avisa) — Rafael Brito
       const m = current();
-      if (!selectedId || !m) return;
-      if (selectedId === m.id) { toast(currentT().toast['cannot-delete-pool']); return; }
-      edit((x) => deleteElements(x, [selectedId]), { select: null });
+      if (!m) return;
+      const ids = get().selectedIds.filter((id) => id !== m.id);
+      if (!ids.length) { if (get().selectedIds.includes(m.id)) toast(currentT().toast['cannot-delete-pool']); return; }
+      edit((x) => deleteElements(x, ids), { select: null });
     },
 
     rename: (id, text) => {
@@ -324,8 +359,11 @@ export const useEditor = create<EditorState>((set, get) => {
     setAttr: (nodeId, defId, value) => { edit((m) => setNodeAttribute(m, nodeId, defId, value)); },
     assignLane: (nodeId, laneId) => { edit((m) => setNodeLane(m, nodeId, laneId)); },
     nudge: (dx, dy) => {
-      const { selectedId } = get();
-      if (selectedId) edit((m) => (m.nodes.some((n) => n.id === selectedId && n.kind !== 'boundary') ? moveNodes(m, [selectedId], dx, dy) : m));
+      const sel = new Set(get().selectedIds);
+      edit((m) => {
+        const ids = m.nodes.filter((n) => sel.has(n.id) && n.kind !== 'boundary').map((n) => n.id);
+        return ids.length ? moveNodes(m, ids, dx, dy) : m;
+      });
     },
     setProcessName: (name) => { edit((m) => renameProcess(m, name.trim() || m.name)); },
 

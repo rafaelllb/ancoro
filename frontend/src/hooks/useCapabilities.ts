@@ -27,6 +27,10 @@ export interface Capabilities {
   canViewProcesses: boolean
   canEditProcesses: boolean
   canPublishProcesses: boolean
+  // [2026-11-10] Criado: comentários de processo e link público de revisão
+  canCommentProcesses: boolean
+  canModerateProcessComments: boolean
+  canShareProcesses: boolean
   can: (capability: CapabilityKey) => boolean
   role: string | undefined
 }
@@ -66,6 +70,9 @@ export function useCapabilities(): Capabilities {
       canViewProcesses: can('canViewProcesses'),
       canEditProcesses: can('canEditProcesses'),
       canPublishProcesses: can('canPublishProcesses'),
+      canCommentProcesses: can('canCommentProcesses'),
+      canModerateProcessComments: can('canModerateProcessComments'),
+      canShareProcesses: can('canShareProcesses'),
       can,
       role,
     }

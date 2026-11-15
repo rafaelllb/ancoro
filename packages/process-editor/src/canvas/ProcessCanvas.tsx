@@ -11,23 +11,35 @@
  * - Mover usa o delta TOTAL desde o início do gesto, livre (1px) com ímã de alinhamento, aplicado sobre o modelo-base (ver store.dragEdit).
  * - Wheel com listener nativo não-passivo (React registra wheel como passivo e não deixa preventDefault).
  *
- * TODO [ESTIGMERGIA]: seleção múltipla e edição de waypoints
- * - Seleção é de um elemento. Marquee/shift-click e arrastar vértices de fluxos ficam para depois (fluxos são auto-roteados).
+ * [2026-11-10] Alterado: seleção múltipla + redimensionar lanes/pools pela borda inteira — Rafael Brito
+ * - Arrastar no fundo (ou sobre lane/pool) desenha um LAÇO: seleciona nós/fluxos/participantes totalmente dentro dele.
+ *   Shift/Ctrl soma ao que já estava selecionado; Shift/Ctrl+clique inclui/retira um elemento.
+ * - Arrastar um nó que faz parte da seleção move o GRUPO (com ímã sobre a caixa envolvente). Clique sem arrastar volta a seleção a ele.
+ * - Pan passou para o botão do meio, botão direito ou Espaço+arrastar (o arrasto esquerdo agora é do laço). Somente leitura mantém pan no esquerdo.
+ * - Bordas de lanes (divisórias internas), do pool e dos participantes têm faixas de "pega" invisíveis ao longo de TODO o comprimento
+ *   (espessura constante na tela), em vez de uma alça só no meio da linha.
+ * TODO [ESTIGMERGIA]: edição de waypoints
+ * - Arrastar vértices de fluxos fica para depois (fluxos são auto-roteados; segmentos já se arrastam).
  * TODO [ESTIGMERGIA]: virtualização
  * - Renderiza todos os elementos. Ok para o corpus (≤30 nós); acima de ~500 renderizar só o que intersecta o viewport.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { alignMove, canConnect, canReconnect, flowLabel, isResizable, moveFlowEndpoint, moveFlowSegment, moveNodes, reconnectFlow, whyCannotAddAfter, nodeLabel, resizeLane, resizeNode, resizePool, segmentAxis, setLabelOffset, snap, type AlignGuide, type Bounds, type ProcessModel, type ResizeHandle } from '@ancoro/process-core';
+import { alignMove, idsInBox, canConnect, canReconnect, flowLabel, isResizable, moveFlowEndpoint, moveFlowSegment, moveNodes, reconnectFlow, whyCannotAddAfter, nodeLabel, resizeLane, resizeNode, resizePool, segmentAxis, setLabelOffset, snap, type AlignGuide, type Bounds, type ProcessModel, type ResizeHandle } from '@ancoro/process-core';
 import { useEditor } from '../store';
 import { PALETTE, toolById } from '../tools';
 import { ToolIcon } from '../panel/Palette';
 import { useT } from '../i18n';
+import { openCountByElement, useComments, PROCESS_ELEMENT } from '../comments';
+import { useUi } from '../ui';
 import { DiagramDefs, DiagramLayers, contentBounds } from '@ancoro/process-render';
 
 interface View { x: number; y: number; k: number }
 type Gesture =
   | { type: 'pan'; sx: number; sy: number; vx: number; vy: number; moved: boolean }
-  | { type: 'move'; id: string; sx: number; sy: number; moved: boolean; last: string }
+  // [2026-11-10] Alterado: move um GRUPO (`ids`); `grab` = nó agarrado; `collapse` = clique sem arrastar reduz a seleção a ele — Rafael Brito
+  | { type: 'move'; ids: string[]; grab: string; collapse: boolean; sx: number; sy: number; moved: boolean; last: string }
+  // [2026-11-10] Criado: laço de seleção; `base` = seleção anterior mantida (Shift/Ctrl) — Rafael Brito
+  | { type: 'marquee'; sx: number; sy: number; additive: boolean; range: boolean; base: string[]; moved: boolean }
   | { type: 'connect'; sourceId: string }
   // [2026-10-27] Criado: clique no "+" do elemento selecionado abre o menu de criação conectada — Rafael Brito
   | { type: 'quick' }
@@ -52,11 +64,25 @@ export interface ProcessCanvasProps {
 
 const MIN_K = 0.1, MAX_K = 4;
 const CLICK_SLOP = 4;
+/** espessura (px de TELA) da faixa de pega ao longo das bordas de lanes/pools */
+const EDGE_HIT = 8;
+
+type EdgePos = ResizeHandle;
+const EDGE_CURSOR: Record<EdgePos, string> = { n: 'ns', s: 'ns', e: 'ew', w: 'ew', nw: 'nwse', se: 'nwse', ne: 'nesw', sw: 'nesw' };
+/** retângulo de pega de uma borda (faixa de espessura `t` ao longo do lado inteiro) ou canto (quadrado 2t) */
+function edgeRect(b: Bounds, pos: EdgePos, t: number) {
+  if (pos === 'n' || pos === 's') return { x: b.x, y: (pos === 'n' ? b.y : b.y + b.h) - t / 2, width: b.w, height: t };
+  if (pos === 'e' || pos === 'w') return { x: (pos === 'w' ? b.x : b.x + b.w) - t / 2, y: b.y, width: t, height: b.h };
+  const cx = pos.includes('w') ? b.x : b.x + b.w, cy = pos.includes('n') ? b.y : b.y + b.h;
+  return { x: cx - t, y: cy - t, width: 2 * t, height: 2 * t };
+}
+const ALL_EDGES: EdgePos[] = ['n', 's', 'e', 'w', 'nw', 'ne', 'se', 'sw'];
+const isTypingTarget = (t: EventTarget | null) => !!(t as HTMLElement | null)?.closest?.('input, textarea, select, button, [contenteditable]');
 
 export function ProcessCanvas({ model, loadedProcessIds, onOpenProcess }: ProcessCanvasProps) {
   const t = useT();
   const ed = useEditor();
-  const { selectedId, armed, editing, fitSignal } = ed;
+  const { selectedId, selectedIds, armed, editing, fitSignal } = ed;
   const ref = useRef<SVGSVGElement>(null);
   const [view, setView] = useState<View>({ x: 0, y: 0, k: 1 });
   const gesture = useRef<Gesture | null>(null);
@@ -64,6 +90,22 @@ export function ProcessCanvas({ model, loadedProcessIds, onOpenProcess }: Proces
   const [guides, setGuides] = useState<AlignGuide[]>([]);
   const [quickOpen, setQuickOpen] = useState(false);
   const [rubber, setRubber] = useState<{ x1: number; y1: number; x2: number; y2: number; ok: boolean | null } | null>(null);
+  const [marquee, setMarquee] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [panning, setPanning] = useState(false);
+  // [2026-11-10] balões de comentários em aberto por elemento (só embutido: a lista vem do host) — Rafael Brito
+  const commentItems = useComments((s) => s.items);
+  const openByEl = useMemo(() => openCountByElement(commentItems), [commentItems]);
+  // Espaço pressionado: arrasto esquerdo vira pan (convenção de editores gráficos)
+  const space = useRef(false);
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => { if (e.code === 'Space' && !isTypingTarget(e.target)) { space.current = true; e.preventDefault(); } };
+    const up = (e: KeyboardEvent) => { if (e.code === 'Space') space.current = false; };
+    const blur = () => { space.current = false; };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    window.addEventListener('blur', blur);
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('blur', blur); };
+  }, []);
 
   const fit = useCallback(() => {
     const el = ref.current;
@@ -121,12 +163,39 @@ export function ProcessCanvas({ model, loadedProcessIds, onOpenProcess }: Proces
   }, [model]);
 
   // ---------------------------------------------------------------- gestos
+  /** só nós "normais" se arrastam (boundary acompanha a hospedeira; fluxos/lanes/pool não) */
+  const movable = (ids: ReadonlyArray<string>) => {
+    const s = new Set(ids);
+    return model.nodes.filter((n) => s.has(n.id) && n.kind !== 'boundary').map((n) => n.id);
+  };
+  const startPan = (e: React.PointerEvent) => {
+    gesture.current = { type: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false };
+    setPanning(true);
+  };
+
   const onPointerDown = (e: React.PointerEvent) => {
-    if (e.button !== 0) return;
+    // [2026-11-10] Alterado: botão do meio, direito ou Espaço+esquerdo = pan; esquerdo no fundo = laço de seleção — Rafael Brito
+    const panButton = e.button === 1 || e.button === 2 || (e.button === 0 && space.current);
+    if (e.button !== 0 && !panButton) return;
+    if (e.button === 1) e.preventDefault(); // evita o autoscroll do botão do meio
     const target = e.target as Element;
-    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    // [2026-11-10] protegido: ponteiro sintético/já liberado (ex.: evento de automação) não pode derrubar o canvas
+    try { (e.currentTarget as Element).setPointerCapture(e.pointerId); } catch { /* segue sem captura */ }
     // [2026-10-15] Criado: somente leitura (CLIENT no Ancoro) — só navegar (pan/zoom/selecionar); nenhuma alça nem arrasto de elementos — Rafael Brito
-    if (ed.readOnly) { gesture.current = { type: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false }; return; }
+    // balão de comentários: funciona também em somente leitura (é o caminho do cliente para comentar)
+    const bubble = !panButton ? target.closest('[data-handle="comments"]')?.getAttribute('data-for') : null;
+    if (bubble) {
+      ed.select(bubble === PROCESS_ELEMENT ? null : bubble);
+      useUi.setState({ rightOpen: true });
+      useUi.getState().setTab('comments');
+      gesture.current = null;
+      return;
+    }
+    if (ed.readOnly || panButton) { startPan(e); return; }
+    const additive = e.shiftKey || e.ctrlKey || e.metaKey;
+    // [2026-11-10] Shift sozinho = intervalo (da âncora até o clicado); Ctrl/Cmd = incluir/retirar um — Rafael Brito
+    const range = e.shiftKey && !e.ctrlKey && !e.metaKey;
+    const pick = (id: string) => (range ? ed.selectRange(id) : ed.toggleSelect(id));
 
     if (target.closest('[data-handle="quick"]')) { gesture.current = { type: 'quick' }; return; }
 
@@ -166,6 +235,7 @@ export function ProcessCanvas({ model, loadedProcessIds, onOpenProcess }: Proces
     // rótulo (texto fora da forma): seleciona o dono e arrasta SÓ o texto
     const labelEl = !armed ? target.closest('[data-label]') : null;
     const labelOwner = labelEl?.closest('[data-id]')?.getAttribute('data-id');
+    if (labelOwner && additive) { pick(labelOwner); gesture.current = null; return; }
     if (labelOwner) {
       ed.select(labelOwner);
       const cur = model.nodes.find((n) => n.id === labelOwner)?.labelOffset ?? model.flows.find((f) => f.id === labelOwner)?.labelOffset;
@@ -177,11 +247,23 @@ export function ProcessCanvas({ model, loadedProcessIds, onOpenProcess }: Proces
     const nodeEl = !armed ? target.closest('.node') : null;
     const nodeId = nodeEl?.getAttribute('data-id');
     if (nodeId && nodeEl?.getAttribute('data-kind') !== 'boundary') {
+      const base = { sx: e.clientX, sy: e.clientY, moved: false, last: '', grab: nodeId };
+      if (additive) {
+        // Shift+clique: intervalo; Ctrl+clique: inclui/retira. Se ficou selecionado, já dá para arrastar o grupo no mesmo gesto
+        pick(nodeId);
+        const now = useEditor.getState().selectedIds;
+        gesture.current = now.includes(nodeId) ? { type: 'move', ids: movable(now), collapse: false, ...base } : null;
+        return;
+      }
+      const sel = useEditor.getState().selectedIds;
+      if (sel.length > 1 && sel.includes(nodeId)) { gesture.current = { type: 'move', ids: movable(sel), collapse: true, ...base }; return; }
       ed.select(nodeId);
-      gesture.current = { type: 'move', id: nodeId, sx: e.clientX, sy: e.clientY, moved: false, last: '' };
+      gesture.current = { type: 'move', ids: [nodeId], collapse: false, ...base };
       return;
     }
-    gesture.current = { type: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false };
+    // com ferramenta armada o clique solta o elemento; o arrasto continua sendo pan
+    if (armed) { startPan(e); return; }
+    gesture.current = { type: 'marquee', sx: e.clientX, sy: e.clientY, additive, range, base: additive ? useEditor.getState().selectedIds : [], moved: false };
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -201,12 +283,20 @@ export function ProcessCanvas({ model, loadedProcessIds, onOpenProcess }: Proces
       // [2026-10-15] Alterado: movimento LIVRE (1px) com ímã de alinhamento nas bordas/centros dos outros elementos — antes era grade de 10px.
       // Alt desliga o ímã. O objetivo é poder deixar as conexões retas (centro com centro) sem brigar com a grade.
       const rx = Math.round(dx), ry = Math.round(dy);
-      const a = e.altKey ? { dx: rx, dy: ry, guides: [] as AlignGuide[] } : alignMove(model0(), g.id, rx, ry, 6 / view.k);
+      const a = e.altKey ? { dx: rx, dy: ry, guides: [] as AlignGuide[] } : alignMove(model0(), g.ids, rx, ry, 6 / view.k);
       const key = `${a.dx},${a.dy}`;
       if (key === g.last) return; // só recalcula (e re-roteia) quando o deslocamento muda
       g.last = key;
       setGuides(a.guides);
-      ed.dragEdit((base) => moveNodes(base, [g.id], a.dx, a.dy));
+      ed.dragEdit((base) => moveNodes(base, g.ids, a.dx, a.dy));
+    } else if (g.type === 'marquee') {
+      if (!g.moved) { if (Math.hypot(e.clientX - g.sx, e.clientY - g.sy) <= CLICK_SLOP) return; g.moved = true; }
+      const a = toModel(g.sx, g.sy), b = toModel(e.clientX, e.clientY);
+      const r = { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
+      setMarquee(r);
+      // só entra o que está TODO dentro do laço (convenção de Visio/Bizagi; evita pegar lanes/pool sem querer)
+      const hits = idsInBox(model, r);
+      ed.selectMany([...g.base, ...hits]);
     } else if (g.type === 'nresize') {
       if (!g.moved) { if (Math.hypot(e.clientX - g.sx, e.clientY - g.sy) <= 2) return; g.moved = true; ed.beginDrag(); }
       const dx = Math.round((e.clientX - g.sx) / view.k), dy = Math.round((e.clientY - g.sy) / view.k);
@@ -273,6 +363,7 @@ export function ProcessCanvas({ model, loadedProcessIds, onOpenProcess }: Proces
       ed.endDrag();
       return;
     }
+    if (g.type === 'move' && !g.moved && g.collapse) { ed.select(g.grab); return; }
     if (g.type === 'move' || g.type === 'label' || g.type === 'segment' || g.type === 'nresize' || g.type === 'presize') { setGuides([]); if (g.moved) ed.endDrag(); return; }
     if (g.type === 'quick') { setQuickOpen((v) => !v); return; }
     if (g.type === 'resize') { if (g.moved) ed.endDrag(); ed.select(g.laneId); return; }
@@ -282,14 +373,18 @@ export function ProcessCanvas({ model, loadedProcessIds, onOpenProcess }: Proces
       if (over && over !== g.sourceId) ed.connect(g.sourceId, over);
       return;
     }
-    if (g.moved) return; // arraste de pan não conta como clique
+    if (g.type === 'pan') setPanning(false);
+    if (g.type === 'marquee') setMarquee(null);
+    if (g.moved) return; // arraste de pan/laço não conta como clique
     // clique
     if (armed) {
       const tool = armed;
       ed.placeTool(tool, toModel(e.clientX, e.clientY));
       return;
     }
-    ed.select(idAt(e.clientX, e.clientY));
+    const hit = idAt(e.clientX, e.clientY);
+    if (g.type === 'marquee' && g.additive) { if (hit) (g.range ? ed.selectRange(hit) : ed.toggleSelect(hit)); return; } // Shift/Ctrl+clique em fluxo/lane/pool
+    ed.select(hit);
   };
 
   // [2026-10-14] Alterado: duplo clique edita o texto de QUALQUER elemento que tenha texto — Rafael Brito
@@ -340,7 +435,6 @@ export function ProcessCanvas({ model, loadedProcessIds, onOpenProcess }: Proces
   // ---------------------------------------------------------------- render
   const pool = model.pool;
   const selNode = model.nodes.find((n) => n.id === selectedId);
-  const selLane = model.lanes.find((l) => l.id === selectedId);
   const selFlow = model.flows.find((f) => f.id === selectedId && f.waypoints && f.waypoints.length >= 2);
   const selPart = model.participants.find((p) => p.id === selectedId);
   // elemento selecionado que aceita redimensionar (tarefa, subprocesso, anotação, dados, participante)
@@ -350,13 +444,40 @@ export function ProcessCanvas({ model, loadedProcessIds, onOpenProcess }: Proces
     : selPart?.bounds ? { id: selPart.id, x: selPart.bounds.x + selPart.bounds.w / 2, y: selPart.bounds.y - 16 }
     : selectedId === model.id && pool ? { id: model.id, x: pool.x + pool.w / 2, y: pool.y + pool.h + 16 } : null;
 
+  // [2026-11-10] Criado: faixas de pega ao longo de TODA a borda (antes: uma alça só no meio da linha da lane) — Rafael Brito
+  const edgeT = EDGE_HIT / view.k;
+  const showEdges = !ed.readOnly && !armed;
+  const lanesByY = model.lanes.filter((l) => l.bounds).sort((a, b) => a.bounds!.y - b.bounds!.y);
+  const lastLane = lanesByY[lanesByY.length - 1];
+
   return (
     <div className="canvas-wrap" data-armed={armed ? armed.id : undefined}>
-      <svg ref={ref} className={`canvas${armed ? ' armed' : ''}`} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}
-        onDoubleClick={onDoubleClick} onDragOver={onDragOver} onDrop={onDrop}>
+      <svg ref={ref} className={`canvas${armed ? ' armed' : ''}${panning ? ' panning' : ''}`} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}
+        onDoubleClick={onDoubleClick} onDragOver={onDragOver} onDrop={onDrop} onContextMenu={(e) => e.preventDefault()}>
         <DiagramDefs />
         <g transform={`translate(${view.x},${view.y}) scale(${view.k})`}>
-          <DiagramLayers model={model} selectedId={selectedId} editingId={editing} loadedProcessIds={loadedProcessIds} />
+          <DiagramLayers model={model} selectedId={selectedId} selectedIds={selectedIds} editingId={editing} loadedProcessIds={loadedProcessIds} />
+
+          {showEdges && pool && lanesByY.length > 0 && (
+            <g className="edges">
+              {/* divisória entre lanes: arrastar muda a altura da lane DE CIMA (as de baixo acompanham) */}
+              {lanesByY.slice(0, -1).map((l) => (
+                <rect key={l.id} data-handle="resize" data-for={l.id} className={`handle edge ns${selectedId === l.id ? ' on' : ''}`} {...edgeRect(l.bounds!, 's', edgeT)} />
+              ))}
+              {/* contorno do pool: qualquer ponto de qualquer lado/canto */}
+              {ALL_EDGES.map((pos) => (
+                <rect key={pos} data-handle="presize" data-pos={pos} {...edgeRect(pool, pos, edgeT)}
+                  className={`handle edge ${EDGE_CURSOR[pos]}${pos === 's' && lastLane && selectedId === lastLane.id ? ' on' : ''}`} />
+              ))}
+            </g>
+          )}
+          {showEdges && model.participants.map((p) => p.bounds && (
+            <g key={p.id} className="edges">
+              {ALL_EDGES.map((pos) => (
+                <rect key={pos} data-handle="nresize" data-for={p.id} data-pos={pos} className={`handle edge ${EDGE_CURSOR[pos]}`} {...edgeRect(p.bounds!, pos, edgeT)} />
+              ))}
+            </g>
+          ))}
 
           {!ed.readOnly && selFlow && (['source', 'target'] as const).map((end) => {
             const pt = end === 'source' ? selFlow.waypoints![0]! : selFlow.waypoints![selFlow.waypoints!.length - 1]!;
@@ -393,11 +514,7 @@ export function ProcessCanvas({ model, loadedProcessIds, onOpenProcess }: Proces
           {guides.map((g, i) => (
             <path key={i} className="guide" d={g.axis === 'x' ? `M${g.pos} ${g.from}V${g.to}` : `M${g.from} ${g.pos}H${g.to}`} />
           ))}
-          {!ed.readOnly && selLane?.bounds && (
-            <g data-handle="resize" data-for={selLane.id} className="handle resize">
-              <rect x={selLane.bounds.x + selLane.bounds.w / 2 - 30} y={selLane.bounds.y + selLane.bounds.h - 4} width={60} height={8} rx={4} />
-            </g>
-          )}
+          {marquee && <rect className="marquee" x={marquee.x} y={marquee.y} width={marquee.w} height={marquee.h} />}
           {!ed.readOnly && connectFor && !armed && (
             <g data-handle="connect" data-for={connectFor.id} className="handle connect" transform={`translate(${connectFor.x},${connectFor.y})`}>
               <circle r={10} /><path d="M-4 0H4M1 -3L4 0L1 3" />
@@ -408,6 +525,31 @@ export function ProcessCanvas({ model, loadedProcessIds, onOpenProcess }: Proces
               <title>{t.quickAdd}</title><circle r={10} /><path d="M-4 0H4M0 -4V4" />
             </g>
           )}
+          {openByEl.size > 0 && (() => {
+            // âncora do balão: canto superior direito da forma (nós, participantes, pool) ou topo do cabeçalho (lanes)
+            const spots: Array<{ id: string; x: number; y: number }> = [];
+            for (const n of model.nodes) if (n.bounds && openByEl.has(n.id)) spots.push({ id: n.id, x: n.bounds.x + n.bounds.w, y: n.bounds.y });
+            for (const p of model.participants) if (p.bounds && openByEl.has(p.id)) spots.push({ id: p.id, x: p.bounds.x + p.bounds.w, y: p.bounds.y });
+            for (const l of model.lanes) if (l.bounds && openByEl.has(l.id)) spots.push({ id: l.id, x: l.bounds.x + 11, y: l.bounds.y + 4 });
+            if (pool && openByEl.has(PROCESS_ELEMENT)) spots.push({ id: PROCESS_ELEMENT, x: pool.x + pool.w, y: pool.y });
+            for (const f of model.flows) {
+              const wp = f.waypoints;
+              if (!wp?.length || !openByEl.has(f.id)) continue;
+              const mid = wp[Math.floor((wp.length - 1) / 2)]!;
+              spots.push({ id: f.id, x: mid[0], y: mid[1] });
+            }
+            const k = 1 / view.k;
+            return spots.map((b) => {
+              const n = openByEl.get(b.id)!;
+              return (
+                <g key={b.id} data-handle="comments" data-for={b.id} className="handle cbubble" transform={`translate(${b.x},${b.y}) scale(${k})`}>
+                  <title>{t.comments.badge.replace('{n}', String(n))}</title>
+                  <path d="M-11 -9h22a3 3 0 0 1 3 3v10a3 3 0 0 1 -3 3h-12l-6 5v-5h-4a3 3 0 0 1 -3 -3v-10a3 3 0 0 1 3 -3z" />
+                  <text y={3.5} textAnchor="middle">{n > 99 ? '99+' : n}</text>
+                </g>
+              );
+            });
+          })()}
           {rubber && (
             <path className={`rubber ${rubber.ok === true ? 'ok' : rubber.ok === false ? 'bad' : ''}`} d={`M${rubber.x1} ${rubber.y1}L${rubber.x2} ${rubber.y2}`} />
           )}

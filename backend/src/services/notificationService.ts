@@ -16,7 +16,7 @@ import { prisma } from '../index'
 
 // Tipos de eventos emitidos pelo servidor
 export interface NotificationEvent {
-  type: 'requirement:conflict' | 'requirement:comment' | 'crossmatrix:circular' | 'requirement:update' | 'requirement:create'
+  type: 'requirement:conflict' | 'requirement:comment' | 'crossmatrix:circular' | 'requirement:update' | 'requirement:create' | 'process:comment'
   projectId: string
   data: {
     id: string

@@ -34,6 +34,10 @@ type CapabilityMap = {
   canDeleteAnyProcess: boolean
   canDeleteOwnProcess: boolean
   canPublishProcesses: boolean
+  // [2026-11-10] Criado: comentários no processo e link público de revisão — Rafael Brito
+  canCommentProcesses: boolean
+  canModerateProcessComments: boolean
+  canShareProcesses: boolean
 }
 
 type RoleCapabilityMap = Record<UserRoleType, Partial<CapabilityMap>>
@@ -61,6 +65,9 @@ export const RoleCapabilities: RoleCapabilityMap = {
     canDeleteAnyProcess: true,
     canDeleteOwnProcess: false,
     canPublishProcesses: true,
+    canCommentProcesses: true,
+    canModerateProcessComments: true,
+    canShareProcesses: true,
   },
 
   [UserRole.MANAGER]: {
@@ -85,6 +92,9 @@ export const RoleCapabilities: RoleCapabilityMap = {
     canDeleteAnyProcess: false,
     canDeleteOwnProcess: true,
     canPublishProcesses: true,
+    canCommentProcesses: true,
+    canModerateProcessComments: true,
+    canShareProcesses: true,
   },
 
   [UserRole.CONSULTANT]: {
@@ -109,6 +119,9 @@ export const RoleCapabilities: RoleCapabilityMap = {
     canDeleteAnyProcess: false,
     canDeleteOwnProcess: true,
     canPublishProcesses: false,
+    canCommentProcesses: true,
+    canModerateProcessComments: true,
+    canShareProcesses: false,
   },
 
   [UserRole.CLIENT]: {
@@ -133,6 +146,9 @@ export const RoleCapabilities: RoleCapabilityMap = {
     canDeleteAnyProcess: false,
     canDeleteOwnProcess: false,
     canPublishProcesses: false,
+    canCommentProcesses: true,
+    canModerateProcessComments: false,
+    canShareProcesses: false,
   },
 }
 

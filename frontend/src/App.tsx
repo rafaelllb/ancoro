@@ -15,6 +15,7 @@ import LandingPage from './pages/LandingPage'
 import Plans from './pages/Plans'
 import DependencyGraph from './pages/DependencyGraph'
 import Processes from './pages/Processes'
+import ProcessShare from './pages/ProcessShare'
 import { useEntitlements } from './hooks/useEntitlements'
 
 /**
@@ -256,6 +257,8 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             {/* [2026-10-24] Planos e contato comercial (público, sempre acessível) */}
             <Route path="/planos" element={<Plans />} />
+            {/* [2026-11-10] Link PÚBLICO de revisão de processo (sem login): o cliente vê e comenta — Rafael Brito */}
+            <Route path="/share/:token" element={<ProcessShare />} />
 
             {/* 404 */}
             <Route

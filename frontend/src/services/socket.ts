@@ -19,6 +19,7 @@ export interface NotificationEvent {
     | 'crossmatrix:circular'
     | 'requirement:update'
     | 'requirement:create'
+    | 'process:comment'
   projectId: string
   data: {
     id: string

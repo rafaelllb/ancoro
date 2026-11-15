@@ -237,10 +237,46 @@ export interface AlignGuide { axis: 'x' | 'y'; pos: number; from: number; to: nu
  * a distância é <= `threshold`. Objetivo: deixar as conexões retas (centro com centro) sem forçar uma grade.
  * Devolve o deslocamento ajustado e as guias a desenhar.
  */
-export function alignMove(m: ProcessModel, id: string, dx: number, dy: number, threshold: number): { dx: number; dy: number; guides: AlignGuide[] } {
-  const me = nodeOf(m, id)?.bounds;
-  if (!me) return { dx, dy, guides: [] };
-  const others = m.nodes.filter((n) => n.id !== id && n.bounds && n.attachedToId !== id && n.kind !== 'boundary').map((n) => n.bounds!);
+// ---------------------------------------------------------------- seleção por área
+
+/** [2026-11-10] Caixa de um elemento selecionável: nó, participante ou fluxo (envolvente dos waypoints). Lanes/pool: undefined — Rafael Brito */
+export function selectableBounds(m: ProcessModel, id: string): Bounds | undefined {
+  const b = nodeOf(m, id)?.bounds ?? m.participants.find((p) => p.id === id)?.bounds;
+  if (b) return b;
+  const wp = m.flows.find((f) => f.id === id)?.waypoints;
+  if (!wp?.length) return undefined;
+  const xs = wp.map((p) => p[0]), ys = wp.map((p) => p[1]);
+  const x = Math.min(...xs), y = Math.min(...ys);
+  return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
+}
+
+/**
+ * [2026-11-10] Ids de nós, fluxos e participantes TOTALMENTE dentro de `box` (laço e Shift+clique) — Rafael Brito
+ * Lanes e pool nunca entram: são o "fundo" onde o laço começa.
+ */
+export function idsInBox(m: ProcessModel, box: Bounds): string[] {
+  const inside = (b: Bounds) => b.x >= box.x && b.y >= box.y && b.x + b.w <= box.x + box.w && b.y + b.h <= box.y + box.h;
+  return [...m.nodes.map((n) => n.id), ...m.flows.map((f) => f.id), ...m.participants.map((p) => p.id)]
+    .filter((id) => { const b = selectableBounds(m, id); return !!b && inside(b); });
+}
+
+/** [2026-11-10] Shift+clique: os dois elementos e tudo o que está no retângulo que os envolve — Rafael Brito */
+export function idsBetween(m: ProcessModel, a: string, b: string): string[] {
+  const ba = selectableBounds(m, a), bb = selectableBounds(m, b);
+  if (!ba || !bb) return [a, b];
+  const x = Math.min(ba.x, bb.x), y = Math.min(ba.y, bb.y);
+  const box = { x, y, w: Math.max(ba.x + ba.w, bb.x + bb.w) - x, h: Math.max(ba.y + ba.h, bb.y + bb.h) - y };
+  return [...new Set([a, b, ...idsInBox(m, box)])];
+}
+
+// [2026-11-10] Alterado: aceita VÁRIOS ids (seleção múltipla) — alinha a caixa envolvente do grupo; o grupo não "gruda" em si mesmo — Rafael Brito
+export function alignMove(m: ProcessModel, id: string | ReadonlyArray<string>, dx: number, dy: number, threshold: number): { dx: number; dy: number; guides: AlignGuide[] } {
+  const ids = new Set(typeof id === 'string' ? [id] : id);
+  const mine = m.nodes.filter((n) => ids.has(n.id) && n.bounds).map((n) => n.bounds!);
+  if (!mine.length) return { dx, dy, guides: [] };
+  const x0 = Math.min(...mine.map((b) => b.x)), y0 = Math.min(...mine.map((b) => b.y));
+  const me: Bounds = { x: x0, y: y0, w: Math.max(...mine.map((b) => b.x + b.w)) - x0, h: Math.max(...mine.map((b) => b.y + b.h)) - y0 };
+  const others = m.nodes.filter((n) => !ids.has(n.id) && n.bounds && !ids.has(n.attachedToId ?? '') && n.kind !== 'boundary').map((n) => n.bounds!);
   const box = { x: me.x + dx, y: me.y + dy, w: me.w, h: me.h };
   const pick = (mine: number[], theirs: number[]) => {
     let best: { d: number; at: number } | null = null;

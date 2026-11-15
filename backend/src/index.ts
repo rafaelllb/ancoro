@@ -64,7 +64,8 @@ const globalLimiter = rateLimit({
   message: { error: 'Too many requests', message: 'Muitas requisições. Aguarde alguns minutos.' },
   // Não aplica rate limit em dev para facilitar debugging
   // Ignora OPTIONS para não bloquear preflight CORS
-  skip: (req) => config.isDevelopment || req.method === 'OPTIONS',
+  // [2026-11-10] Alterado: o link público de revisão de processo tem limitador PRÓPRIO (o polling do 'ao vivo' estouraria o global) — Rafael Brito
+  skip: (req) => config.isDevelopment || req.method === 'OPTIONS' || req.path.startsWith('/api/public/share/'),
 })
 app.use(globalLimiter)
 
@@ -110,6 +111,7 @@ import demoRoutes from './routes/demo'
 import evidencesRoutes from './routes/evidences'
 import graphLayoutRoutes from './routes/graphLayout'
 import processesRoutes from './routes/processes'
+import processCommentsRoutes, { publicShareRouter } from './routes/processComments'
 import { getEntitlements } from './config/entitlements'
 import usersRoutes from './routes/users'
 import leadsRoutes from './routes/leads'
@@ -163,6 +165,8 @@ app.use('/api/demo', demoRoutes)
 app.use('/api/auth', authRoutes)
 // [2026-10-24] Criado: leads comerciais (POST público) — ANTES dos routers que usam router.use(authenticate) — Rafael Brito
 app.use('/api', leadsRoutes)
+// [2026-11-10] Criado: link PÚBLICO de revisão de processo (sem login) — também ANTES dos routers autenticados — Rafael Brito
+app.use('/api/public', publicShareRouter)
 app.use('/api', requirementsRoutes)
 app.use('/api', crossMatrixRoutes)
 app.use('/api', commentsRoutes)
@@ -174,6 +178,7 @@ app.use('/api', projectMembersRoutes)
 app.use('/api', projectsRoutes)
 app.use('/api', evidencesRoutes)
 app.use('/api', graphLayoutRoutes)
+app.use('/api', processCommentsRoutes)  // comentários de processo + gestão do link público (antes de processes: router próprio)
 app.use('/api', processesRoutes)         // Process Studio (Fase 4)
 app.use('/api', usersRoutes)
 

@@ -29,6 +29,8 @@ const TOAST_CONFIG: Record<string, { show: boolean; duration: number }> = {
   'crossmatrix:circular': { show: true, duration: 6000 },
   'requirement:update': { show: false, duration: 3000 }, // Muito frequente, não mostra toast
   'requirement:create': { show: true, duration: 3000 },
+  // [2026-11-10] Criado: comentário do cliente num processo (inclusive pelo link público) — Rafael Brito
+  'process:comment': { show: true, duration: 5000 },
 }
 
 export function useNotifications() {
@@ -52,6 +54,9 @@ export function useNotifications() {
       if (event.data.userId === user?.id) {
         return
       }
+
+      // [2026-11-10] resolver/reabrir/excluir comentário de processo só sincroniza telas abertas: não entra no sino
+      if (event.data.metadata?.silent) return
 
       // Adiciona ao store
       addNotification(event)
@@ -135,6 +140,8 @@ function getEventIcon(type: string): string {
       return '✏️'
     case 'requirement:create':
       return '✨'
+    case 'process:comment':
+      return '💬'
     default:
       return '🔔'
   }

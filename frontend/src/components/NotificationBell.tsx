@@ -48,6 +48,9 @@ export function NotificationBell() {
 
     if (notification.type === 'crossmatrix:circular') {
       navigate('/cross-matrix')
+    } else if (notification.type === 'process:comment' && typeof notification.data.metadata?.processId === 'string') {
+      // [2026-11-10] Criado: comentário em processo (inclusive do cliente pelo link público) abre o processo — Rafael Brito
+      navigate(`/processes/${notification.data.metadata.processId}`)
     } else if (notification.data.id && notification.data.reqId) {
       navigate(`/dashboard?highlight=${notification.data.id}`)
     }

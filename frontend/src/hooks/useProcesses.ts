@@ -11,7 +11,8 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { processesAPI, type ProcessGenerateInput } from '../services/api'
+import { processCommentsAPI, processesAPI, type ProcessGenerateInput } from '../services/api'
+import { onNotification } from '../services/socket'
 
 const KEY = 'processes'
 export const processKeys = {
@@ -216,6 +217,11 @@ export function useProcessStudioBridge({ projectId, processId, iframe, onNavigat
         }
         case 'attachments.remove': await processesAPI.deleteAttachment(projectId, processId, String(p.id)); return null
         case 'requirements.search': return (await processesAPI.searchRequirements(projectId, p?.q ?? '')).data
+        // [2026-11-10] Criado: comentários por elemento (CLIENT também comenta; resolver/excluir de outros = equipe) — Rafael Brito
+        case 'comments.list': return (await processCommentsAPI.list(projectId, processId)).data
+        case 'comments.add': return (await processCommentsAPI.add(projectId, processId, { elementId: String(p.elementId), type: p.type, content: String(p.content), parentId: p.parentId })).data
+        case 'comments.setStatus': return (await processCommentsAPI.setStatus(projectId, processId, String(p.id), p.status)).data
+        case 'comments.remove': await processCommentsAPI.remove(projectId, processId, String(p.id)); return null
         default: throw Object.assign(new Error(`unknown request: ${type}`), { status: 400 })
       }
     }
@@ -245,7 +251,12 @@ export function useProcessStudioBridge({ projectId, processId, iframe, onNavigat
     }
     window.addEventListener('message', onMessage)
     i18n.on('languageChanged', sendLang)
-    return () => { window.removeEventListener('message', onMessage); i18n.off('languageChanged', sendLang) }
+    // [2026-11-10] ao vivo: comentário novo/alterado neste processo (de outra pessoa ou do cliente pelo link) => o editor recarrega a lista
+    const unsub = onNotification((ev) => {
+      if (ev.type !== 'process:comment' || ev.data.metadata?.processId !== processId) return
+      iframe.current?.contentWindow?.postMessage({ ps: 1, kind: 'event', type: 'comments.changed' }, window.location.origin)
+    })
+    return () => { window.removeEventListener('message', onMessage); i18n.off('languageChanged', sendLang); unsub() }
   }, [projectId, processId, iframe, qc, i18n])
 
   return { ready, dirty }
