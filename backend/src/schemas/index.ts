@@ -251,13 +251,34 @@ export const updateCrossMatrixSchema = z.object({
  * (sem projectId, que vem da URL)
  *
  * @param pattern - Padrão de ID do projeto
+ * @param options.validModules - Códigos de módulo configurados no projeto (lista MODULE). Quando
+ *   informado, o módulo é validado contra essa lista (maiúsculas) em vez do enum fixo, para aceitar
+ *   módulos personalizados do projeto (ex.: SALESFORCE).
+ * @param options.force - Importação forçada (somente ADMIN, validado na rota): campos 5W2H
+ *   (what, why, who, when, where, howToday, howMuch) podem vir vazios/curtos e são gravados como ''.
+ *   reqId, shortDesc, module e status continuam obrigatórios/validados.
  * @returns Schema Zod para validar itens de importação em massa
  */
-export function createBulkImportItemSchemaForProject(pattern: RequirementIdPattern) {
+export function createBulkImportItemSchemaForProject(
+  pattern: RequirementIdPattern,
+  options: { force?: boolean; validModules?: string[] } = {}
+) {
+  const validModules = options.validModules?.map((m) => m.toUpperCase())
+  // Modo normal: texto mínimo obrigatório. Modo forçado: qualquer texto (ou ausente => '')
+  const text5w2h = (min: number, message: string) =>
+    options.force ? z.string().optional().default('') : z.string().min(min, message)
+
   return z.object({
     reqId: z.string().trim().min(1, 'Req ID é obrigatório').max(100, 'Req ID deve ter no máximo 100 caracteres'),
     shortDesc: z.string().max(50, 'Máximo 50 caracteres').min(1, 'Descrição obrigatória'),
-    module: z.enum([
+    module: validModules && validModules.length > 0
+      ? z
+          .string()
+          .trim()
+          .refine((m) => validModules.includes(m.toUpperCase()), {
+            message: `Módulo inexistente na lista do projeto (válidos: ${validModules.join(', ')})`,
+          })
+      : z.enum([
       // Financeiro
       Module['FI-CA'],
       Module['FI-AR'],
@@ -281,13 +302,13 @@ export function createBulkImportItemSchemaForProject(pattern: RequirementIdPatte
       Module.CUSTOM,
       Module.OTHER,
     ]),
-    what: z.string().min(10, 'Campo "What" deve ter no mínimo 10 caracteres'),
-    why: z.string().min(10, 'Campo "Why" deve ter no mínimo 10 caracteres'),
-    who: z.string().min(3, 'Campo "Who" deve ter no mínimo 3 caracteres'),
-    when: z.string().min(3, 'Campo "When" deve ter no mínimo 3 caracteres'),
-    where: z.string().min(3, 'Campo "Where" deve ter no mínimo 3 caracteres'),
-    howToday: z.string().min(10, 'Campo "How (hoje)" deve ter no mínimo 10 caracteres'),
-    howMuch: z.string().min(3, 'Campo "How Much" deve ter no mínimo 3 caracteres'),
+    what: text5w2h(10, 'Campo "What" deve ter no mínimo 10 caracteres'),
+    why: text5w2h(10, 'Campo "Why" deve ter no mínimo 10 caracteres'),
+    who: text5w2h(3, 'Campo "Who" deve ter no mínimo 3 caracteres'),
+    when: text5w2h(3, 'Campo "When" deve ter no mínimo 3 caracteres'),
+    where: text5w2h(3, 'Campo "Where" deve ter no mínimo 3 caracteres'),
+    howToday: text5w2h(10, 'Campo "How (hoje)" deve ter no mínimo 10 caracteres'),
+    howMuch: text5w2h(3, 'Campo "How Much" deve ter no mínimo 3 caracteres'),
     dependsOn: z.array(z.string()).optional().default([]),
     providesFor: z.array(z.string()).optional().default([]),
     responsibleConsultantId: z.string().cuid().optional(),
@@ -512,27 +533,6 @@ export const processPublishSchema = z.object({
   brand: z.record(z.string(), z.unknown()).optional(),
 })
 
-// ===== LEAD SCHEMAS =====
-// [2026-10-24] Criado: validação do formulário público de /planos — Rafael Brito
-// `website` é um honeypot: humanos não veem o campo; bots preenchem. Preenchido => descartamos em silêncio (rota responde 201).
-const optionalText = (max: number) =>
-  z.string().trim().max(max).optional().transform((v) => (v ? v : undefined))
-
-export const leadSchema = z.object({
-  interest: z.enum(['ENTERPRISE', 'SELF_SERVICE_WAITLIST']),
-  name: z.string().trim().min(2, 'Nome deve ter no mínimo 2 caracteres').max(100),
-  email: z.string().trim().toLowerCase().email('Email inválido').max(254),
-  company: optionalText(120),
-  phone: optionalText(40),
-  teamSize: z.enum(['1', '2-5', '6-20', '21-100', '100+']).optional(),
-  deployment: z.enum(['SAAS', 'DEDICATED', 'ONPREMISE', 'UNSURE']).optional(),
-  message: optionalText(2000),
-  locale: z.enum(['pt', 'en']).default('pt'),
-  // LGPD: sem consentimento explícito não gravamos dado pessoal
-  consent: z.literal(true, { error: 'É necessário aceitar o contato para enviar' }),
-  website: z.string().max(200).optional(),
-})
-
 // ===== PROCESS COMMENTS / SHARE SCHEMAS =====
 // [2026-11-10] Criado: comentários por elemento (interno e via link público) — Rafael Brito
 export const PROCESS_COMMENT_TYPES = ['OBSERVATION', 'QUESTION', 'CHANGE_REQUEST'] as const
@@ -554,6 +554,27 @@ export const publicProcessCommentSchema = processCommentCreateSchema.extend({
 })
 
 export const processCommentStatusSchema = z.object({ status: z.enum(['OPEN', 'RESOLVED']) })
+
+// ===== LEAD SCHEMAS =====
+// [2026-10-24] Criado: validação do formulário público de /planos — Rafael Brito
+// `website` é um honeypot: humanos não veem o campo; bots preenchem. Preenchido => descartamos em silêncio (rota responde 201).
+const optionalText = (max: number) =>
+  z.string().trim().max(max).optional().transform((v) => (v ? v : undefined))
+
+export const leadSchema = z.object({
+  interest: z.enum(['ENTERPRISE', 'SELF_SERVICE_WAITLIST']),
+  name: z.string().trim().min(2, 'Nome deve ter no mínimo 2 caracteres').max(100),
+  email: z.string().trim().toLowerCase().email('Email inválido').max(254),
+  company: optionalText(120),
+  phone: optionalText(40),
+  teamSize: z.enum(['1', '2-5', '6-20', '21-100', '100+']).optional(),
+  deployment: z.enum(['SAAS', 'DEDICATED', 'ONPREMISE', 'UNSURE']).optional(),
+  message: optionalText(2000),
+  locale: z.enum(['pt', 'en']).default('pt'),
+  // LGPD: sem consentimento explícito não gravamos dado pessoal
+  consent: z.literal(true, { error: 'É necessário aceitar o contato para enviar' }),
+  website: z.string().max(200).optional(),
+})
 
 export const leadStatusSchema = z.object({
   status: z.enum(['NEW', 'CONTACTED', 'QUALIFIED', 'WON', 'LOST']),

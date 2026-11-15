@@ -31,5 +31,11 @@
     "exportBpdShort": "BPD",
     "manageMembers": "Gerenciar Membros",
     "manageMembersShort": "Membros"
+  },
+  "importForce": {
+    "forceLabel": "Forçar importação (somente admin)",
+    "forceHint": "Importa também as linhas com campos 5W2H vazios ou curtos (O que, Por que, Quem, Quando, Onde, Como, Quanto). Os campos ficam em branco para preencher depois. Req ID, Descrição e Módulo continuam obrigatórios. Em requisitos já existentes, campos vazios não apagam o valor atual.",
+    "forceWarning": "Aviso",
+    "forceButton": "Forçar importação de {{count}} requisitos"
   }
 }

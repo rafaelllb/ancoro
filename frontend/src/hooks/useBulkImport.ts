@@ -13,6 +13,7 @@ import { requirementKeys } from './useRequirements'
 interface UseBulkImportParams {
   projectId: string
   requirements: BulkImportRequest['requirements']
+  force?: boolean
 }
 
 /**
@@ -29,8 +30,8 @@ export function useBulkImportRequirements() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ projectId, requirements }: UseBulkImportParams) => {
-      const response = await requirementsAPI.bulkImport(projectId, { requirements })
+    mutationFn: async ({ projectId, requirements, force }: UseBulkImportParams) => {
+      const response = await requirementsAPI.bulkImport(projectId, { requirements, ...(force ? { force: true } : {}) })
       return response.data
     },
 

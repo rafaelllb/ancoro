@@ -12,7 +12,9 @@
  */
 
 import { useState, useCallback, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import * as XLSX from 'xlsx'
+import { useAuth } from '../contexts/AuthContext'
 import { useBulkImportRequirements } from '../hooks/useBulkImport'
 import { BulkImportError, Requirement } from '../services/api'
 import {
@@ -71,10 +73,16 @@ const VALID_MODULES = [
 
 interface ParsedRow {
   data: Record<string, any>
+  /** Todos os erros (bloqueantes + conteúdo 5W2H) — usado na exibição */
   errors: string[]
+  /** Erros que bloqueiam sempre, mesmo na importação forçada (reqId, descrição, módulo, status) */
+  hardErrors: string[]
   isValid: boolean
   rowNumber: number
 }
+
+// Campos que continuam obrigatórios mesmo na importação forçada (admin)
+const HARD_REQUIRED_FIELDS = ['reqId', 'shortDesc', 'module']
 
 type Step = 'upload' | 'preview' | 'importing' | 'result'
 
@@ -109,44 +117,49 @@ function validateRow(
   validModules: string[],
   moduleLabel: string
 ): ParsedRow {
-  const errors: string[] = []
+  // hardErrors: bloqueiam sempre. softErrors: conteúdo 5W2H, dispensável na importação forçada (admin)
+  const hardErrors: string[] = []
+  const softErrors: string[] = []
 
   // Verificar campos obrigatórios
   for (const field of REQUIRED_FIELDS) {
     const value = data[field]
     if (!value || (typeof value === 'string' && !value.trim())) {
-      errors.push(`Campo "${field}" obrigatório`)
+      const target = HARD_REQUIRED_FIELDS.includes(field) ? hardErrors : softErrors
+      target.push(`Campo "${field}" obrigatório`)
     }
   }
 
   // Admin define o reqId livremente; aqui só exigimos presença e limite razoável
   if (data.reqId && String(data.reqId).trim().length > 100) {
-    errors.push('reqId deve ter no máximo 100 caracteres')
+    hardErrors.push('reqId deve ter no máximo 100 caracteres')
   }
 
   // Validar module
   if (data.module && !validModules.includes(data.module.toUpperCase())) {
-    errors.push(`${moduleLabel} deve ser uma de: ${validModules.join(', ')}`)
+    hardErrors.push(`${moduleLabel} deve ser uma de: ${validModules.join(', ')}`)
   }
 
   // Validar status se fornecido
   if (data.status && !VALID_STATUS.includes(data.status.toUpperCase())) {
-    errors.push(`status deve ser um de: ${VALID_STATUS.join(', ')}`)
+    hardErrors.push(`status deve ser um de: ${VALID_STATUS.join(', ')}`)
   }
 
-  // Validar tamanhos mínimos
-  if (data.what && data.what.length < 10) errors.push('what deve ter mínimo 10 caracteres')
-  if (data.why && data.why.length < 10) errors.push('why deve ter mínimo 10 caracteres')
-  if (data.howToday && data.howToday.length < 10) errors.push('howToday deve ter mínimo 10 caracteres')
-  if (data.who && data.who.length < 3) errors.push('who deve ter mínimo 3 caracteres')
-  if (data.when && data.when.length < 3) errors.push('when deve ter mínimo 3 caracteres')
-  if (data.where && data.where.length < 3) errors.push('where deve ter mínimo 3 caracteres')
-  if (data.howMuch && data.howMuch.length < 3) errors.push('howMuch deve ter mínimo 3 caracteres')
-  if (data.shortDesc && data.shortDesc.length > 50) errors.push('shortDesc deve ter máximo 50 caracteres')
+  // Validar tamanhos mínimos (conteúdo 5W2H)
+  if (data.what && data.what.length < 10) softErrors.push('what deve ter mínimo 10 caracteres')
+  if (data.why && data.why.length < 10) softErrors.push('why deve ter mínimo 10 caracteres')
+  if (data.howToday && data.howToday.length < 10) softErrors.push('howToday deve ter mínimo 10 caracteres')
+  if (data.who && data.who.length < 3) softErrors.push('who deve ter mínimo 3 caracteres')
+  if (data.when && data.when.length < 3) softErrors.push('when deve ter mínimo 3 caracteres')
+  if (data.where && data.where.length < 3) softErrors.push('where deve ter mínimo 3 caracteres')
+  if (data.howMuch && data.howMuch.length < 3) softErrors.push('howMuch deve ter mínimo 3 caracteres')
+  if (data.shortDesc && data.shortDesc.length > 50) hardErrors.push('shortDesc deve ter máximo 50 caracteres')
 
+  const errors = [...hardErrors, ...softErrors]
   return {
     data,
     errors,
+    hardErrors,
     isValid: errors.length === 0,
     rowNumber,
   }
@@ -208,6 +221,10 @@ export default function ImportSpreadsheetModal({
   requirements = [],
   reqIdPattern = DEFAULT_PATTERN,
 }: ImportSpreadsheetModalProps) {
+  const { t } = useTranslation('dashboard')
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'ADMIN'
+  const [forceImport, setForceImport] = useState(false)
   const { data: projectModules = [] } = useProjectModules(projectId)
   const { moduleLabel } = useProjectTerminology(projectId)
   const [step, setStep] = useState<Step>('upload')
@@ -235,6 +252,7 @@ export default function ImportSpreadsheetModal({
     setColumnMapping({})
     setServerErrors([])
     setImportResult(null)
+    setForceImport(false)
     onClose()
   }, [onClose])
 
@@ -385,7 +403,9 @@ export default function ImportSpreadsheetModal({
 
   // Handler para importar
   const handleImport = useCallback(async () => {
-    const validRows = parsedRows.filter((r) => r.isValid)
+    // Importação forçada só vale para admin; o backend também valida o papel
+    const force = isAdmin && forceImport
+    const validRows = parsedRows.filter((r) => (force ? r.hardErrors.length === 0 : r.isValid))
     if (validRows.length === 0) {
       alert('Nenhuma linha válida para importar')
       return
@@ -413,7 +433,7 @@ export default function ImportSpreadsheetModal({
     }))
 
     bulkImportMutation.mutate(
-      { projectId, requirements },
+      { projectId, requirements, force },
       {
         onSuccess: (data) => {
           setImportResult({
@@ -439,12 +459,15 @@ export default function ImportSpreadsheetModal({
         },
       }
     )
-  }, [parsedRows, projectId, bulkImportMutation])
+  }, [parsedRows, projectId, bulkImportMutation, isAdmin, forceImport])
 
   if (!isOpen) return null
 
-  const validCount = parsedRows.filter((r) => r.isValid).length
+  const force = isAdmin && forceImport
+  const isImportable = (r: ParsedRow) => (force ? r.hardErrors.length === 0 : r.isValid)
+  const validCount = parsedRows.filter(isImportable).length
   const invalidCount = parsedRows.length - validCount
+  const incompleteCount = force ? parsedRows.filter((r) => r.hardErrors.length === 0 && !r.isValid).length : 0
   const mappedFieldsCount = Object.keys(columnMapping).length
 
   return (
@@ -595,6 +618,12 @@ export default function ImportSpreadsheetModal({
                       <p className="text-2xl font-bold text-green-600">{validCount}</p>
                       <p className="text-xs text-gray-500">válidas</p>
                     </div>
+                    {incompleteCount > 0 && (
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-amber-600">{incompleteCount}</p>
+                        <p className="text-xs text-gray-500">incompletas</p>
+                      </div>
+                    )}
                     {invalidCount > 0 && (
                       <div className="text-center">
                         <p className="text-2xl font-bold text-red-600">{invalidCount}</p>
@@ -603,6 +632,22 @@ export default function ImportSpreadsheetModal({
                     )}
                   </div>
                 </div>
+
+                {/* Importação forçada (somente admin) */}
+                {isAdmin && (
+                  <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                    <input
+                      type="checkbox"
+                      checked={forceImport}
+                      onChange={(e) => setForceImport(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-amber-900">{t('importForce.forceLabel')}</span>
+                      <span className="mt-1 block text-xs text-amber-800">{t('importForce.forceHint')}</span>
+                    </span>
+                  </label>
+                )}
 
                 {/* Aviso de campos não mapeados */}
                 {REQUIRED_FIELDS.some((f) => columnMapping[f] === undefined) && (
@@ -633,11 +678,15 @@ export default function ImportSpreadsheetModal({
                         {parsedRows.map((row) => (
                           <tr
                             key={row.rowNumber}
-                            className={row.isValid ? '' : 'bg-red-50'}
+                            className={isImportable(row) ? (row.isValid ? '' : 'bg-amber-50') : 'bg-red-50'}
                           >
                             <td className="px-3 py-2 text-gray-500">{row.rowNumber}</td>
                             <td className="px-3 py-2">
-                              {row.isValid ? (
+                              {isImportable(row) && !row.isValid ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                  {t('importForce.forceWarning')}
+                                </span>
+                              ) : row.isValid ? (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                                   OK
                                 </span>
@@ -650,7 +699,7 @@ export default function ImportSpreadsheetModal({
                             <td className="px-3 py-2 font-mono text-blue-600">{row.data.reqId || '—'}</td>
                             <td className="px-3 py-2 truncate max-w-xs">{row.data.shortDesc || '—'}</td>
                             <td className="px-3 py-2">{row.data.module || '—'}</td>
-                            <td className="px-3 py-2 text-red-600 text-xs">
+                            <td className={`px-3 py-2 text-xs ${isImportable(row) ? 'text-amber-700' : 'text-red-600'}`}>
                               {row.errors.length > 0 && (
                                 <ul className="list-disc list-inside">
                                   {row.errors.slice(0, 3).map((err, i) => (
@@ -823,7 +872,7 @@ export default function ImportSpreadsheetModal({
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
-                    Importar {validCount} Requisitos
+                    {force ? t('importForce.forceButton', { count: validCount }) : `Importar ${validCount} Requisitos`}
                   </button>
                 </>
               )}

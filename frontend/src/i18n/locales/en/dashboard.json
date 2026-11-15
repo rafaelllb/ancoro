@@ -31,5 +31,11 @@
     "exportBpdShort": "BPD",
     "manageMembers": "Manage Members",
     "manageMembersShort": "Members"
+  },
+  "importForce": {
+    "forceLabel": "Force import (admin only)",
+    "forceHint": "Also imports rows with empty or short 5W2H fields (What, Why, Who, When, Where, How, How much). Those fields stay blank to be filled in later. Req ID, Description and Module are still required. For existing requirements, empty fields do not erase the current value.",
+    "forceWarning": "Warning",
+    "forceButton": "Force import of {{count}} requirements"
   }
 }

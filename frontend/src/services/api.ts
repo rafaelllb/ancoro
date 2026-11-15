@@ -267,6 +267,8 @@ export interface BulkImportResponse {
 
 export interface BulkImportRequest {
   requirements: Omit<CreateRequirementRequest, 'projectId'>[]
+  /** Somente ADMIN: aceita campos 5W2H vazios/curtos (o backend responde 403 para outros papéis) */
+  force?: boolean
 }
 
 export interface BulkDeleteFailure {

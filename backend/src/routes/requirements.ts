@@ -956,7 +956,11 @@ router.delete(
  * Importação em massa de requisitos a partir de planilha
  * Requer: autenticação + acesso ao projeto + role ADMIN ou MANAGER
  *
- * Body: { requirements: Array<RequirementData> }
+ * Body: { requirements: Array<RequirementData>, force?: boolean }
+ *
+ * force=true (somente ADMIN): importação forçada — campos 5W2H vazios/curtos são aceitos
+ * (gravados como ''). reqId, shortDesc, module e status continuam validados. Em updates
+ * (upsert), campos 5W2H vazios NÃO sobrescrevem o valor já existente.
  *
  * Comportamento:
  * - Valida cada item individualmente com Zod
@@ -972,6 +976,7 @@ router.post(
     try {
       const { projectId } = req.params
       const { requirements } = req.body
+      const force = req.body.force === true
 
       // Apenas ADMIN ou MANAGER podem fazer bulk import
       const allowedRoles = ['ADMIN', 'MANAGER']
@@ -980,6 +985,15 @@ router.post(
           success: false,
           error: 'Forbidden',
           message: 'Apenas gerentes e administradores podem importar requisitos em massa',
+        })
+      }
+
+      // Importação forçada é exclusiva de ADMIN
+      if (force && req.user!.role !== 'ADMIN') {
+        return res.status(403).json({
+          success: false,
+          error: 'Forbidden',
+          message: 'Apenas administradores podem forçar a importação',
         })
       }
 
@@ -1026,7 +1040,16 @@ router.post(
 
       // Cria schema dinâmico baseado no padrão do projeto
       const pattern = patternFromProject(project)
-      const bulkItemSchema = createBulkImportItemSchemaForProject(pattern)
+      // Módulos válidos = lista MODULE ativa do projeto (inclui módulos personalizados, ex.: SALESFORCE)
+      const projectModules = await prisma.projectListItem.findMany({
+        where: { projectId, listType: 'MODULE', isActive: true },
+        select: { code: true },
+      })
+      const canonicalModule = new Map(projectModules.map((m) => [m.code.toUpperCase(), m.code]))
+      const bulkItemSchema = createBulkImportItemSchemaForProject(pattern, {
+        force,
+        validModules: [...canonicalModule.values()],
+      })
 
       // Buscar reqIds existentes no projeto para identificar updates vs creates
       const existingReqs = await prisma.requirement.findMany({
@@ -1048,6 +1071,10 @@ router.post(
 
         // Validar com Zod usando schema dinâmico do projeto
         const result = bulkItemSchema.safeParse(item)
+        // Grava o código canônico do módulo conforme a lista do projeto
+        if (result.success) {
+          result.data.module = (canonicalModule.get(String(result.data.module).toUpperCase()) ?? result.data.module) as typeof result.data.module
+        }
         if (!result.success) {
           rowErrors.push(
             ...result.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`)
@@ -1135,19 +1162,21 @@ router.post(
           }
 
           // Atualizar requisitos existentes (update individual necessário pois cada registro tem valores diferentes)
+          // Em importação forçada, texto 5W2H vazio não apaga o valor que já existe
+          const keepIfEmpty = (value: string | undefined) => (force && !value ? undefined : value)
           for (const { id, data } of itemsToUpdate) {
             await tx.requirement.update({
               where: { id },
               data: {
                 shortDesc: data.shortDesc,
                 module: data.module,
-                what: data.what,
-                why: data.why,
-                who: data.who,
-                when: data.when,
-                where: data.where,
-                howToday: data.howToday,
-                howMuch: data.howMuch,
+                what: keepIfEmpty(data.what),
+                why: keepIfEmpty(data.why),
+                who: keepIfEmpty(data.who),
+                when: keepIfEmpty(data.when),
+                where: keepIfEmpty(data.where),
+                howToday: keepIfEmpty(data.howToday),
+                howMuch: keepIfEmpty(data.howMuch),
                 dependsOn: JSON.stringify(data.dependsOn || []),
                 providesFor: JSON.stringify(data.providesFor || []),
                 responsibleConsultantId: data.responsibleConsultantId || null,
@@ -1178,7 +1207,13 @@ router.post(
       if (itemsToUpdate.length > 0) {
         parts.push(`${itemsToUpdate.length} atualizado(s)`)
       }
-      const message = parts.length > 0 ? parts.join(', ') : 'Nenhuma alteração'
+      let message = parts.length > 0 ? parts.join(', ') : 'Nenhuma alteração'
+      if (force) {
+        message += ' (importação forçada)'
+        console.warn(
+          `[bulk-import] FORCE por ${req.user!.userId} no projeto ${projectId}: ${itemsToCreate.length} criado(s), ${itemsToUpdate.length} atualizado(s)`
+        )
+      }
 
       const response: BulkImportResponse = {
         success: true,
