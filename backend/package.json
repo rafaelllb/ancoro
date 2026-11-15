@@ -11,6 +11,7 @@
     "dev": "dotenv -e .env.development -- nodemon src/index.ts",
     "predev:sqlite": "npm run prisma:generate:sqlite",
     "dev:sqlite": "dotenv -e .env.development.sqlite -- nodemon src/index.ts",
+    "db:push:sqlite": "dotenv -e .env.development.sqlite -- prisma db push --schema prisma/schema.sqlite.prisma",
     "predev:demo": "npm run prisma:generate:sqlite",
     "dev:demo": "dotenv -e .env.demo -- nodemon src/index.ts",
     "predev:local": "npm run prisma:generate:sqlite",

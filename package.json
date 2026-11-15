@@ -10,6 +10,10 @@
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
 
+    "dev:sqlite": "concurrently \"npm run dev:sqlite:backend\" \"npm run dev:frontend\"",
+    "dev:sqlite:backend": "cd backend && npm run dev:sqlite",
+    "dev:sqlite:push": "cd backend && npm run db:push:sqlite",
+
     "demo": "concurrently \"npm run demo:backend\" \"npm run demo:frontend\"",
     "demo:backend": "cd backend && npm run dev:demo",
     "demo:frontend": "cd frontend && npm run dev:demo",
