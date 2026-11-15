@@ -38,6 +38,11 @@ function EventIcon({ variant, filled, color }: { variant: string; filled: boolea
       return <g><rect x={-7} y={-5} width={14} height={10} rx={1} fill={fill} stroke={color} strokeWidth={1.2} /><path d="M-7 -5L0 1L7 -5" fill="none" stroke={inv} strokeWidth={1.2} /></g>;
     case 'error':
       return <path d="M-6 7L-2 -4L2 1L6 -7L2.5 -1L-1.5 -6Z" fill={fill} stroke={color} strokeWidth={1.1} strokeLinejoin="round" />;
+    // [2026-11-07] Criado: ícones de sinal (triângulo) e escalonamento (seta para cima) — Rafael Brito
+    case 'signal':
+      return <path d="M0 -7.5L8 6.5H-8Z" fill={fill} stroke={color} strokeWidth={1.2} strokeLinejoin="round" />;
+    case 'escalation':
+      return <path d="M0 -8L6.5 7L0 3L-6.5 7Z" fill={fill} stroke={color} strokeWidth={1.2} strokeLinejoin="round" />;
     case 'conditional':
       return <g fill="none" stroke={color} strokeWidth={1.2}><rect x={-6} y={-7} width={12} height={14} /><path d="M-3 -3H3M-3 0H3M-3 3H3" /></g>;
     case 'link':

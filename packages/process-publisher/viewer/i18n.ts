@@ -26,7 +26,7 @@ const pt = {
     association: 'Associação', message: 'Fluxo de mensagem', lane: 'Raia', participant: 'Participante externo', process: 'Processo',
   } as Record<string, string>,
   variant: {
-    none: '', timer: 'temporizador', message: 'mensagem', error: 'erro', conditional: 'condicional', link: 'link', terminate: 'término', generic: '',
+    none: '', timer: 'temporizador', message: 'mensagem', signal: 'sinal', escalation: 'escalonamento', error: 'erro', conditional: 'condicional', link: 'link', terminate: 'término', generic: '',
     user: 'usuário', service: 'serviço', manual: 'manual', script: 'script', exclusive: 'exclusivo', parallel: 'paralelo', inclusive: 'inclusivo', eventBased: 'por evento',
   } as Record<string, string>,
   loopKind: { standard: 'Repetição (loop)', parallel: 'Multi-instância paralela', sequential: 'Multi-instância sequencial' } as Record<string, string>,
@@ -67,7 +67,7 @@ const en: Dict = {
     association: 'Association', message: 'Message flow', lane: 'Lane', participant: 'External participant', process: 'Process',
   },
   variant: {
-    none: '', timer: 'timer', message: 'message', error: 'error', conditional: 'conditional', link: 'link', terminate: 'terminate', generic: '',
+    none: '', timer: 'timer', message: 'message', signal: 'signal', escalation: 'escalation', error: 'error', conditional: 'conditional', link: 'link', terminate: 'terminate', generic: '',
     user: 'user', service: 'service', manual: 'manual', script: 'script', exclusive: 'exclusive', parallel: 'parallel', inclusive: 'inclusive', eventBased: 'event-based',
   },
   loopKind: { standard: 'Standard loop', parallel: 'Parallel multi-instance', sequential: 'Sequential multi-instance' },

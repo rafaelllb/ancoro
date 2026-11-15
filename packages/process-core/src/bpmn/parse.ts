@@ -40,7 +40,7 @@ const GATEWAY_MAP: Record<string, string> = {
 };
 const EVENT_DEF_MAP: Record<string, string> = {
   'bpmn:TimerEventDefinition': 'timer', 'bpmn:MessageEventDefinition': 'message', 'bpmn:ErrorEventDefinition': 'error',
-  'bpmn:ConditionalEventDefinition': 'conditional', 'bpmn:LinkEventDefinition': 'link', 'bpmn:TerminateEventDefinition': 'terminate',
+  'bpmn:SignalEventDefinition': 'signal', 'bpmn:EscalationEventDefinition': 'escalation', 'bpmn:ConditionalEventDefinition': 'conditional', 'bpmn:LinkEventDefinition': 'link', 'bpmn:TerminateEventDefinition': 'terminate',
 };
 
 /** Lê <ancoro:props> de um elemento BPMN para um objeto de campos do modelo (somente o que está presente). */

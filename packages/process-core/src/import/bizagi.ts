@@ -339,7 +339,7 @@ export function importXpdl(xml: string, label = 'diagrama', extra: { defsXml?: s
       if (ev) {
         const [evKind, evBody] = (['StartEvent', 'EndEvent', 'IntermediateEvent'] as const).map((k) => [k, ev[k]] as const).find(([, v]) => v) ?? [];
         const trigger = String(evBody?.['@_Trigger'] ?? evBody?.['@_Result'] ?? 'None');
-        const variant = ({ None: 'none', Message: 'message', Timer: 'timer', Error: 'error', Conditional: 'conditional', Link: 'link', Terminate: 'terminate' } as Record<string, string>)[trigger];
+        const variant = ({ None: 'none', Message: 'message', Timer: 'timer', Error: 'error', Signal: 'signal', Escalation: 'escalation', Conditional: 'conditional', Link: 'link', Terminate: 'terminate' } as Record<string, string>)[trigger];
         if (!variant) warnings.push(`${tag} evento '${name || id}': gatilho '${trigger}' não suportado; tratado como evento sem definição`);
         const v = variant ?? 'none';
         if (evKind === 'StartEvent') nodes.push({ ...base, kind: 'start', variant: v } as ProcessNode);

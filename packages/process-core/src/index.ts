@@ -9,9 +9,13 @@ export { ANCORO_NS } from './bpmn/moddle.js';
 export * from './import/bizagi.js';
 // [2026-10-14] Criado: exemplo canônico exposto p/ demos/editor (fixture; não usar em produção) — Rafael Brito
 export { billingSample } from './samples/billing.js';
+// [2026-11-07] Criado: subprocesso de exemplo chamado pelo faturamento (demo do mergulho na simulação) — Rafael Brito
+export { tariffSample } from './samples/tariff.js';
 export * from './edit.js';
 export * from './attributes.js';
 export * from './labels.js';
 // [2026-10-27] Criado: geração automática de processos a partir de requisitos — Rafael Brito
 export * from './generate.js';
 export * from './generate-requirements.js';
+// [2026-11-07] Criado: motor de simulação (Fase 7) — eventos + KPIs + Monte Carlo — Rafael Brito
+export * from './simulate.js';

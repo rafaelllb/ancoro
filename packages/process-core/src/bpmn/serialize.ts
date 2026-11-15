@@ -30,6 +30,8 @@ const GATEWAY_TYPE: Record<string, string> = {
 const EVENT_DEF_TYPE: Record<string, string> = {
   timer: 'bpmn:TimerEventDefinition', message: 'bpmn:MessageEventDefinition', error: 'bpmn:ErrorEventDefinition',
   // [2026-10-14] Alterado: + conditional/link/terminate (corpus BIIN) — Rafael Brito
+  // [2026-11-07] Alterado: + signal/escalation — Rafael Brito
+  signal: 'bpmn:SignalEventDefinition', escalation: 'bpmn:EscalationEventDefinition',
   conditional: 'bpmn:ConditionalEventDefinition', link: 'bpmn:LinkEventDefinition', terminate: 'bpmn:TerminateEventDefinition',
 };
 

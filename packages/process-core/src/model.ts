@@ -26,7 +26,9 @@ export type NodeKind = (typeof NODE_KINDS)[number];
 
 // Variantes por kind. Eventos: definição do evento. Task: tipo. Gateway: tipo.
 // [2026-10-14] Alterado: + conditional, link, terminate (corpus BIIN usa os três) — Rafael Brito
-export const EVENT_VARIANTS = ['none', 'timer', 'message', 'error', 'conditional', 'link', 'terminate'] as const;
+// [2026-11-07] Alterado: + signal e escalation (BPMN 2.0) — sinal broadcast e escalonamento; antes só havia message/timer/error — Rafael Brito
+// TODO [ESTIGMERGIA]: faltam compensation, cancel e multiple/parallelMultiple (raros em processos de negócio; adicionar sob demanda)
+export const EVENT_VARIANTS = ['none', 'timer', 'message', 'signal', 'escalation', 'error', 'conditional', 'link', 'terminate'] as const;
 export const TASK_VARIANTS = ['generic', 'user', 'service', 'manual', 'script'] as const;
 export const GATEWAY_VARIANTS = ['exclusive', 'parallel', 'inclusive', 'eventBased'] as const;
 
